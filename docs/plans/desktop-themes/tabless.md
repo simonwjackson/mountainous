@@ -70,8 +70,8 @@ Chromium's input protocol. Link/popup actions ran in a private local fixture.
 | Drag/attach into another window | Public `tabs.move` left **two tabs in one normal window**. `onAttached` does not run the detach logic. This is not an invariant that every window always contains one tab. |
 | Old-window flash | **Not visually established.** Observer timestamps show ordinary new tabs remained attached for about **84–104 ms** before detachment. This is enough to make a flash plausible, not proof of a visible frame. No no-flash claim. |
 
-The first one-window state was captured under Platinum light/dark and Win98
-light/dark: `{platinum,win98}-{light,dark}-one-tab.png`. The caption belongs to
+The first one-window state was captured under Platinum light/dark and Memphis
+light/dark: `{platinum,memphis}-{light,dark}-one-tab.png`. The caption belongs to
 our shell. Chromium owns the address/security row and page. Native GTK paint
 changed with the private theme. A page's white background need not become dark.
 
@@ -155,14 +155,14 @@ placed these normal windows on separate pages. Full captures and
 | Surface | 20 windows | 40 windows |
 |---|---|---|
 | Platinum Control Strip | 900 logical px; all tiles fit | 1780 logical px of a 1920 px screen; all fit, no scroll arrows at this size. Repeated browser icons, titles on hover/menu rather than the strip. |
-| Win98 taskbar | 20 shortened title buttons; plan width 57 units per button | 38 icon-only buttons at the 26-unit minimum, Start becomes icon-only, **2 windows in `»` overflow**. Same Chromium icon throughout. |
-| Held switcher | — | Real **Super+Tab**: Win98 Cool Switch shows 40 icons and a selected title, and its cycle contains 40 unique window addresses. Platinum cycles **one Chromium app**, not 40 pages. |
+| Memphis taskbar | 20 shortened title buttons; plan width 57 units per button | 38 icon-only buttons at the 26-unit minimum, Start becomes icon-only, **2 windows in `»` overflow**. Same Chromium icon throughout. |
+| Held switcher | — | Real **Super+Tab**: Memphis Cool Switch shows 40 icons and a selected title, and its cycle contains 40 unique window addresses. Platinum cycles **one Chromium app**, not 40 pages. |
 | Application menu | One Chromium app group | Chromium row shows **40**; underlying model retains 40 distinct windows, including repeated titles. Opening/scrolling the full submenu was **not** verified; screenshots establish the top-level row only. |
 
 The repository binds Super+Tab. It does **not** bind literal Alt+Tab to Cool
 Switch. This probe used the real existing binding; it does not claim Alt+Tab
 parity. Source-level cycle tests now cover 20 and 40 same-class windows with
-repeated titles, and every window remains in Win98's cycle.
+repeated titles, and every window remains in Memphis's cycle.
 
 ### Ctrl+L collisions
 

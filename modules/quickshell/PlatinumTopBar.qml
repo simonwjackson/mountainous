@@ -8,12 +8,14 @@ import "app-icon.js" as AppIcon
 import "battery.js" as BatteryRule
 import "oci-model.js" as OciModel
 import "notification-model.js" as NotificationModel
+import "sni-tray.js" as Sni
 
 // One screen's top bar, as a Mac OS 8 Platinum menu bar.
 //
 //   left    the omni mark, then the front window's title or dictation
 //   centre  the clock (the time alone), or the Super+O chord while active
-//   right   the controls, the battery, the front app
+//   right   the controls, the apps' tray icons (StatusNotifierItems),
+//           the battery, the front app
 //
 // Quiet glyphs: each icon carries its value (speaker waves, sun rays, a
 // cloud meter for the worst OCI profile, the battery fill, a dot on the
@@ -56,6 +58,45 @@ PanelWindow {
     property date now: new Date()
     property bool chordVisible: false
 
+    // The StatusNotifierItem host (SniTray.qml), where the shell has one.
+    // The apps' icons stand after the built-in controls and go into »
+    // before them (bar-plan.js). sniKey: the item whose menu ("sni") is
+    // open or was last; PlatinumDesktop draws that menu.
+    property var tray: null
+    readonly property var sniRows: bar.tray ? bar.tray.rows : []
+    property string sniKey: ""
+    property bool sniFromOverflow: false
+    property var sniItems: ({})
+    function sniRowFor(key) {
+        for (const r of bar.sniRows) if (r.key === key) return r;
+        return null;
+    }
+    function sniOpen(key, fromOverflow) {
+        bar.sniKey = key;
+        bar.sniFromOverflow = fromOverflow;
+        const item = bar.sniItems[key];
+        MenuState.open("sni", bar.modelData, item && item.visible ? bar.xOf(item) : bar.anchorFor("more"));
+    }
+    // A press on an app's icon: button "left", "middle" or "right".
+    function sniPress(key, button) {
+        const what = Sni.press(bar.sniRowFor(key), button);
+        if (what === "menu") {
+            if (bar.isOpen("sni") && bar.sniKey === key) { MenuState.close(); return; }
+            bar.sniOpen(key, false);
+            return;
+        }
+        if (bar.menuHere) MenuState.close();
+        if (what === "activate") bar.tray.activate(key);
+        else if (what === "secondary") bar.tray.secondary(key);
+    }
+    // Chosen in »: its menu, led by its own command, or its command.
+    function sniChoose(key) {
+        const r = bar.sniRowFor(key);
+        if (Sni.overflowChoice(r) === "menu") { bar.sniOpen(key, true); return; }
+        MenuState.close();
+        if (r) bar.tray.activate(key);
+    }
+
     // The battery as UPower reports it. A harness may replace it.
     property var battery: {
         const dev = UPower.displayDevice;
@@ -82,6 +123,8 @@ PanelWindow {
 
     // The bar's titles by name.
     function itemFor(name) {
+        if (name === "sni") return bar.sniItems[bar.sniKey] || null;
+        if (Sni.isKey(name)) return bar.sniItems[name] || null;
         return ({
             apple: markControl, find: markControl, app: appControl,
             layout: layoutControl, bt: btControl, wifi: wifiControl, vol: volControl, bri: briControl,
@@ -101,7 +144,8 @@ PanelWindow {
         // Go to Address hangs from the front window's title, the window it acts on.
         if (name === "address") return bar.titleX;
         const item = bar.itemFor(name);
-        if (bar.plan.overflow.indexOf(name) >= 0 && moreControl.visible) return bar.xOf(moreControl);
+        const id = name === "sni" ? bar.sniKey : name;
+        if (bar.plan.overflow.indexOf(id) >= 0 && moreControl.visible) return bar.xOf(moreControl);
         if (item && item.visible && item.width > 0) return bar.xOf(item);
         return -1;
     }
@@ -131,6 +175,7 @@ PanelWindow {
     }
 
     function valueFor(id) {
+        if (Sni.isKey(id)) { const r = bar.sniRowFor(id); return r && r.attention ? "Needs attention" : ""; }
         if (id === "battery") return bar.battery.percent + "%";
         if (id === "clock") return Qt.formatDateTime(bar.now, "M/d") + "  " + bar.clockTime(bar.now);
         if (id === "app") return bar.appName;
@@ -154,6 +199,7 @@ PanelWindow {
     // Balloon Help: the full value of the title under the pointer, as a
     // sentence (Mac OS 8). Every value here is also in its menu.
     function balloonFor(id) {
+        if (Sni.isKey(id)) { const r = bar.sniRowFor(id); return r ? r.tooltip.replace(/\n/g, ": ") + "." : ""; }
         if (id === "clock") return Qt.formatDate(bar.now, "dddd, MMMM d, yyyy") + ".";
         if (id === "oci") return bar.oci.state === "ready"
             ? "OCI egress this month: " + bar.ociRows.map(function (r) { return r.name + " " + r.value; }).join(", ")
@@ -370,7 +416,8 @@ PanelWindow {
             // Offline keeps a "!" once the words yield.
             { id: "ntf", iconWidth: 16, readoutWidth: ntfReadoutW,
                 compactReadoutWidth: ntfOffline ? Math.min(Kit.PlatinumMetrics.width("!"), ntfReadoutW) : 0 }
-        ].filter(function (c) { return c !== null; }),
+        ].filter(function (c) { return c !== null; })
+            .concat(sniRows.map(function (r) { return { id: r.key, iconWidth: 16, readoutWidth: 0 }; })),
         markWidth: 20,
         // The title box draws 8 px either side of its text. While dictation
         // shows, the title is its dot and status text and ends at the
@@ -429,6 +476,7 @@ PanelWindow {
             ["ntf", ntfControl], ["battery", batteryControl], ["app", appControl],
             ["clock", clockCentre], ["clock", clockRight]];
         for (const t of titles) if (t[1].visible && t[1].hovered) return t[0];
+        for (const k in bar.sniItems) { const it = bar.sniItems[k]; if (it && it.visible && it.hovered) return k; }
         return "";
     }
     // The balloon shows after the pointer rests 600 ms on a title, while
@@ -1003,6 +1051,60 @@ PanelWindow {
                 visible: bar.notifications.count > 0 && !bar.ntfShowsReadout
                 fill: ntfControl.fg
                 knock: ntfControl.bg
+            }
+        }
+
+        // The apps' tray icons (StatusNotifierItems): theme art or a period
+        // lettermark. Left activates, middle is the secondary command,
+        // right (or left on a menu-only item) drops the app's menu, drawn
+        // as a Platinum menu; the wheel goes to the app.
+        Repeater {
+            model: bar.sniRows
+
+            Item {
+                id: sniSlot
+                required property var modelData
+                readonly property string key: modelData.key
+                readonly property bool hovered: sniControl.hovered
+                visible: bar.onBar(key)
+                width: sniControl.implicitWidth
+                height: sniControl.implicitHeight
+                Component.onCompleted: { const m = Object.assign({}, bar.sniItems); m[key] = sniSlot; bar.sniItems = m; }
+                Component.onDestruction: if (bar.sniItems[key] === sniSlot) {
+                    const m = Object.assign({}, bar.sniItems); delete m[key]; bar.sniItems = m;
+                }
+
+                PlatinumBarControl {
+                    id: sniControl
+                    anchors.fill: parent
+                    screen: bar.modelData
+                    open: bar.isOpen("sni") && bar.sniKey === sniSlot.key
+                    pad: bar.pad
+                    icon: ""
+                    onActivated: bar.sniPress(sniSlot.key, "left")
+                    onWheel: function (delta) { if (bar.tray && delta !== 0) bar.tray.scroll(sniSlot.key, delta, false); }
+
+                    iconExtras: [
+                        SniIcon {
+                            anchors.fill: parent
+                            themeId: "platinum"
+                            row: sniSlot.modelData
+                            tray: bar.tray
+                            size: 16
+                        },
+                        // A needs-attention item carries the bar's badge dot.
+                        PlatinumBarBadge {
+                            visible: sniSlot.modelData.attention
+                            fill: Kit.PlatinumTokens.barWarning
+                            knock: sniControl.bg
+                        }
+                    ]
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.MiddleButton | Qt.RightButton
+                    onPressed: function (mouse) { bar.sniPress(sniSlot.key, mouse.button === Qt.MiddleButton ? "middle" : "right"); }
+                }
             }
         }
 

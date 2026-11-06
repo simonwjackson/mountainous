@@ -1,6 +1,6 @@
 # Fleet window and the glance space
 
-Status: built on `cairn` at `37c91c12`; not deployed. Written 2026-10-24. The Windows 98 form: `docs/plans/desktop-themes.md`, "Fleet window and glance space, Windows 98".
+Status: built on `cairn` at `37c91c12`; not deployed. Written 2026-10-24. The Memphis form: `docs/plans/desktop-themes.md`, "Fleet window and glance space, Memphis".
 
 Spec: the approved mocks, `/tmp/hud-mock/` (Fleet windoid) and `/tmp/glance-mock/` (glance space; `DIRECTION.md` has the tokens and the mock's motion table). Data contract: `~/.local/share/mountainous/handoffs/beszel-quickshell-hud.md`. Simon's decision after the mocks: the bar's Fleet readout is the title of the Glance menu; the Application menu is not swapped.
 
@@ -18,10 +18,10 @@ Spec: the approved mocks, `/tmp/hud-mock/` (Fleet windoid) and `/tmp/glance-mock
 
 ## Keys and IPC
 
-| Key | IPC | Platinum | Win98 |
+| Key | IPC | Platinum | Memphis |
 |---|---|---|---|
-| Super+B, Super+O then F | `qs -c mountainous ipc call fleet toggle` | Toggles the Fleet window. From the glance space it dismisses the space and opens the window. | The same, for the Win98 Fleet window above the tray; a minimized window comes back |
-| Super+W | `glance toggle` (also `reveal`, `hide`) | Toggles the glance space on the focused screen | The same, for the Win98 glance space |
+| Super+B, Super+O then F | `qs -c mountainous ipc call fleet toggle` | Toggles the Fleet window. From the glance space it dismisses the space and opens the window. | The same, for the Memphis Fleet window above the tray; a minimized window comes back |
+| Super+W | `glance toggle` (also `reveal`, `hide`) | Toggles the glance space on the focused screen | The same, for the Memphis glance space |
 | Super+O, then the chord | `chrome open fleet` | Opens the Glance menu | Toggles the Fleet window (the tray Fleet icon's action) |
 
 Super+W and Super+B were free in `hyprland.lua` (checked against every `hl.bind`). Kanata (`modules/kanata.nix`) leaves physical W alone; physical B is dead (f24) and physical `.` types `b`, so Super+B is held Space + `.` on Simon's keyboard. Escape in the space is the `kl` chord (Escape is dead on the base layer).
@@ -52,7 +52,7 @@ See the report in `/tmp/fleet-glance/REPORT.md` for evidence. Short list:
 |---|---|
 | The space is a Top-layer surface, not Overlay | The brief says "overlay layer surface". Hyprland stacks surfaces of one layer in map order, so the space (mapped on summon) covers the bar's shadow, the dock and an open Fleet window, while the bar's menus (mapped later) draw over it. On the Overlay layer the Glance menu would open under the dither. Cost: a fullscreen window covers Top-layer surfaces in Hyprland, so Super+W over a fullscreen window is not proven to show the space. |
 | The space covers the whole screen with an input mask that leaves out the bar | As `PlatinumMenuHost` does: the bar stays live, and the zoom rects can start at the readout in the bar. |
-| The bar readout counts as a Fleet view | It needs a current count; so Beszel polls every 60 s while the Platinum bar shows, not only while a window is open. Under Win98 nothing polls. |
+| The bar readout counts as a Fleet view | It needs a current count; so Beszel polls every 60 s while the Platinum bar shows, not only while a window is open. Under Memphis nothing polls. |
 | A failed SMART disk raises a host's tone only after its drill-down ran | The brief keeps `list_smart_devices` to the expanded host. Fetched verdicts are kept for the session. |
 | Fleet-level staleness is per host | A failed refresh keeps the last sample; each host passes the model's three-minute warning on its own, and a sunken "Last update" badge and the footer say so. |
 | Sizes snapped to even logical pixels | 19-px column headers and rows and the 15-px footer became 20, 20 and 16, so every hair lands on whole device pixels at 1.5. |
@@ -62,7 +62,7 @@ See the report in `/tmp/fleet-glance/REPORT.md` for evidence. Short list:
 
 ## Evidence and limits
 
-Nested Hyprland 0.56.2 in headless labwc at 2880×1800, scale 1.5 (`/tmp/fleet-glance/`, `REPORT.md`). Measured there: summon ends at frame 9 (152–157 ms after the call), dismiss at 161–162 ms, reduced motion draws no animation frame; the dither's ink cells are 100% pure black on the screen's 3-device-px checker; the Glance menu draws over the space; a Win98 swap leaves only the taskbar mapped and the Fleet/glance IPC does nothing there. Focused checks `beszel-model`, `beszel-status`, `fleet-glance-model`, `bar-model`, `bar-delivery`, `desktop-theme`, `desktop-theme-shell` and `win98-desktop` pass; the Myoko toplevel evaluates.
+Nested Hyprland 0.56.2 in headless labwc at 2880×1800, scale 1.5 (`/tmp/fleet-glance/`, `REPORT.md`). Measured there: summon ends at frame 9 (152–157 ms after the call), dismiss at 161–162 ms, reduced motion draws no animation frame; the dither's ink cells are 100% pure black on the screen's 3-device-px checker; the Glance menu draws over the space; a Memphis swap leaves only the taskbar mapped and the Fleet/glance IPC does nothing there. Focused checks `beszel-model`, `beszel-status`, `fleet-glance-model`, `bar-model`, `bar-delivery`, `desktop-theme`, `desktop-theme-shell` and `memphis-desktop` pass; the Myoko toplevel evaluates.
 
 Not proven: Super+W and Super+B as real key presses (the binds load; a virtual Super from wtype did not fire them), the dither on Myoko's OLED, the space over a fullscreen window, two screens.
 

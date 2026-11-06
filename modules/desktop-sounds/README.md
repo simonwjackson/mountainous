@@ -1,7 +1,7 @@
 # Original UI sounds
 
 `generate.py` is the source for every WAV in
-`../quickshell/themes/{platinum,win98}/sounds/`.
+`../quickshell/themes/{platinum,memphis}/sounds/`.
 
 Author: mountainous contributors, 2026. Code and generated recordings:
 **CC0-1.0**, <https://creativecommons.org/publicdomain/zero/1.0/>.

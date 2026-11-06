@@ -169,7 +169,7 @@
                       "notification-dev"
                       "builder-dev"
                       "theme-dev"
-                      # themes/win98/dev: the control gallery and its scripts.
+                      # themes/memphis/dev: the control gallery and its scripts.
                       "dev"
                     ])
                   ) (collect (relative + "/") (directory + "/${name}"))

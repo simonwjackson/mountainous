@@ -9,7 +9,7 @@ let
       platinumFont = "${
         self.packages.${pkgs.stdenv.hostPlatform.system}.chicagoflf
       }/share/fonts/truetype/ChicagoFLF.ttf";
-      win98Font = "${
+      memphisFont = "${
         self.packages.${pkgs.stdenv.hostPlatform.system}.w95fa-grid
       }/share/fonts/truetype/W95FAGrid.ttf";
     };

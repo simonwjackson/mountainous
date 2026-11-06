@@ -89,8 +89,8 @@ in
               if grep -q '^pragma Singleton' "$file"; then printf 'singleton ' >> qml/qmldir; fi
               printf '%s 1.0 %s.qml\n' "$name" "$name" >> qml/qmldir
             done
-            bash ${../scripts/lint-quickshell-qml} qml/CdpBrowser.qml qml/OmniBar.qml qml/PlatinumGoToAddress.qml qml/Win98OpenDialog.qml \
-              qml/WindowIcon.qml qml/PlatinumToken.qml qml/Win98Taskbar.qml qml/Win98CoolSwitch.qml qml/Win98FindWindow.qml \
+            bash ${../scripts/lint-quickshell-qml} qml/CdpBrowser.qml qml/OmniBar.qml qml/PlatinumGoToAddress.qml qml/MemphisOpenDialog.qml \
+              qml/WindowIcon.qml qml/PlatinumToken.qml qml/MemphisTaskbar.qml qml/MemphisCoolSwitch.qml qml/MemphisFindWindow.qml \
               qml/PlatinumFindMenu.qml qml/PlatinumCascadeMenu.qml qml/PlatinumControlStrip.qml \
               qml/PlatinumStripTile.qml qml/PlatinumAppIcon.qml qml/PlatinumDesktop.qml
             # A runtime load catches Image property errors which qmllint

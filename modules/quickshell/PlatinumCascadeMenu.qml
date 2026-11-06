@@ -272,18 +272,14 @@ Item {
             return h - list.contentY;
         }
 
-        // The hard shadow, one rule down and right.
-        Rectangle {
-            x: 2 * root.hair
-            y: 2 * root.hair
-            width: parent.width
-            height: parent.height
-            color: Kit.PlatinumTokens.menuShadow
-        }
+        // The hard shadow, one rule down and right (hatched, with crop
+        // marks, on Drawing Board).
+        PlatinumShadow { hairs: 2 }
         PlatinumBevel {
             anchors.fill: parent
             color: Kit.PlatinumTokens.menuSurface
         }
+        PlatinumCropMarks { visible: Kit.PlatinumTokens.drafting; z: 10 }
 
         Flickable {
             id: list

@@ -133,7 +133,7 @@ function hideWindow(state, rows, address) {
     return hide(state, rows, function (r) { return k !== "" && key(r.address) === k; });
 }
 
-// Every shown window on one screen: Win98's Minimize All Windows.
+// Every shown window on one screen: Memphis's Minimize All Windows.
 function hideScreen(state, rows, screen) {
     return hide(state, rows, function (r) { return r.screen === screen; });
 }
@@ -169,7 +169,7 @@ function showAll(state, rows, fallbackPage) {
     return show(state, rows, function () { return true; }, fallbackPage);
 }
 
-// One window: Win98's Restore (a minimized window's taskbar button). The
+// One window: Memphis's Restore (a minimized window's taskbar button). The
 // rest of its app stays hidden.
 function showWindow(state, rows, address, fallbackPage) {
     var k = key(address);
@@ -182,7 +182,7 @@ function homeOf(state, address) {
     return e && e.page > 0 ? e.page : null;
 }
 
-// Give a hidden window another home page without showing it (Win98's
+// Give a hidden window another home page without showing it (Memphis's
 // Move to Page on a minimized window). A window the state does not know
 // gets an entry. Returns the new state; nothing moves.
 function setHome(state, rows, address, page) {

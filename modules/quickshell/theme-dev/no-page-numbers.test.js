@@ -79,7 +79,7 @@ const bad = seen.filter(([, text]) => NUMBER.test(text));
 assert.deepEqual(bad, [], "a rendered label shows a page number");
 
 // ---------------------------------------------------------------- 2. the sources
-// Owned by win98-taskbar-session (the taskbar, Move to Page, Start ▸ Windows,
+// Owned by memphis-taskbar-session (the taskbar, Move to Page, Start ▸ Windows,
 // Alt+Tab). Remove a line when that work lands; a clean listed file fails.
 const PENDING = new Set([]);
 // A string that ends in "page " or "Page " and is followed by + or ${}:
@@ -106,16 +106,16 @@ for (const rel of files(dir, "")) {
 }
 assert.deepEqual(offenders, [], "a shipped file builds a page-number label");
 // ---------------------------------------------------------------- 3. the dividers
-// A page is never a control, so it has nothing to number: the Win98
+// A page is never a control, so it has nothing to number: the Memphis
 // taskbar's divider is a groove with no head (no place, no tooltip, no
 // keyboard stop, no click), and the Control Strip's page slot is a groove.
 const src = (rel) => fs.readFileSync(path.join(dir, rel), "utf8");
-const P = load("themes/win98/taskbar-plan.js");
+const P = load("themes/memphis/taskbar-plan.js");
 assert.equal(P.TAG, undefined, "the taskbar plan has no page head");
 const tp = P.plan(1440, { windows: [{ page: 1, focused: true }, { page: 2 }, { page: 5 }], showingPage: 1,
     tray: [], clock: { time: "4:51", ampm: "PM" }, dict: { visible: false }, measure: (t) => String(t).length * 6 });
 assert.equal(JSON.stringify(tp.groups.map((g) => [g.divider, g.head])), "[[false,3],[true,5],[true,5]]", "dividers are a groove and a gap");
-for (const rel of ["Win98Taskbar.qml", "Win98MenuHost.qml", "Win98Desktop.qml"]) {
+for (const rel of ["MemphisTaskbar.qml", "MemphisMenuHost.qml", "MemphisDesktop.qml"]) {
     const text = src(rel);
     assert.ok(!/["']page["']\s*\+/.test(text), rel + " builds no page control id");
     assert.ok(!/showPage/.test(text), rel + " has no page click");

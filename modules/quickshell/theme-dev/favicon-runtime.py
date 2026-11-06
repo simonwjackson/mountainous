@@ -219,7 +219,7 @@ ShellRoot {
                 const token = small.children.find(function(child) { return child.objectName === "platinum-token-image"; });
                 if (!token.source.toString().endsWith("-24-platinum-dark.png")) return;
                 console.log("PLATINUM_TOKEN_DARK_READY");
-                // Opt-out restores today's icon, as on Win98.
+                // Opt-out restores today's icon, as on Memphis.
                 small.platinumToken = false;
                 medium.platinumToken = false;
                 large.platinumToken = false;
@@ -227,7 +227,7 @@ ShellRoot {
                 root.stage = 7;
             } else if (root.stage === 7 && small.status === Image.Ready && !small.tokenReady) {
                 if (small.source.toString() !== "ORIGIN/32.png") throw new Error("token opt-out changed the existing icon");
-                console.log("WIN98_ICON_PATH_UNCHANGED");
+                console.log("MEMPHIS_ICON_PATH_UNCHANGED");
                 Qt.quit();
             }
         }
@@ -259,7 +259,7 @@ ShellRoot {
         "NO_FAVICON_FALLBACK_READY",
         "PLATINUM_TOKEN_LIGHT_READY 24 30 48",
         "PLATINUM_TOKEN_DARK_READY",
-        "WIN98_ICON_PATH_UNCHANGED",
+        "MEMPHIS_ICON_PATH_UNCHANGED",
     ]:
         assert marker in result.stdout, marker
 finally:

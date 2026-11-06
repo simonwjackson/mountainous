@@ -35,7 +35,7 @@ function scopeLabel(scope) {
 
 // ------------------------------------------------------------------ entry
 // The service's state is { shown, mode, query, caller }. Every way in (Super+P,
-// F1, Super+Shift+P, Ctrl+L, Apple menu ▸ Find…, Win98 Run…, the IPC targets)
+// F1, Super+Shift+P, Ctrl+L, Apple menu ▸ Find…, Memphis Run…, the IPC targets)
 // goes through enter(). The caller is the window that had focus when the
 // menu was summoned; "Go to Address" acts on it. It is captured on the way
 // in, before the menu takes the keyboard, and kept while the menu moves

@@ -9,13 +9,14 @@ pkgs.stdenvNoCC.mkDerivation {
   buildPhase = ''
     runHook preBuild
     python3 ${../scripts/generate-native-themes.py} \
+      --schemes ${../scripts/system-colour-schemes.json} \
       --out "$out" --mac ${inputs.platinum-gtk-src} \
       --chicago ${inputs.chicago95-src} --kvantum ${inputs.platinum-kvantum-src}
     runHook postBuild
   '';
   dontInstall = true;
   meta = {
-    description = "Platinum and Windows 98 native desktop appearances";
+    description = "Platinum and Memphis native desktop appearances";
     # Mac-OS-9 and the stable Kvantum fork include GPLv3 texts. Chicago95's
     # README declares GPL-3.0+/MIT; its theme code is kept under GPL-3.0+.
     license = with pkgs.lib.licenses; [

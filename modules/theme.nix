@@ -25,6 +25,12 @@ let
       "${theme.id}) icons=${theme.art.icons}; cursors=${theme.art.cursors}; cursor_size=${toString theme.art.cursorSize} ;;"
     ) themes
   );
+  appearanceCases = builtins.concatStringsSep "\n" (
+    builtins.concatMap (
+      theme:
+      map (appearance: "${theme.id}:${appearance.id}) printf '${appearance.mode}' ;;") theme.appearances
+    ) themes
+  );
   ghosttyRootConfig =
     pkgs:
     pkgs.writeText "ghostty-config" ''
@@ -54,6 +60,7 @@ let
         state_file="$state_dir/theme"
         extra_file="$state_dir/theme-extra"
         name_file="$state_dir/theme-name"
+        appearance_file="$state_dir/theme-appearance"
         sounds_file="$state_dir/theme-sounds"
 
         # Serialize toggles and publish only complete files.
@@ -64,7 +71,7 @@ let
         usage() {
           printf 'usage: desktop-theme dark|light|toggle|status|reapply\n' >&2
           printf '       desktop-theme set <theme>|list|picker\n' >&2
-          printf '       desktop-theme apply <theme> dark|light on|off\n' >&2
+          printf '       desktop-theme apply <theme> <appearance-id> on|off\n' >&2
           printf '       desktop-theme rollback <failed-theme> <fallback-theme>\n' >&2
           printf '       desktop-theme extra on|off|toggle|status\n' >&2
           printf '       desktop-theme sounds on|off|toggle|status\n' >&2
@@ -173,18 +180,59 @@ let
           mv -f "$name_file.new" "$name_file"
         }
 
-        read_state() {
+        read_mode() {
           value=""
           if [ -r "$state_file" ]; then value=$(tr -d '[:space:]' < "$state_file"); fi
           case "$value" in light) printf light ;; *) printf dark ;; esac
+        }
+
+        # Old light/dark callers remain aliases, not new saved identifiers.
+        default_appearance() {
+          if [ "$2" = dark ]; then printf dark-grey
+          elif [ "$1" = memphis ]; then printf standard
+          else printf light; fi
+        }
+        appearance_mode() {
+          case "$1:$2" in
+        ${appearanceCases}
+            *) return 1 ;;
+          esac
+        }
+        resolve_appearance() {
+          case "$2" in
+            dark|light) default_appearance "$1" "$2" ;;
+            *) appearance_mode "$1" "$2" > /dev/null || return 1; printf '%s' "$2" ;;
+          esac
+        }
+        read_appearance() {
+          local saved=""
+          if [ -r "$appearance_file" ]; then saved=$(tr -d '[:space:]' < "$appearance_file"); fi
+          if appearance_mode "$1" "$saved" > /dev/null; then printf '%s' "$saved"
+          else default_appearance "$1" "$(read_mode)"; fi
+        }
+        read_state() {
+          local theme
+          theme=$(read_name)
+          appearance_mode "$theme" "$(read_appearance "$theme")"
+        }
+        write_appearance() {
+          printf '%s\n' "$1" > "$appearance_file.new"
+          mv -f "$appearance_file.new" "$appearance_file"
+        }
+        native_appearance() {
+          case "$2" in standard|light) printf light ;; dark-grey)
+            if [ "$1" = platinum ] && [ "$3" = on ]; then printf extra; else printf dark; fi ;;
+            *) printf '%s' "$2" ;;
+          esac
         }
 
         apply_native() {
           mode="$1"
           name="''${2:-$(read_name)}"
           extra_value="''${3:-$(read_extra)}"
-          appearance="$mode"
-          if [ "$name" = platinum ] && [ "$mode" = dark ] && [ "$extra_value" = on ]; then appearance=extra; fi
+          appearance_choice="''${4:-$(read_appearance "$name")}"
+          mode=$(appearance_mode "$name" "$appearance_choice") || return
+          appearance=$(native_appearance "$name" "$appearance_choice" "$extra_value")
           gtk_theme="Mountainous-$name-$appearance"
           if [ "$mode" = light ]; then scheme=prefer-light; else mode=dark; scheme=prefer-dark; fi
           if [ "$name" = platinum ]; then font=ChicagoFLF; else font='W95FA Grid'; fi
@@ -198,7 +246,7 @@ let
           dconf write /org/gnome/desktop/interface/icon-theme "'$icons'" || return
           dconf write /org/gnome/desktop/interface/cursor-theme "'$cursors'" || return
           dconf write /org/gnome/desktop/interface/cursor-size "$cursor_size" || return
-          python3 ${../scripts/apply-native-theme.py} ${nativeThemes} "$name" "$mode" "$extra_value" --art ${desktopArt}
+          python3 ${../scripts/apply-native-theme.py} ${nativeThemes} "$name" "$mode" "$extra_value" --appearance "$appearance_choice" --art ${desktopArt}
         }
 
         apply() {
@@ -208,17 +256,21 @@ let
           mv -f "$state_file.new" "$state_file"
           write_extra "$extra_value"
           write_name "$name"
+          # Migrate only missing keys. Unknown future IDs survive reapply,
+          # Extra dark and theme switches until an explicit choice replaces them.
+          if [ ! -e "$appearance_file" ] || [ "$#" -ge 4 ]; then write_appearance "$appearance_choice"; fi
           printf '%s\n' "$mode"
         }
 
         case "''${1:-toggle}" in
-          dark) apply dark; changed=1 ;;
-          light) apply light; changed=1 ;;
+          dark|light)
+            apply "$1" "$(read_name)" "$(read_extra)" "$(default_appearance "$(read_name)" "$1")"
+            changed=1 ;;
           toggle)
             if [ "$(read_state)" = dark ]; then
-              apply light
+              apply light "$(read_name)" "$(read_extra)" "$(default_appearance "$(read_name)" light)"
             else
-              apply dark
+              apply dark "$(read_name)" "$(read_extra)" dark-grey
             fi
             changed=1
             ;;
@@ -244,6 +296,9 @@ let
               # Chrome recovery must not depend on D-Bus or toolkit files.
               # Preserve mode/Extra dark; publish the known-good name first.
               write_name "$3"
+              printf '%s\n' "$(read_state)" > "$state_file.new"
+              mv -f "$state_file.new" "$state_file"
+              if [ ! -e "$appearance_file" ]; then write_appearance "$(read_appearance "$3")"; fi
               changed=1
               if ! apply_native "$(read_state)" "$3" "$(read_extra)"; then
                 printf 'desktop-theme: restored %s; native settings may lag; run desktop-theme reapply\n' "$3" >&2
@@ -258,11 +313,11 @@ let
             ;;
           apply)
             if [ "$#" -ne 4 ] || ! valid_theme "$2"; then usage; fi
-            case "$3" in dark|light) ;; *) usage ;; esac
+            selected=$(resolve_appearance "$2" "$3") || usage
             case "$4" in on|off) ;; *) usage ;; esac
             # Apply the session first: a failed dconf write must not publish
             # a new theme. All three preferences share this lock.
-            apply "$3" "$2" "$4"
+            apply "$(appearance_mode "$2" "$selected")" "$2" "$4" "$selected"
             changed=1
             ;;
           extra) extra "''${2:-}" ;;
@@ -292,6 +347,10 @@ in
     packages.desktop-native-themes = import ../lib/native-themes.nix { inherit pkgs inputs; };
     checks.native-themes =
       let
+        kitPalettes = import ../lib/kit-palettes.nix {
+          inherit pkgs;
+          kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
+        };
         qt5Probe = import ../lib/native-qt-probe.nix {
           inherit pkgs qtPlatformTheme;
           qt = pkgs.libsForQt5;
@@ -324,6 +383,8 @@ in
             pkgs.nodejs
           ];
           DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
+          SCHEMES_JSON = ../scripts/system-colour-schemes.json;
+          KIT_PALETTES = kitPalettes;
           # Phase 4: icons, cursors and the desktop pattern, asserted after
           # every set, toggle and reapply in scripts/test-native-themes.
           DESKTOP_ART = import ../lib/desktop-art.nix { inherit pkgs inputs; };
@@ -350,7 +411,7 @@ in
             import ../lib/native-themes.nix { inherit pkgs inputs; }
           }
           native=${import ../lib/native-themes.nix { inherit pkgs inputs; }}
-          python3 ${../tests/native-palettes.py} ${../scripts/generate-native-themes.py} ${./quickshell} "$native"
+          python3 ${../tests/native-palettes.py} ${../scripts/generate-native-themes.py} ${kitPalettes} "$native"
           python3 ${../tests/desktop-art.py} "$DESKTOP_ART" "$THEMES_JSON" ${./web-apps.json} ${./web-app-pwas.json}
           node "$DESKTOP_PATTERN_TEST" "$DESKTOP_PATTERN_JS" "$THEMES_JSON"
           export HOME="$TMPDIR/home" XDG_CONFIG_HOME="$TMPDIR/config" XDG_STATE_HOME="$TMPDIR/state" XDG_CACHE_HOME="$TMPDIR/cache"
@@ -358,6 +419,60 @@ in
           for config in "$native"/share/mountainous/native/*/ghostty.conf; do
             ghostty +validate-config --config-file="$config"
           done
+          touch $out
+        '';
+    checks.desktop-appearances =
+      pkgs.runCommand "desktop-appearances"
+        {
+          nativeBuildInputs = [ pkgs.nodejs ];
+          KIT_PALETTES = import ../lib/kit-palettes.nix {
+            inherit pkgs;
+            kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
+          };
+          SCHEMES_JSON = ../scripts/system-colour-schemes.json;
+          HENSOU_QML_ROOT = "${
+            inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
+          }/lib/qt-6/qml";
+        }
+        ''
+          node ${./quickshell/desktop-art.test.js} ${./quickshell/desktop-art.js} ${./quickshell}/themes.json
+          node ${./quickshell/web-theme.test.js} ${./quickshell/web-theme.js} ${./quickshell/web-theme-page.js} ${./quickshell}
+          touch $out
+        '';
+    checks.desktop-appearance-surface =
+      pkgs.runCommand "desktop-appearance-surface"
+        {
+          nativeBuildInputs = [
+            (pkgs.python3.withPackages (p: [ p.pillow ]))
+            pkgs.quickshell
+            pkgs.labwc
+            pkgs.grim
+          ];
+          SCHEMES_JSON = ../scripts/system-colour-schemes.json;
+          QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+          QML_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+        }
+        ''
+          export NOTIFICATION_SCHEMA_JS="$TMPDIR/notification-schema.js"
+          bash ${./quickshell/notification-schema-js.sh} ${../packages/notify-sync/schema/ui-socket.v1.json} > "$NOTIFICATION_SCHEMA_JS"
+          python3 ${../scripts/test-theme-appearance-host.py} ${./quickshell} \
+            ${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml \
+            ${pkgs.quickshell}/bin/qs ${pkgs.labwc}/bin/labwc
+          touch $out
+        '';
+    checks.theme-appearance-host =
+      pkgs.runCommand "theme-appearance-host"
+        {
+          nativeBuildInputs = [
+            pkgs.python3
+            pkgs.quickshell
+          ];
+        }
+        ''
+          python3 ${../scripts/test-theme-appearance-host.py} ${./quickshell} \
+            ${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml \
+            ${pkgs.quickshell}/bin/qs
           touch $out
         '';
     checks.ghostty-reload =
@@ -393,6 +508,7 @@ in
           DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
         }
         ''
+          export THEMES_JSON=${./quickshell/themes.json}
           bash ${../scripts/test-desktop-theme} ${desktopThemeCommand pkgs}/bin/desktop-theme
           touch $out
         '';

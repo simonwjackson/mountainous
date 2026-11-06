@@ -9,7 +9,13 @@ let
         folders.gadgetbridge.enable = true;
       } extra;
     };
-  incomplete = trial { };
+  # The guard must still refuse an external peer without its identity.
+  incomplete = trial {
+    externalDevices.phone = {
+      deviceId = lib.mkForce null;
+      tailnetName = lib.mkForce null;
+    };
+  };
   complete = trial {
     externalDevices.phone = {
       deviceId = lib.mkForce "AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA-AAAAAAA";

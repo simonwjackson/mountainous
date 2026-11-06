@@ -28,7 +28,7 @@ Scope {
 
     // A theme that draws the bar itself (Platinum's Find menu) claims the
     // view while its Desktop is active. With no claim, the unthemed card
-    // below shows, as it always has (Win98, or a theme without a view).
+    // below shows, as it always has (Memphis, or a theme without a view).
     property var views: []
     readonly property bool themed: root.views.length > 0
     function claimView(owner) {
@@ -180,8 +180,8 @@ Scope {
         { kind: "cmd", label: "Interface scale down",  detail: "Super+-",           act: "scaledown" },
         { kind: "cmd", label: "Interface scale 100%",  detail: "Super+0",           act: "scalereset" },
         { kind: "cmd", label: "Toggle bars",           detail: "Super+I",           act: "chrome" },
-        { kind: "cmd", label: "Dark appearance",        detail: "Super+D",           act: "theme:dark" },
-        { kind: "cmd", label: "Light appearance",       detail: "Super+D",           act: "theme:light" },
+        { kind: "cmd", label: "Dark appearance",        detail: "Super+X",           act: "theme:dark" },
+        { kind: "cmd", label: "Light appearance",       detail: "Super+X",           act: "theme:light" },
         // A toggle. Its detail is the current state; light mode ignores it.
         { kind: "cmd", label: "Desktop theme…", detail: "Appearance", act: "theme:picker" },
         { kind: "cmd", label: "Extra dark appearance",  detail: !Theme.dark ? "dark only" : Theme.extraDark ? "on" : "off",
@@ -313,7 +313,7 @@ Scope {
     //--------------------------------------------------------------
     // THE VEIL
     //--------------------------------------------------------------
-    // The unthemed card: Win98's Super+P and Start > Run…, and any theme
+    // The unthemed card: Memphis's Super+P and Start > Run…, and any theme
     // that does not draw the bar itself (themes.md: the omni bar stays
     // unthemed). A theme with its own view claims it with claimView().
     LazyLoader {

@@ -70,7 +70,7 @@ Measured with Quickshell as a transient `systemd-run --user` unit with these set
 | SIGSTOP | +1.76 s | +4.01 s | 4.39 s, styled |
 | Busy loop, `RestartSec=250ms` (not chosen) | +1.85 s | +2.35 s | 3.11 s, styled |
 
-A window opened 2.3 s into the stall (Quickshell down) loaded plain in 139 ms and was restyled 2.3 s later, as before. No false restarts: three Platinum → Win98 → Platinum → alternate-fixture rounds, mode and Extra dark flips, three hot reloads of `shell.qml` and 30 s idle left `NRestarts=0`.
+A window opened 2.3 s into the stall (Quickshell down) loaded plain in 139 ms and was restyled 2.3 s later, as before. No false restarts: three Platinum → Memphis → Platinum → alternate-fixture rounds, mode and Extra dark flips, three hot reloads of `shell.qml` and 30 s idle left `NRestarts=0`.
 
 Costs: two `systemd-notify` processes a second. A real stall over 2 s restarts the whole bar. A popup opened during a stall waits up to about 4.4 s, of which 2 s is the unchanged `RestartSec`; lowering it to 250 ms gives about 3.1 s, but it changes crash-loop pacing against the default start limit (5 starts in 10 s), so it is left alone. A launcher window never waits.
 
@@ -87,7 +87,7 @@ Costs: two `systemd-notify` processes a second. A real stall over 2 s restarts t
 | `modules/quickshell/Heartbeat.qml` | Event-loop watchdog pings, independent of WebTheme |
 | `modules/bars.nix` | Quickshell unit, watchdog settings and restart after Hjem linking |
 
-## Theme contract (Win98 slot)
+## Theme contract (Memphis slot)
 
 A theme opts in with one file, `modules/quickshell/themes/<id>/web.css`. Nothing else changes: no registry field, no QML.
 - `/* @tokens all */`, then one `/* @tokens <mode> */` per appearance in `themes.json`. An optional `/* @tokens extra */` applies while Extra dark is on.

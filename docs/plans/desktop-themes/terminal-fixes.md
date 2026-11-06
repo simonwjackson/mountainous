@@ -8,7 +8,7 @@ phase 3 section. UI and tab-bar fonts, colours and padding are unchanged.
 
 | Theme | Terminal face | Licence and locked source | Nominal target at scale 1.5 |
 |---|---|---|---|
-| Windows 98 | Fixedsys Excelsior | Public domain / CC0; `kika/fixedsys`, `3f37fa8855bdbc542c817947ede82bef7c4049eb` | 16 pt → 32 device px em; 16 px cell; each source pixel is 2 device px |
+| Memphis | Fixedsys Excelsior | Public domain / CC0; `kika/fixedsys`, `3f37fa8855bdbc542c817947ede82bef7c4049eb` | 16 pt → 32 device px em; 16 px cell; each source pixel is 2 device px |
 | Platinum | ProFontIIx Grid | MIT; Tobias Jung's `profontiix.zip`, flake-locked by content hash | 13.5 pt → 27 device px em; 18 px cell; each source pixel is 3 device px |
 
 ProFont originated as a Macintosh programming face, in the Monaco role. It is
@@ -59,7 +59,7 @@ cause, not a measured diagnosis. No Ghostty/GTK renderer patch is included.
 The previous call addressed only `com.mitchellh.ghostty`. Real nested Ghostty
 reproduces the failure: rewriting the Platinum include and calling that action
 changes the default application, but leaves a non-single-instance terminal and
-`io.github.simonwjackson.mountainous.term` on Win98. The custom terminal keeps
+`io.github.simonwjackson.mountainous.term` on Memphis. The custom terminal keeps
 its old geometry and colours. The old proportional face also leaves btop below
 its minimum 80 columns in the same window.
 
@@ -98,13 +98,13 @@ The custom-class and ordinary NON_UNIQUE shells change cell geometry live.
 
 | Appearance | Screenshot (btop, Bash prompt, `ls -la`, bold, boxes, blocks and icons) |
 |---|---|
-| Win98 light | `session/shots/win98-light.png` |
-| Win98 dark grey | `session/shots/win98-dark.png` |
+| Memphis light | `session/shots/memphis-light.png` |
+| Memphis dark grey | `session/shots/memphis-dark.png` |
 | Platinum light | `session/shots/platinum-light.png` |
 | Platinum dark grey | `session/shots/platinum-dark.png` |
 | Platinum extra black | `session/shots/platinum-extra.png` |
 
-`before-win98-dark.png` and `before-switch-platinum.png` reproduce the old
+`before-memphis-dark.png` and `before-switch-platinum.png` reproduce the old
 proportional font and old single-name reload code in the isolated session.
 They are not a claim that the old packaged command was rerun: that historical
 store path had been garbage-collected. The harness writes the previous font

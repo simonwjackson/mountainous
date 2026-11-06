@@ -10,7 +10,7 @@
 #
 #   platinum-strip.sh <shell dir> <work dir> <out dir> [--no-measure]
 #
-# Needs the session tools of win98/session.sh (sway, grim, qs), python3 with
+# Needs the session tools of memphis/session.sh (sway, grim, qs), python3 with
 # Pillow and numpy, node, the desktop-art package on XDG_DATA_DIRS and as
 # DESKTOP_ART, and
 # MOUNTAINOUS_PLATINUM_ICON (the token helper, which also generates the
@@ -37,17 +37,17 @@ fi
 export XDG_DATA_DIRS="$work/data:$XDG_DATA_DIRS"
 
 export SESSION_THEME=platinum
-# shellcheck source=win98/session.sh
-. "$here/win98/session.sh" "$shell_dir" "$work" 2880x1800
+# shellcheck source=memphis/session.sh
+. "$here/memphis/session.sh" "$shell_dir" "$work" 2880x1800
 trap session_stop EXIT
-for _ in $(seq 80); do w98 current | grep -q '"loaded":"platinum"' && break; sleep 0.1; done
-w98 set strip-icons >/dev/null
+for _ in $(seq 80); do memphis current | grep -q '"loaded":"platinum"' && break; sleep 0.1; done
+memphis set strip-icons >/dev/null
 
 for scheme in light dark black; do
   case $scheme in
-    light) w98 theme light >/dev/null; w98 extra off >/dev/null ;;
-    dark) w98 theme dark >/dev/null; w98 extra off >/dev/null ;;
-    black) w98 theme dark >/dev/null; w98 extra on >/dev/null ;;
+    light) memphis theme light >/dev/null; memphis extra off >/dev/null ;;
+    dark) memphis theme dark >/dev/null; memphis extra off >/dev/null ;;
+    black) memphis theme dark >/dev/null; memphis extra on >/dev/null ;;
   esac
   # Tokens arrive from the helper asynchronously; give them time.
   sleep 4
@@ -58,9 +58,9 @@ done
 # pointer drags Ghostty's tile onto the next one (a swap) and lets go
 # where it started. Needs pywayland (pointer.py); skipped without it.
 if python3 -c 'import pywayland' 2>/dev/null; then
-  w98 theme light >/dev/null; w98 extra off >/dev/null
+  memphis theme light >/dev/null; memphis extra off >/dev/null
   mkfifo "$work/pointer"
-  python3 "$here/win98/pointer.py" "$work/pointer" 1920 1200 > "$work/pointer.log" 2>&1 &
+  python3 "$here/memphis/pointer.py" "$work/pointer" 1920 1200 > "$work/pointer.log" 2>&1 &
   session_pids+=($!)
   exec 7>"$work/pointer"
   sleep 1
@@ -77,8 +77,8 @@ fi
 
 # Many windows on a narrow screen (600 logical px): the ◂ ▸ arrows show and
 # the track scrolls (strip-plan.js plan keeps every tile reachable).
-w98 set tb-huge >/dev/null
-w98 theme light >/dev/null; w98 extra off >/dev/null
+memphis set tb-huge >/dev/null
+memphis theme light >/dev/null; memphis extra off >/dev/null
 sleep 3
 shot "$work/many-wide-full.png"
 swaymsg output HEADLESS-1 resolution 900x1800 >/dev/null

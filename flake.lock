@@ -344,6 +344,30 @@
         "type": "github"
       }
     },
+    "gogcli-aarch64-linux-src": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-5vjSKo8K+SX6zGx9W5Iu8fltcCEqXr1VBCoy2iESRtk=",
+        "type": "file",
+        "url": "https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_arm64.tar.gz"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_arm64.tar.gz"
+      }
+    },
+    "gogcli-x86_64-linux-src": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-RE7euClYTN2rW0M6dbWX6Ik9JqS28nIgtwXFvTj2ujk=",
+        "type": "file",
+        "url": "https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_amd64.tar.gz"
+      },
+      "original": {
+        "type": "file",
+        "url": "https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_amd64.tar.gz"
+      }
+    },
     "gomod2nix-rakku": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -373,17 +397,17 @@
         "w95fa-src": "w95fa-src"
       },
       "locked": {
-        "lastModified": 1793370977,
-        "narHash": "sha256-uBXgS0E0zdTKEIh2/SR9DDf5oc/OPXsOuiF5nSqBDPc=",
+        "lastModified": 1793911738,
+        "narHash": "sha256-uk4SV10IehtL4p3gcWBLeljZ3NkGqRjn8ENOj7s+LUc=",
         "owner": "hensou-desktop",
         "repo": "hensou",
-        "rev": "6b2dfd887b949b41d8dd3c45647d75a0d99da3d5",
+        "rev": "c969483cdbfefef7ee32d949a8577c67b5d52a30",
         "type": "github"
       },
       "original": {
         "owner": "hensou-desktop",
+        "ref": "main",
         "repo": "hensou",
-        "rev": "6b2dfd887b949b41d8dd3c45647d75a0d99da3d5",
         "type": "github"
       }
     },
@@ -1002,6 +1026,8 @@
         "disko": "disko",
         "fixedsys-src": "fixedsys-src",
         "flake-parts": "flake-parts",
+        "gogcli-aarch64-linux-src": "gogcli-aarch64-linux-src",
+        "gogcli-x86_64-linux-src": "gogcli-x86_64-linux-src",
         "gomod2nix-rakku": "gomod2nix-rakku",
         "hensou": "hensou",
         "herdr-bin-aarch64": "herdr-bin-aarch64",

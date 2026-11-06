@@ -160,7 +160,7 @@ ShellRoot {
         fs.unlinkSync(path.join(state, 'theme-sounds'));
         await until(()=>snapshot().sounds === true, 'missing sounds falls back on');
         console.log('HENSOU_HOST_STATE_PASSED: shared identity, defaults, valid/invalid/missing and atomic replacement');
-        const refused = spawnSync(desktopTheme, ['set', 'win98'], {env, encoding:'utf8', timeout:3000});
+        const refused = spawnSync(desktopTheme, ['set', 'memphis'], {env, encoding:'utf8', timeout:3000});
         assert.equal(refused.status, 1, 'ordinary changes must report the disconnected bus: ' + refused.stderr);
         assert.equal(fs.readFileSync(path.join(state,'theme-name'),'utf8').trim(),'platinum');
         for (const entry of themes) {
@@ -180,7 +180,7 @@ ShellRoot {
         const picker = spawnSync(desktopTheme, ['picker'], {env, encoding:'utf8', timeout:3000});
         assert.equal(picker.status, 0, picker.stderr + picker.stdout);
         await until(()=>snapshot().picker, 'CLI picker');
-        // Every installed appearance of every theme (Platinum's two, Win98's two).
+        // Every installed appearance of every theme (Platinum's two, Memphis's two).
         assert.equal(snapshot().choices, themes.reduce((n, t) => n + t.appearances.length, 0));
         assert.ok(snapshot().choices >= 4);
         await wait(150);

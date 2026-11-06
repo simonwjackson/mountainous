@@ -4,7 +4,7 @@ import QtQuick
 
 // A 1-bit checker on exact device pixels: ink on alternate cells, ground
 // (or nothing) on the rest. The SVG is drawn at one source pixel per device
-// pixel and shown unfiltered (the Windows 98 theme's technique), so at scale 1.5 a cell of 3
+// pixel and shown unfiltered (the Memphis theme's technique), so at scale 1.5 a cell of 3
 // device pixels is 3 device pixels, never a blend. The item must sit on
 // whole device pixels; the glance space and the progress bars do.
 //

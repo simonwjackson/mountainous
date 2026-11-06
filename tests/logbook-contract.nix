@@ -40,7 +40,14 @@ assert sidecar.ReadOnlyPaths == [ state ];
 assert sidecar.ReadWritePaths == [ "${state}/state/tsnet" ];
 assert builtins.length sudo == 1;
 assert builtins.length (builtins.head sudo).commands == 2;
-assert !(rakku.systemd.paths ? logbook-gadgetbridge);
-assert !(rakku.systemd.services ? logbook-gadgetbridge);
+assert rakku.systemd.paths ? logbook-gadgetbridge;
+assert rakku.systemd.services ? logbook-gadgetbridge;
+assert
+  rakku.services.syncthing.settings.devices.phone.addresses
+  == [ "tcp://futago.hummingbird-lake.ts.net:22000" ];
+assert
+  rakku.services.syncthing.settings.devices.phone.id
+  == "4FOJIBC-WGJ5VKX-7SZKIR6-IO53D6O-354ONPL-ZTWFPVR-6IJQLHY-FTOM3A3";
+assert rakku.services.syncthing.settings.folders.gadgetbridge.devices == [ "phone" ];
 assert !builtins.elem 3160 rakku.networking.firewall.allowedTCPPorts;
 true

@@ -19,6 +19,22 @@ PanelWindow {
     focusable: true
     color: "transparent"
     readonly property var plan: PickerPlan.plan(width, height)
+    // A choice is named by its stable appearance ID (ThemePicker: preview
+    // and apply take it; "light" and "dark" are the old aliases). A choice
+    // without one takes its mode's default ID.
+    function choiceId(c) {
+        return c.appearanceId || ThemeCatalog.defaultAppearance(c.theme, c.mode);
+    }
+    // A model without currentAppearance has the old mode API: apply and
+    // preview then take the mode.
+    readonly property bool idApi: model.currentAppearance !== undefined
+    function appearanceArg(c) { return win.idApi ? win.choiceId(c) : c.mode; }
+    readonly property string currentAppearance: model.currentAppearance
+        || ThemeCatalog.defaultAppearance(model.currentTheme, model.currentMode)
+    // Extra dark: only for a theme that has it, and only in its dark grey
+    // appearance (Light and Drawing Board disable it).
+    readonly property bool extraOffered: !!ThemeCatalog.find(model.currentTheme) && ThemeCatalog.find(model.currentTheme).options.extraDark
+    readonly property bool extraAvailable: extraOffered && model.currentMode === "dark" && currentAppearance !== "drawing-board"
     property var focusedControl: null
     readonly property real labelLeft: win.plan.stackedOption ? Kit.PlatinumTokens.menuGutter : Math.min(Kit.PlatinumTokens.menuTextLeft, body.width / 3)
     readonly property real rightInset: Math.min(Kit.PlatinumTokens.menuRightInset, body.width / 6)
@@ -54,6 +70,14 @@ PanelWindow {
         anchors.fill: parent
         onClicked: win.model.close()
     }
+    // Drawing Board: the panel casts the hatched shadow and its frame
+    // lines run past the corners (Light and Dark grey draw neither here).
+    Item {
+        visible: Kit.PlatinumTokens.drafting
+        x: panel.x; y: panel.y
+        width: panel.width; height: panel.height
+        PlatinumShadow {}
+    }
     // Below the bar at the left, never centred, as every window the Apple
     // menu opens. A short or narrow screen moves it up and left to fit.
     PlatinumBevel {
@@ -67,6 +91,7 @@ PanelWindow {
         MouseArea {
             anchors.fill: parent
         }
+        PlatinumCropMarks { visible: Kit.PlatinumTokens.drafting; z: 10 }
 
         Item {
             id: header
@@ -88,14 +113,15 @@ PanelWindow {
                 font.family: Kit.PlatinumTokens.platinumFont
                 font.pixelSize: Kit.PlatinumTokens.platinumText
             }
+            // Drawing Board's title bar is plain: no stripes.
             TitleStripes {
-                visible: title.visible
+                visible: title.visible && !Kit.PlatinumTokens.drafting
                 x: PickerPlan.toolbarHeight + win.plan.gap
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.max(0, title.x - x - win.plan.gap)
             }
             TitleStripes {
-                visible: title.visible
+                visible: title.visible && !Kit.PlatinumTokens.drafting
                 x: title.x + title.width + win.plan.gap
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.max(0, header.width - x - win.plan.gap)
@@ -171,14 +197,14 @@ PanelWindow {
                                 objectName: "pickerChoice-" + index
                                 required property var modelData
                                 required property int index
-                                readonly property bool selected: win.model.currentTheme === modelData.theme && win.model.currentMode === modelData.mode
+                                readonly property bool selected: win.model.currentTheme === modelData.theme && win.currentAppearance === win.choiceId(modelData)
                                 width: (body.width - (grid.columns - 1) * grid.spacing) / grid.columns
                                 height: Math.max(Kit.PlatinumTokens.menuRow, label.y + label.implicitHeight + win.plan.gap)
                                 activeFocusOnTab: true
                                 Component.onCompleted: if (index === 0)
                                     forceActiveFocus()
                                 function apply() {
-                                    win.model.apply(modelData.theme, modelData.mode, win.model.extraDark);
+                                    win.model.apply(modelData.theme, win.appearanceArg(modelData), win.model.extraDark);
                                 }
                                 onActiveFocusChanged: if (activeFocus)
                                     win.rememberFocus(choice)
@@ -205,7 +231,7 @@ PanelWindow {
                                     Image {
                                         anchors.fill: parent
                                         anchors.margins: 3
-                                        source: preview.visible ? win.model.preview(choice.modelData.theme, choice.modelData.mode) : ""
+                                        source: preview.visible ? win.model.preview(choice.modelData.theme, win.appearanceArg(choice.modelData)) : ""
                                         fillMode: Image.PreserveAspectFit
                                     }
                                 }
@@ -241,13 +267,13 @@ PanelWindow {
                     FocusScope {
                         id: extra
                         objectName: "pickerOption"
-                        visible: !!ThemeCatalog.find(win.model.currentTheme) && ThemeCatalog.find(win.model.currentTheme).options.extraDark
-                        enabled: win.model.currentMode === "dark" && !win.model.applying
+                        visible: win.extraOffered
+                        enabled: win.extraAvailable && !win.model.applying
                         width: body.width
                         height: Math.max(Kit.PlatinumTokens.menuLine + 4, win.plan.stackedOption ? extraLabel.implicitHeight + extraMark.height + 3 * win.plan.gap : extraLabel.implicitHeight + 2 * win.plan.gap)
                         activeFocusOnTab: enabled
                         function toggle() {
-                            win.model.apply(win.model.currentTheme, win.model.currentMode, !win.model.extraDark);
+                            win.model.apply(win.model.currentTheme, win.idApi ? win.currentAppearance : win.model.currentMode, !win.model.extraDark);
                         }
                         onActiveFocusChanged: if (activeFocus)
                             win.rememberFocus(extra)
@@ -409,8 +435,8 @@ PanelWindow {
     Shortcut {
         sequence: "E"
         context: Qt.WindowShortcut
-        enabled: win.model.currentMode === "dark" && !!ThemeCatalog.find(win.model.currentTheme) && ThemeCatalog.find(win.model.currentTheme).options.extraDark
-        onActivated: win.model.apply(win.model.currentTheme, win.model.currentMode, !win.model.extraDark)
+        enabled: win.extraAvailable
+        onActivated: win.model.apply(win.model.currentTheme, win.idApi ? win.currentAppearance : win.model.currentMode, !win.model.extraDark)
     }
     Shortcut {
         sequence: "Escape"

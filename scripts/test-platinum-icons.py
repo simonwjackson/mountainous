@@ -144,7 +144,7 @@ class RendererTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 render([corpus()["square"]], size)
         with self.assertRaises(ValueError):
-            render([corpus()["square"]], 24, "win98")
+            render([corpus()["square"]], 24, "memphis")
 
 
 class OpticalSizeTests(unittest.TestCase):

@@ -25,7 +25,7 @@
 #   overall shape               example/hyprland.lua, shipped with 0.56.2
 { inputs, ... }:
 let
-  # Platinum and Windows 98 title bars: nixpkgs' hyprbars with our patch
+  # Platinum and Memphis title bars: nixpkgs' hyprbars with our patch
   # (hyprland/hyprbars-platinum.patch). The patch adds square bevelled
   # boxes on both ends, pinstripes, the bevelled window frame, a palette
   # set from config, and no bar on clients that draw their own. It uses
@@ -52,8 +52,9 @@ in {
     checks.page-layout = pkgs.runCommand "page-layout" {
       nativeBuildInputs = [(pkgs.lua.withPackages (ps: [ps.dkjson])) pkgs.nodejs pkgs.shellcheck];
     } ''
-      luac -p ${./hyprland/page-layout.lua} ${./hyprland/hyprland.lua} ${./hyprland/navigation.test.lua}
+      luac -p ${./hyprland/page-layout.lua} ${./hyprland/hyprland.lua} ${./hyprland/navigation.test.lua} ${./hyprland/float-fit.lua}
       lua ${./hyprland/navigation.test.lua} ${./hyprland/hyprland.lua} ${./hyprland/page-layout.lua}
+      lua ${./hyprland/float-fit.test.lua} ${./hyprland/float-fit.lua}
       lua ${./hyprland/page-layout.test.lua} ${./hyprland/page-layout.lua} "$TMPDIR/state.json" ${./hyprland/hyprland.lua}
       node ${./hyprland/page-layout-state.test.js} ${./quickshell/page-layout-model.js} "$TMPDIR/state.json"
       shellcheck -s bash ${./hyprland/page-layout.sh} ${./hyprland/page-layout-command.test.sh}
@@ -64,16 +65,20 @@ in {
 
     # The patch applies and builds against the pinned Hyprland, and the
     # module that styles it (titlebars.lua) keeps to its contract and to the
-    # Platinum and Win98 tokens. Headless: no compositor runs.
+    # Platinum and Memphis tokens. Headless: no compositor runs.
     checks.titlebars = pkgs.runCommand "titlebars" {
-      nativeBuildInputs = [pkgs.lua pkgs.binutils];
+      nativeBuildInputs = [(pkgs.lua.withPackages (ps: [ps.dkjson])) pkgs.binutils pkgs.python3];
+      KIT_PALETTES = import ../lib/kit-palettes.nix {
+        inherit pkgs;
+        kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
+      };
       PLUGIN = "${hyprbarsPlatinum pkgs}/lib/libhyprbars.so";
-      HENSOU_QML = "${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml/Hensou";
     } ''
       nm -D --defined-only "$PLUGIN" | grep -q ' pluginInit$'
       grep -q 'platinum_title_inactive' "$PLUGIN"
       luac -p ${./hyprland/titlebars.lua} ${./hyprland/hyprland.lua}
-      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} "$HENSOU_QML/PlatinumTokens.qml" ${./hyprland/hyprland.lua} "$HENSOU_QML/Win98Tokens.qml"
+      lua ${./hyprland/titlebars.test.lua} ${./hyprland/titlebars.lua} "$KIT_PALETTES" ${./hyprland/hyprland.lua}
+      python3 ${../tests/system-palettes.py} ${../scripts/generate-native-themes.py} ${../scripts/system-colour-schemes.json} ${./hyprland/titlebars.lua} ${./quickshell}
       touch $out
     '';
   };
@@ -459,6 +464,8 @@ in {
     ];
     hjem.users.simon.files.".config/hypr/page-layout.lua".source =
       ./hyprland/page-layout.lua;
+    hjem.users.simon.files.".config/hypr/float-fit.lua".source =
+      ./hyprland/float-fit.lua;
     hjem.users.simon.files.".config/hypr/dkjson.lua".source =
       "${pkgs.luaPackages.dkjson}/share/lua/${pkgs.lua.luaversion}/dkjson.lua";
     hjem.users.simon.files.".config/hypr/titlebars.lua".source =

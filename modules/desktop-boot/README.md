@@ -22,5 +22,5 @@ Microsoft word mark, Windows 95 logo and flag. No separate permission for those
 assets is supplied. Its script also references missing `bullet.png` and
 `SpriteNew()`. We do not treat the project's code licence as permission to ship
 that Microsoft art. Neither that Plymouth art nor its script is copied into
-this repository or the generated packages. The Win98 package uses our own
+this repository or the generated packages. The Memphis package uses our own
 frame and peak instead. Simon/design review can replace this original art.

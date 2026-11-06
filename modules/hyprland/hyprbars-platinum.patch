@@ -172,8 +172,8 @@ index c27653d..e64c376 100644
      m_bCancelledDown = true;
  
 -    if (doButtonPress(BARPADDING, BARBUTTONPADDING, HEIGHT, COORDS, BUTTONSRIGHT))
-+    // Win98 retains its controls while inactive. Platinum's first click focuses.
-+    if ((WASFOCUSED || g_pGlobalState->config.win98->value() || !g_pGlobalState->config.platinum->value()) && doButtonPress(BARPADDING, BARBUTTONPADDING, HEIGHT, COORDS, BUTTONSRIGHT))
++    // Memphis retains its controls while inactive. Platinum's first click focuses.
++    if ((WASFOCUSED || g_pGlobalState->config.memphis->value() || !g_pGlobalState->config.platinum->value()) && doButtonPress(BARPADDING, BARBUTTONPADDING, HEIGHT, COORDS, BUTTONSRIGHT))
          return;
  
      if (!ON_DOUBLE_CLICK.empty() &&
@@ -302,8 +302,8 @@ index c27653d..e64c376 100644
          return;
  
      g_pHyprOpenGL->scissor(titleBarBox);
-+    if (g_pGlobalState->config.win98->value()) {
-+        renderWin98(titleBarBox, a);
++    if (g_pGlobalState->config.memphis->value()) {
++        renderMemphis(titleBarBox, a);
 +        g_pHyprOpenGL->scissor(nullptr);
 +        m_bWindowSizeChanged = false;
 +        m_bTitleColorChanged = false;
@@ -586,11 +586,11 @@ index c27653d..e64c376 100644
 +// geometry used for drawing; an off-box release never acts on a neighbour.
 +double CHyprBar::barHeight() const {
 +    const auto MONITOR = m_pWindow ? m_pWindow->m_monitor.lock() : nullptr;
-+    return g_pGlobalState->config.win98->value() && MONITOR ? 38.0 / MONITOR->m_scale : g_pGlobalState->config.barHeight->value();
++    return g_pGlobalState->config.memphis->value() && MONITOR ? 38.0 / MONITOR->m_scale : g_pGlobalState->config.barHeight->value();
 +}
 +
 +int CHyprBar::buttonAt(Vector2D coords) {
-+    if (g_pGlobalState->config.win98->value()) {
++    if (g_pGlobalState->config.memphis->value()) {
 +        const auto MONITOR = m_pWindow->m_monitor.lock();
 +        if (!MONITOR)
 +            return -1;
@@ -633,7 +633,7 @@ index c27653d..e64c376 100644
 +    damageEntire();
 +    if (!act)
 +        return;
-+    if (g_pGlobalState->config.win98->value() && button == 3) {
++    if (g_pGlobalState->config.memphis->value() && button == 3) {
 +        const auto box = assignedBoxGlobal();
 +        Config::Supplementary::executor()->spawn(std::format("qs -c mountainous ipc call windows menu {:x} {} {}",
 +            (uintptr_t)m_pWindow.lock().get(), (int)std::round(box.x), (int)std::round(box.y + barHeight())));
@@ -643,9 +643,9 @@ index c27653d..e64c376 100644
 +    }
 +}
 +
-+// W95FA Grid, as Win98Text.qml: normal 25px face, 2px extra advance,
++// W95FA Grid, as MemphisText.qml: normal 25px face, 2px extra advance,
 +// second strike 2px to the right. Disable all smoothing and hinting.
-+void CHyprBar::renderWin98Title(cairo_t* cr, int width) {
++void CHyprBar::renderMemphisTitle(cairo_t* cr, int width) {
 +    if (width <= 2 || m_szLastTitle.empty())
 +        return;
 +    const auto color = titleColor();
@@ -684,16 +684,16 @@ index c27653d..e64c376 100644
 +    cairo_restore(cr);
 +}
 +
-+void CHyprBar::renderWin98(const CBox& bar, float a) {
++void CHyprBar::renderMemphis(const CBox& bar, float a) {
 +    const auto window = m_pWindow.lock();
 +    const bool focused = window == Desktop::focusState()->window();
 +    const bool restore = Fullscreen::controller()->getFullscreenModes(window).internal == Fullscreen::FSMODE_MAXIMIZED;
 +    const int pressed = m_pressedInside ? m_pressedButton : -1;
 +    const auto& c = g_pGlobalState->config;
-+    const double u = 2; // Win98Tokens.unitFor: always two physical pixels
++    const double u = 2; // MemphisTokens.unitFor: always two physical pixels
 +    const auto plan = captionPlan(bar.w / u);
 +    // One texture for the whole caption, including its face, glyphs, bold
-+    // title and held box. Inactive Win98 windows retain all three boxes,
++    // title and held box. Inactive Memphis windows retain all three boxes,
 +    // unlike Platinum: drawing each glyph run as a GL rectangle every frame
 +    // was the cost, not rebuilding the already-cached gradient or title.
 +    const bool dirty = !m_captionTex || m_bTitleColorChanged || m_bWindowSizeChanged ||
@@ -703,7 +703,7 @@ index c27653d..e64c376 100644
 +    if (dirty) {
 +        auto surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, (int)bar.w, (int)bar.h);
 +        if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS) {
-+            Log::logger->log(Log::ERR, "[hyprbars] Cannot allocate Win98 caption texture");
++            Log::logger->log(Log::ERR, "[hyprbars] Cannot allocate Memphis caption texture");
 +            cairo_surface_destroy(surface);
 +            return;
 +        }
@@ -765,7 +765,7 @@ index c27653d..e64c376 100644
 +        }
 +        m_szLastTitle = window->m_title;
 +        if (plan.title)
-+            renderWin98Title(cr, std::max(0, (int)(bar.w - (21+52)*u)));
++            renderMemphisTitle(cr, std::max(0, (int)(bar.w - (21+52)*u)));
 +        cairo_surface_flush(surface);
 +        m_captionTex = g_pHyprRenderer->createTexture(surface);
 +        cairo_destroy(cr);
@@ -774,7 +774,7 @@ index c27653d..e64c376 100644
 +        m_captionFocused = focused;
 +        m_captionRestore = restore;
 +        m_captionPressed = pressed;
-+        Log::logger->log(Log::DEBUG, "[hyprbars] Win98 caption cache rebuild {:x} {}x{} focus={} pressed={}",
++        Log::logger->log(Log::DEBUG, "[hyprbars] Memphis caption cache rebuild {:x} {}x{} focus={} pressed={}",
 +            (uintptr_t)window.get(), (int)bar.w, (int)bar.h, focused, pressed);
 +    }
 +    if (m_captionTex)
@@ -820,8 +820,8 @@ index a3b4e2d..a5420e8 100644
 +    double barHeight() const;
 +    int buttonAt(Vector2D coords);
 +    void releaseButton(Event::SCallbackInfo& info);
-+    void renderWin98(const CBox& bar, float a);
-+    void renderWin98Title(cairo_t* cr, int width);
++    void renderMemphis(const CBox& bar, float a);
++    void renderMemphisTitle(cairo_t* cr, int width);
 +    SP<Render::ITexture> m_captionTex;
 +    bool m_captionFocused = false;
 +    bool m_captionRestore = false;
@@ -859,7 +859,7 @@ index 0000000..d3f4fc5
 @@ -0,0 +1,59 @@
 +#pragma once
 +
-+// Win98 mock's capPlan, in 2-device-pixel units. The caption width excludes
++// Memphis mock's capPlan, in 2-device-pixel units. The caption width excludes
 +// the three-unit frame on each side. Title yields before the min/max pair,
 +// then Close. The system menu remains reachable at every width.
 +struct SCaptionPlan {
@@ -945,14 +945,14 @@ index 0000000..71f988c
 +    if (!g_pGlobalState->config.platinum->value() || !g_pGlobalState->config.enabled->value())
 +        return false;
 +    const auto PWINDOW = m_pWindow.lock();
-+    return PWINDOW && !(g_pGlobalState->config.win98->value() && Fullscreen::controller()->getFullscreenModes(PWINDOW).internal == Fullscreen::FSMODE_MAXIMIZED) && platinumBarShown(PWINDOW);
++    return PWINDOW && !(g_pGlobalState->config.memphis->value() && Fullscreen::controller()->getFullscreenModes(PWINDOW).internal == Fullscreen::FSMODE_MAXIMIZED) && platinumBarShown(PWINDOW);
 +}
 +
 +SDecorationPositioningInfo CPlatinumFrame::getPositioningInfo() {
 +    const auto PWINDOW  = m_pWindow.lock();
 +    const auto PMONITOR = PWINDOW ? PWINDOW->m_monitor.lock() : nullptr;
 +    // One hair in logical px: whole device pixels on the window's monitor.
-+    const double HAIR = shown() && PMONITOR ? (g_pGlobalState->config.win98->value() ? 2 : platinumHair(PMONITOR->m_scale)) / PMONITOR->m_scale : 0.0;
++    const double HAIR = shown() && PMONITOR ? (g_pGlobalState->config.memphis->value() ? 2 : platinumHair(PMONITOR->m_scale)) / PMONITOR->m_scale : 0.0;
 +    m_lastHair        = HAIR;
 +
 +    SDecorationPositioningInfo info;
@@ -964,7 +964,7 @@ index 0000000..71f988c
 +    info.reserved       = true;
 +    // The edge hair on every side, and a bevel hair inside it on the left,
 +    // right and bottom. The bar draws the bevel's top hair itself.
-+    if (g_pGlobalState->config.win98->value())
++    if (g_pGlobalState->config.memphis->value())
 +        info.desiredExtents = {Vector2D{3 * HAIR, 3 * HAIR}, Vector2D{3 * HAIR, 3 * HAIR}};
 +    else
 +        info.desiredExtents = {Vector2D{2 * HAIR, HAIR}, Vector2D{2 * HAIR, 2 * HAIR}};
@@ -978,7 +978,7 @@ index 0000000..71f988c
 +void CPlatinumFrame::draw(PHLMONITOR pMonitor, float const& a) {
 +    const bool SHOWN    = shown();
 +    const auto PMONITOR = m_pWindow ? m_pWindow->m_monitor.lock() : nullptr;
-+    const auto HAIR     = SHOWN && PMONITOR ? (g_pGlobalState->config.win98->value() ? 2 : platinumHair(PMONITOR->m_scale)) / PMONITOR->m_scale : 0.0;
++    const auto HAIR     = SHOWN && PMONITOR ? (g_pGlobalState->config.memphis->value() ? 2 : platinumHair(PMONITOR->m_scale)) / PMONITOR->m_scale : 0.0;
 +    if (SHOWN != m_lastShown || HAIR != m_lastHair) {
 +        m_lastShown = SHOWN;
 +        g_pDecorationPositioner->repositionDeco(this);
@@ -1014,13 +1014,13 @@ index 0000000..71f988c
 +        (PWORKSPACE && !PWINDOW->m_pinned ? PWORKSPACE->m_renderOffset->value() : Vector2D());
 +    const CBox   WB  = PWINDOW->getWindowMainSurfaceBox();
 +    const double S   = pMonitor->m_scale;
-+    const double BAR = g_pGlobalState->config.win98->value() ? 38.0 / S : g_pGlobalState->config.barHeight->value();
++    const double BAR = g_pGlobalState->config.memphis->value() ? 38.0 / S : g_pGlobalState->config.barHeight->value();
 +    const double L = std::round((WB.x + OFF.x) * S), R = std::round((WB.x + WB.w + OFF.x) * S);
 +    const double T = std::round((WB.y - BAR + OFF.y) * S), B = std::round((WB.y + WB.h + OFF.y) * S);
 +    if (R - L < 1 || B - T < 1)
 +        return;
 +
-+    if (g_pGlobalState->config.win98->value()) {
++    if (g_pGlobalState->config.memphis->value()) {
 +        constexpr double u = 2;
 +        const auto& c = g_pGlobalState->config;
 +        const auto hi = CHyprColor{static_cast<uint64_t>(c.platHi->value())};
@@ -1213,7 +1213,7 @@ index 0ef19ae..207411e 100644
          SP<Config::Values::CBoolValue>       barBlur, barTitleEnabled, barPartOfWindow, barPrecedenceOverBorder, enabled, iconOnHover;
          SP<Config::Values::CStringValue>     barTextFont, barTextAlign, barButtonsAlignment, onDoubleClick;
 +        // platinum fork
-+        SP<Config::Values::CBoolValue>       platinum, win98;
++        SP<Config::Values::CBoolValue>       platinum, memphis;
 +        SP<Config::Values::CColorValue>      winLi, winCaption1, winCaption2, winInactive1, winInactive2, winText;
 +        SP<Config::Values::CColorValue>      platHi, platLo, platFrame, platBox, platRule, platTitleInactive;
      } config;
@@ -1316,14 +1316,14 @@ index ae9c90b..02fadaf 100644
      g_pGlobalState->config.iconOnHover         = makeShared<Config::Values::CBoolValue>("plugin:hyprbars:icon_on_hover", "Whether to use an icon on hover of the buttons", false);
      g_pGlobalState->config.onDoubleClick       = makeShared<Config::Values::CStringValue>("plugin:hyprbars:on_double_click", "Action to execute on double click of the bar", "");
  
-+    g_pGlobalState->config.win98 = makeShared<Config::Values::CBoolValue>("plugin:hyprbars:win98", "Windows 98 caption style", false);
-+    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.win98);
-+    g_pGlobalState->config.winLi = makeShared<Config::Values::CColorValue>("plugin:hyprbars:win98_li", "Win98 inner light edge", 0xffdfdfdf);
-+    g_pGlobalState->config.winCaption1 = makeShared<Config::Values::CColorValue>("plugin:hyprbars:win98_caption1", "Win98 active gradient start", 0xff000080);
-+    g_pGlobalState->config.winCaption2 = makeShared<Config::Values::CColorValue>("plugin:hyprbars:win98_caption2", "Win98 active gradient end", 0xff1084d0);
-+    g_pGlobalState->config.winInactive1 = makeShared<Config::Values::CColorValue>("plugin:hyprbars:win98_inactive1", "Win98 inactive gradient start", 0xff808080);
-+    g_pGlobalState->config.winInactive2 = makeShared<Config::Values::CColorValue>("plugin:hyprbars:win98_inactive2", "Win98 inactive gradient end", 0xffc0c0c0);
-+    g_pGlobalState->config.winText = makeShared<Config::Values::CColorValue>("plugin:hyprbars:win98_button_text", "Win98 button glyph", 0xff000000);
++    g_pGlobalState->config.memphis = makeShared<Config::Values::CBoolValue>("plugin:hyprbars:memphis", "Memphis caption style", false);
++    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.memphis);
++    g_pGlobalState->config.winLi = makeShared<Config::Values::CColorValue>("plugin:hyprbars:memphis_li", "Memphis inner light edge", 0xffdfdfdf);
++    g_pGlobalState->config.winCaption1 = makeShared<Config::Values::CColorValue>("plugin:hyprbars:memphis_caption1", "Memphis active gradient start", 0xff000080);
++    g_pGlobalState->config.winCaption2 = makeShared<Config::Values::CColorValue>("plugin:hyprbars:memphis_caption2", "Memphis active gradient end", 0xff1084d0);
++    g_pGlobalState->config.winInactive1 = makeShared<Config::Values::CColorValue>("plugin:hyprbars:memphis_inactive1", "Memphis inactive gradient start", 0xff808080);
++    g_pGlobalState->config.winInactive2 = makeShared<Config::Values::CColorValue>("plugin:hyprbars:memphis_inactive2", "Memphis inactive gradient end", 0xffc0c0c0);
++    g_pGlobalState->config.winText = makeShared<Config::Values::CColorValue>("plugin:hyprbars:memphis_button_text", "Memphis button glyph", 0xff000000);
 +    for (const auto& c : {g_pGlobalState->config.winLi, g_pGlobalState->config.winCaption1, g_pGlobalState->config.winCaption2,
 +                          g_pGlobalState->config.winInactive1, g_pGlobalState->config.winInactive2, g_pGlobalState->config.winText})
 +        HyprlandAPI::addConfigValueV2(PHANDLE, c);

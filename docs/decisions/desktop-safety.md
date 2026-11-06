@@ -61,7 +61,7 @@ callers must not put secrets in launch arguments. No cross-process history merge
 is promised: one Quickshell instance owns this state.
 
 The changed launch sites are OmniBar app selection and its terminal command,
-both CdpBrowser web-app paths, and Win98 Programs. Platinum's current dock only
+both CdpBrowser web-app paths, and Memphis Programs. Platinum's current dock only
 activates existing windows; it has no application-launch path to replace.
 Short-lived compositor, theme, screenshot and other helpers stay unchanged.
 

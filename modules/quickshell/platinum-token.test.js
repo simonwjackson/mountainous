@@ -6,7 +6,7 @@ const path = require("node:path");
 const dir = process.argv[2] || __dirname;
 const read = name => fs.readFileSync(path.join(dir, name), "utf8");
 const icon = read("WindowIcon.qml"), helper = read("PlatinumToken.qml");
-assert.match(icon, /property bool platinumToken: false/, "Win98 must not opt in implicitly");
+assert.match(icon, /property bool platinumToken: false/, "Memphis must not opt in implicitly");
 assert.match(icon, /root\.platinumToken && CdpTarget\.isBrowser\(CdpTarget\.appIdOf\(root\.toplevel\)\)/, "only Chromium gets generated tokens");
 assert.match(icon, /source: root\.tokenReady \|\| root\.boxedArt \? "" : root\.siteIcon \? root\.favicon : root\.fallbackSource/, "keep today's image until the token is decoded");
 // The Control Strip: one optical size. A site icon's token has opaque
@@ -29,6 +29,6 @@ for (const name of ["PlatinumAppIcon.qml", "PlatinumFindMenu.qml", "PlatinumGoTo
     assert.match(read(name), /WindowIcon\s*\{\s*platinumToken: true/, name);
 for (const name of ["PlatinumCascadeMenu.qml", "PlatinumStripTile.qml"])
     assert.match(read(name), /PlatinumAppIcon\s*\{/, name);
-for (const name of ["Win98Taskbar.qml", "Win98FindWindow.qml", "Win98CoolSwitch.qml"])
+for (const name of ["MemphisTaskbar.qml", "MemphisFindWindow.qml", "MemphisCoolSwitch.qml"])
     assert.doesNotMatch(read(name), /platinumToken\s*:\s*true/, name);
-console.log("PLATINUM_TOKEN_CONTRACTS_PASSED: shared strip/menu/Find path, async fallback, stale replies, exact device pixels, Win98 opt-out");
+console.log("PLATINUM_TOKEN_CONTRACTS_PASSED: shared strip/menu/Find path, async fallback, stale replies, exact device pixels, Memphis opt-out");

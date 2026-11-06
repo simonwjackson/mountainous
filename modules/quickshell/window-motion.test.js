@@ -12,11 +12,11 @@ const M = { GlancePlan: G };
 vm.runInNewContext(lib(process.argv[2] || __dirname + "/window-motion.js"), M);
 const eq = (a, b, m) => assert.deepEqual(JSON.parse(JSON.stringify(a)), JSON.parse(JSON.stringify(b)), m);
 
-// ---- the table: Win98 animates minimize, restore and maximize with its
+// ---- the table: Memphis animates minimize, restore and maximize with its
 // caption; Platinum opens, closes, hides and shows with zoom rects; every
 // other cell is a cut, and an unknown theme draws nothing.
-eq(["minimize", "restore", "maximize", "unmaximize", "open", "close"].map((k) => M.style("win98", k)),
-    ["caption", "caption", "caption", "caption", "", ""], "Win98: caption, and no open or close motion");
+eq(["minimize", "restore", "maximize", "unmaximize", "open", "close"].map((k) => M.style("memphis", k)),
+    ["caption", "caption", "caption", "caption", "", ""], "Memphis: caption, and no open or close motion");
 eq(["minimize", "restore", "maximize", "unmaximize", "open", "close"].map((k) => M.style("platinum", k)),
     ["zoom", "zoom", "", "", "zoom", "zoom"], "Platinum: zoom rects, and no zoom-box motion");
 assert.equal(M.style("kamoi", "minimize"), "", "another theme cuts");

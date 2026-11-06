@@ -35,12 +35,13 @@ printf '/* user rule */\nlabel.user { opacity: 0.9; }\n' > "$XDG_CONFIG_HOME/gtk
 printf '[Other]\nkeep=yes\n[Fonts]\nfixed="DejaVu Sans Mono,10,-1,5,50,0,0,0,0,0"\n' > "$XDG_CONFIG_HOME/qt6ct/qt6ct.conf"
 chmod 600 "$XDG_CONFIG_HOME/qt6ct/qt6ct.conf"
 verify() {
-  local theme=$1 mode=$2 extra=$3 appearance=$2 font style name face icons cursors pattern
-  [[ $theme == platinum && $mode == dark && $extra == on ]] && appearance=extra
+  local theme=$1 mode=$2 extra=$3 appearance=${4:-$2} font style name face icons cursors pattern
+  [[ $theme == platinum && $appearance == dark && $extra == on ]] && appearance=extra
   name="Mountainous-$theme-$appearance"
   if [[ $theme == platinum ]]; then font=ChicagoFLF; style=kvantum; else font='W95FA Grid'; style=Windows; fi
   [[ ! -e $HOME/ghostty-autostarted ]]
   [[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'$name'" ]]
+  grep -F "share/themes/$name/gtk-2.0/gtkrc" "$HOME/.gtkrc-2.0"
   for version in 3 4; do
     grep -F "gtk-theme-name = $name" "$XDG_CONFIG_HOME/gtk-$version.0/settings.ini"
     test -s "$assets/share/themes/$name/gtk-$version.0/gtk.css"
@@ -64,7 +65,7 @@ verify() {
     python3 "$NATIVE_OBS_PROBE" "$OBS_LIBRARY" "$XDG_CONFIG_HOME/obs-studio/user.ini"
   fi
   grep -F "theme = Mountainous-platinum-$([[ $theme == platinum ]] && echo "$appearance" || echo light)" "$XDG_CONFIG_HOME/Kvantum/kvantum.kvconfig"
-  for variant in light dark extra; do
+  for variant in light dark extra drawing-board; do
     [[ $(readlink "$XDG_CONFIG_HOME/Kvantum/Mountainous-platinum-$variant") == "$assets/share/Kvantum/Mountainous-platinum-$variant" ]]
   done
   local terminal_font
@@ -107,11 +108,18 @@ verify() {
     [[ $(grep -F setcursor "$HYPRCTL_LOG" | tail -n 1) == "--instance 0 setcursor $cursors 24" ]]
     [[ $(tail -n 1 "$HYPRCTL_LOG") == "--instance 0 eval hl.config({ cursor = { invisible = false } })" ]]
     pattern=$(node "$DESKTOP_PATTERN_TEST" "$DESKTOP_PATTERN_JS" "$THEMES_JSON" --state "$XDG_STATE_HOME/mountainous")
-    [[ $pattern == "themes/$theme/patterns/$appearance.svg" ]]
+    local expected_pattern
+    expected_pattern=$(python3 - "$THEMES_JSON" "$theme" "$appearance" <<'EOF'
+import json, sys
+entry = next(t for t in json.load(open(sys.argv[1])) if t["id"] == sys.argv[2])
+print(entry["art"]["patterns"].get(sys.argv[3], ""))
+EOF
+)
+    [[ $pattern == "$expected_pattern" ]]
     echo "art: $theme $mode $extra -> $icons, $cursors, $pattern"
   fi
 }
-for theme in platinum win98; do
+for theme in platinum memphis; do
   for mode in light dark; do
     for extra in off on; do
       "$command_path" apply "$theme" "$mode" "$extra"
@@ -125,20 +133,20 @@ for theme in platinum win98; do
   done
 done
 "$command_path" apply platinum dark on
-"$command_path" set win98
-verify win98 dark on
+"$command_path" set memphis
+verify memphis dark on
 "$command_path" set platinum
 verify platinum dark on
 "$command_path" extra toggle
 verify platinum dark off
 # A bus error must leave the published choice and native files intact.
 before=$(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf")
-if DBUS_SESSION_BUS_ADDRESS=unix:path=/not-a-bus "$command_path" apply win98 light off; then exit 1; fi
+if DBUS_SESSION_BUS_ADDRESS=unix:path=/not-a-bus "$command_path" apply memphis light off; then exit 1; fi
 [[ $("$command_path" status) == 'mode=dark extra=off theme=platinum' ]]
 [[ $(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf") == "$before" ]]
 # Recovery must restore the chrome's name even when native synchronisation
 # fails. Native output stays stale until a later successful reapply.
-"$command_path" apply win98 dark on
+"$command_path" apply memphis dark on
 before=$(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf")
 printf 'broken\n' > "$XDG_STATE_HOME/mountainous/theme-name"
 DBUS_SESSION_BUS_ADDRESS=unix:path=/not-a-bus "$command_path" rollback broken platinum
@@ -147,10 +155,10 @@ DBUS_SESSION_BUS_ADDRESS=unix:path=/not-a-bus "$command_path" rollback broken pl
 "$command_path" reapply
 verify platinum dark on
 # A stale callback must not revert a newer choice or touch its native files.
-"$command_path" apply win98 dark on
+"$command_path" apply memphis dark on
 before=$(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf")
 "$command_path" rollback broken platinum
-[[ $("$command_path" status) == 'mode=dark extra=on theme=win98' ]]
+[[ $("$command_path" status) == 'mode=dark extra=on theme=memphis' ]]
 [[ $(sha256sum "$XDG_CONFIG_HOME/ghostty/mountainous.conf") == "$before" ]]
 # Also recover when the native writer, rather than D-Bus, refuses a change.
 collision="$XDG_CONFIG_HOME/Kvantum/Mountainous-platinum-light"
@@ -170,4 +178,19 @@ for config_home in '' relative-config; do
   test -s "$HOME/.config/ghostty/mountainous.conf"
   test ! -e relative-config
 done
+# Exercise every registered appearance through the packaged command and both
+# real Qt probes, not merely a generated file count.
+while IFS=$'\t' read -r theme selected mode native_key; do
+  "$command_path" apply "$theme" "$selected" off
+  verify "$theme" "$mode" off "$native_key"
+  "$command_path" reapply
+  [[ $(<"$XDG_STATE_HOME/mountainous/theme-appearance") == "$selected" ]]
+done < <(python3 - "$THEMES_JSON" <<'EOF'
+import json, sys
+for theme in json.load(open(sys.argv[1])):
+    for a in theme["appearances"]:
+        key = {"standard": "light", "dark-grey": "dark"}.get(a["id"], a["id"])
+        print(theme["id"], a["id"], a["mode"], key, sep="\t")
+EOF
+)
 echo NATIVE_THEME_TESTS_PASSED

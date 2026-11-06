@@ -1,5 +1,5 @@
 // The tandem rule as a check (docs/plans/desktop-themes.md, "Tandem rule
-// and parity ledger"): Platinum and Windows 98 move together. This fails
+// and parity ledger"): Platinum and Memphis move together. This fails
 // when one theme's Desktop exposes something the other lacks, unless the
 // ledger lists that gap with a reason.
 //

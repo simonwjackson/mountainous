@@ -130,7 +130,7 @@ function cycleStart(rows, mru, names) {
     return { order: order, base: base < 0 ? 0 : base };
 }
 
-// The same cycle over windows, not apps (Win98's Cool Switch, as Alt+Tab
+// The same cycle over windows, not apps (Memphis's Cool Switch, as Alt+Tab
 // stepped through windows): every live window in the order before the
 // quick press, hidden ones included, starting from the window the quick
 // press reached. order holds window keys; cycleTarget reads it alike.

@@ -77,7 +77,7 @@ class LockConfigTests(unittest.TestCase):
         )
         return result.stdout
 
-    def test_all_four_appearance_combinations_and_win98(self):
+    def test_all_four_appearance_combinations_and_memphis(self):
         for theme, extra, app in (
             ("light", "off", "light"),
             ("light", "on", "light"),
@@ -87,7 +87,7 @@ class LockConfigTests(unittest.TestCase):
             with self.subTest(theme=theme, extra=extra):
                 (self.state / "theme").write_text(theme)
                 (self.state / "theme-extra").write_text(extra)
-                (self.state / "theme-name").write_text("win98")
+                (self.state / "theme-name").write_text("memphis")
                 conf = self.run_config()
                 self.assertEqual(conf.count("input-field {"), 2)
                 self.assertIn(f"dialog-{app}-", conf)

@@ -21,6 +21,29 @@ Singleton {
     readonly property string namePath: stateDir + "/mountainous/theme-name"
     readonly property string name: Kit.Theme.name
 
+    readonly property string appearancePath: stateDir + "/mountainous/theme-appearance"
+    readonly property string appearance: Kit.Theme.appearance
+    property string savedAppearance: ""
+    property string savedMode: "dark"
+
+    function syncAppearance() {
+        const catalog = typeof ThemeCatalog !== "undefined" ? ThemeCatalog : null;
+        const choice = catalog ? catalog.resolveAppearance(name, savedAppearance, savedMode) : null;
+        // A standalone gallery has no registry. Empty is the kit's existing
+        // mode-only host contract, not a second list of default IDs.
+        Kit.Theme.appearance = choice ? choice.id : "";
+        Kit.Theme.mode = choice ? choice.mode : savedMode;
+    }
+    FileView {
+        path: root.appearancePath
+        blockLoading: true
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: { root.savedAppearance = text().trim(); root.syncAppearance(); }
+        onLoadFailed: { root.savedAppearance = ""; root.syncAppearance(); }
+    }
+
     readonly property string extraPath: stateDir + "/mountainous/theme-extra"
 
     readonly property string soundsPath: stateDir + "/mountainous/theme-sounds"
@@ -42,7 +65,7 @@ Singleton {
 
     // "Extra dark": the stored choice, on or off. Each theme and native
     // toolkit adapter decides how it applies in dark mode. A missing file
-    // is off; Win98 keeps this preference but ignores it.
+    // is off; Memphis keeps this preference but ignores it.
     readonly property string extraState: Kit.Theme.extraState
     readonly property bool extraDark: Kit.Theme.extraDark
 
@@ -54,7 +77,8 @@ Singleton {
         onFileChanged: reload()
         onLoaded: {
             const value = text().trim();
-            if (value === "dark" || value === "light") Kit.Theme.mode = value;
+            if (value === "dark" || value === "light") root.savedMode = value;
+            root.syncAppearance();
         }
     }
 
@@ -81,13 +105,14 @@ Singleton {
     // Quickshell.iconPath() calls already resolve, and are cached, under
     // it. Quickshell.iconTheme comes from lib/patches/quickshell-icon-
     // theme.patch; an unpatched Quickshell keeps its startup icon theme.
-    // Theme.qml also runs without the registry: the Win98 control gallery
+    // Theme.qml also runs without the registry: the Memphis control gallery
     // and the dictation test stage it alone, and a reload of a half-linked
     // tree may lack a new file. Then there is no icon theme to choose.
     function choose(id) {
         const entry = typeof ThemeCatalog !== "undefined" ? ThemeCatalog.find(id) : null;
         if (entry && entry.art && ("iconTheme" in Quickshell)) Quickshell.iconTheme = entry.art.icons;
         Kit.Theme.name = id;
+        root.syncAppearance();
     }
     readonly property string iconTheme: ("iconTheme" in Quickshell) ? Quickshell.iconTheme : ""
     Component.onCompleted: root.choose(root.name)
@@ -102,7 +127,7 @@ Singleton {
         function current(): string {
             return root.mode + " " + root.bgBase + " " + root.bgVeil
                 + " extra=" + root.extraState + root.chromeStatus + " theme=" + root.name
-                + " icons=" + root.iconTheme;
+                + " icons=" + root.iconTheme + " appearance=" + root.appearance;
         }
     }
 

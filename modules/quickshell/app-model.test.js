@@ -93,7 +93,7 @@ const many = Array.from({ length: 52 }, (_, i) => row("m" + i, "app" + (i % 9), 
 const mm = A.reconcile([], many);
 assert.equal(A.apps(many, mm, "m0", {}, {}).length, 9);
 assert.equal(A.appOrder(many, mm, {}).length, 9);
-// ---- window cycling (Win98's Cool Switch): windows, not apps
+// ---- window cycling (Memphis's Cool Switch): windows, not apps
 // Before the quick press: w2 (Firefox) in front, then w3, w5, w1, w4, w6, w7.
 // The quick press focused w3; position 1 is w3, 2 the next window after it.
 let wc = A.windowCycleStart(rows, afterQuick);
@@ -159,7 +159,7 @@ for (const count of [20, 40]) {
     assert.equal(browsers[0].count,count);
     assert.equal(new Set(browsers[0].windows.map(w=>w.address)).size,count);
     const cycle = A.windowCycleStart(chromiumPages,browserMru);
-    assert.equal(cycle.order.length,count,"Win98 cycles all browser windows, not one app group");
+    assert.equal(cycle.order.length,count,"Memphis cycles all browser windows, not one app group");
     assert.equal(new Set(Array.from({length:count}, (_,i) => A.cycleTarget(cycle,i))).size,count,
         "all windows remain reachable even when their titles are the same");
     assert.equal(A.cycleStart(chromiumPages,browserMru,{}).order.length,1,

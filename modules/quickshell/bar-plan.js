@@ -14,8 +14,10 @@
 //   1. Spacing yields (pad 8 -> 5, gap 2 -> 0).
 //   2. Readouts yield in YIELD_ORDER. The window title gives way to the
 //      numbers: a warning outlasts it.
-//   3. Controls move into » in OVERFLOW_ORDER, then dictation's Retry and
-//      Dismiss together (one group).
+//   3. Controls move into »: the apps' StatusNotifierItems first (ids
+//      "sni:<id>", after the built-in controls on the bar; the last one
+//      first), then OVERFLOW_ORDER, then dictation's Retry and Dismiss
+//      together (one group).
 //   4. Padding goes, one logical pixel at a time.
 //   5. Below that floor (191 px for the captured metrics), battery, clock
 //      and Application move into ». Clock clearance and edges go last.
@@ -58,6 +60,8 @@ var EDGE = 6, INSIDE_GAP = 6, CLOCK_GAP = 16, TITLE_STUB = 56;
 var PAD = 8, PAD_TIGHT = 5, GAP = 2;
 var COMPACT_ORDER = ["battery", "clock", "app"];
 
+function isSni(id) { return typeof id === "string" && /^sni:./.test(id); }
+
 function even(v) { return Math.ceil(v / 2 - 1e-6) * 2; }
 
 function dimension(value, name) {
@@ -73,7 +77,7 @@ function validate(width, metrics) {
         if (metrics[name] !== undefined) dimension(metrics[name], name);
     const ids = [];
     for (const control of metrics.controls) {
-        if (!control || OVERFLOW_ORDER.indexOf(control.id) < 0 || ids.indexOf(control.id) >= 0) throw new Error("Invalid or duplicate control");
+        if (!control || (OVERFLOW_ORDER.indexOf(control.id) < 0 && !isSni(control.id)) || ids.indexOf(control.id) >= 0) throw new Error("Invalid or duplicate control");
         ids.push(control.id);
         dimension(control.iconWidth, "control icon");
         dimension(control.readoutWidth, "control readout");
@@ -175,7 +179,9 @@ function fit(width, metrics, chordW, chordNames) {
         let bar = items.slice(), overflow = [], right = rightW(bar, overflow);
         if (fits(right)) return done(bar, overflow, right);
         if (count < steps.length) continue;
-        for (const id of OVERFLOW_ORDER) {
+        const order = metrics.controls.filter(function (c) { return isSni(c.id); })
+            .map(function (c) { return c.id; }).reverse().concat(OVERFLOW_ORDER);
+        for (const id of order) {
             if (!bar.some(function (it) { return it.id === id; })) continue;
             bar = bar.filter(function (it) { return it.id !== id; });
             overflow.push(id);

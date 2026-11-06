@@ -102,7 +102,7 @@ name="$XDG_STATE_HOME/mountainous/theme-name"
 rm -f "$name"
 [[ $("$command_path" status) == 'mode=dark extra=on theme=platinum' ]]
 [[ ! -e $name ]]
-[[ $("$command_path" list) == $'platinum\tMac OS 8 Platinum\nwin98\tWindows 98' ]]
+[[ $("$command_path" list) == $'platinum\tMac OS 8 Platinum\nmemphis\tMemphis' ]]
 [[ $("$command_path" set platinum) == platinum ]]
 [[ $(<"$name") == platinum ]]
 for bad in unknown '../platinum' ''; do
@@ -121,42 +121,42 @@ if "$command_path" apply platinum bogus on; then exit 1; fi
 if "$command_path" apply platinum dark bogus; then exit 1; fi
 check light prefer-light
 check_extra off
-# Win98 has no Extra dark: the stored value passes through untouched, and
+# Memphis has no Extra dark: the stored value passes through untouched, and
 # switching back to Platinum finds it again.
 "$command_path" apply platinum dark on
 check_extra on
-"$command_path" apply win98 dark on
-[[ $(<"$name") == win98 ]]
+"$command_path" apply memphis dark on
+[[ $(<"$name") == memphis ]]
 [[ $(<"$state") == dark ]]
 [[ $(dconf read /org/gnome/desktop/interface/color-scheme) == "'prefer-dark'" ]]
 check_extra on
-[[ $("$command_path" status) == 'mode=dark extra=on theme=win98' ]]
+[[ $("$command_path" status) == 'mode=dark extra=on theme=memphis' ]]
 [[ $("$command_path" set platinum) == platinum ]]
 check dark prefer-dark
 check_extra on
-"$command_path" apply win98 light off
-[[ $(<"$name") == win98 ]]
+"$command_path" apply memphis light off
+[[ $(<"$name") == memphis ]]
 [[ $(<"$state") == light ]]
-[[ $("$command_path" status) == 'mode=light extra=off theme=win98' ]]
+[[ $("$command_path" status) == 'mode=light extra=off theme=memphis' ]]
 "$command_path" set platinum >/dev/null
 check light prefer-light
 [[ ! -e $name.new ]]
 
 # Loader recovery is local first, even when the session bus is absent. Keep
 # mode/Extra dark, and do not let a delayed rejection replace a newer choice.
-"$command_path" apply win98 dark on >/dev/null
+"$command_path" apply memphis dark on >/dev/null
 printf 'broken\n' > "$name"
 [[ $(DBUS_SESSION_BUS_ADDRESS=unix:path=/does-not-exist "$command_path" rollback broken platinum) == platinum ]]
 [[ $(<"$name") == platinum && $(<"$state") == dark && $(<"$extra") == on ]]
 "$command_path" reapply >/dev/null
 check dark prefer-dark
 check_extra on
-"$command_path" set win98 >/dev/null
-[[ $(DBUS_SESSION_BUS_ADDRESS=unix:path=/does-not-exist "$command_path" rollback broken platinum) == win98 ]]
-[[ $(<"$name") == win98 ]]
+"$command_path" set memphis >/dev/null
+[[ $(DBUS_SESSION_BUS_ADDRESS=unix:path=/does-not-exist "$command_path" rollback broken platinum) == memphis ]]
+[[ $(<"$name") == memphis ]]
 for fallback in unknown '../platinum' ''; do
-  if "$command_path" rollback win98 "$fallback"; then echo 'FAIL: invalid rollback accepted' >&2; exit 1; fi
-  [[ $(<"$name") == win98 ]]
+  if "$command_path" rollback memphis "$fallback"; then echo 'FAIL: invalid rollback accepted' >&2; exit 1; fi
+  [[ $(<"$name") == memphis ]]
 done
 "$command_path" set platinum >/dev/null
 
@@ -185,7 +185,7 @@ asked() { # command... -> how many times hyprctl was asked to restyle
     echo 0
   fi
 }
-for change in dark light toggle reapply 'set win98' 'set platinum' 'apply platinum dark on' 'extra off' 'extra toggle' 'extra on' 'rollback platinum win98' 'rollback win98 platinum'; do
+for change in dark light toggle reapply 'set memphis' 'set platinum' 'apply platinum dark on' 'extra off' 'extra toggle' 'extra on' 'rollback platinum memphis' 'rollback memphis platinum'; do
   # shellcheck disable=SC2086
   [[ $(asked $change) == 1 ]] || { echo "FAIL: '$change' did not restyle the title bars" >&2; exit 1; }
 done
@@ -204,7 +204,7 @@ rm -f "$sounds"
 [[ $("$command_path" sounds status) == on && ! -e $sounds ]]
 [[ $(DBUS_SESSION_BUS_ADDRESS=unix:path=/missing "$command_path" sounds off) == off ]]
 [[ $(<"$sounds") == off ]]
-"$command_path" apply win98 dark on >/dev/null
+"$command_path" apply memphis dark on >/dev/null
 [[ $("$command_path" sounds status) == off ]]
 "$command_path" reapply >/dev/null
 [[ $(<"$sounds") == off ]]
@@ -220,4 +220,64 @@ printf 'invalid\n' > "$sounds"
 rm -f "$sounds"
 "$command_path" reapply >/dev/null
 [[ $(<"$sounds") == on && ! -e $sounds.new ]]
-echo 'DESKTOP_THEME_TESTS_PASSED' 
+# Migrate real old files. Reads do not create keys; the next write does.
+appearance="$XDG_STATE_HOME/mountainous/theme-appearance"
+for theme in memphis platinum; do
+  for mode in light dark; do
+    printf '%s\n' "$theme" > "$name"
+    printf '%s\n' "$mode" > "$state"
+    rm -f "$appearance"
+    "$command_path" status >/dev/null
+    [[ ! -e $appearance ]]
+    "$command_path" reapply >/dev/null
+    if [[ $mode == dark ]]; then expected="dark-grey"
+    elif [[ $theme == memphis ]]; then expected=standard
+    else expected=light; fi
+    [[ $(<"$appearance") == "$expected" && $(<"$state") == "$mode" ]]
+    printf 'future-appearance\n' > "$appearance"
+    "$command_path" reapply >/dev/null
+    [[ $(<"$appearance") == future-appearance && $(<"$state") == "$mode" ]]
+  done
+done
+# Canonical IDs derive mode on every apply, even when Extra dark is retained.
+for dark in dark-grey high-contrast-black high-contrast-1 high-contrast-2; do
+  "$command_path" apply memphis "$dark" on >/dev/null
+  [[ $(<"$state") == dark && $(<"$appearance") == "$dark" && $(<"$extra") == on ]]
+done
+"$command_path" apply memphis high-contrast-white on >/dev/null
+[[ $(<"$state") == light ]]
+"$command_path" apply platinum drawing-board on >/dev/null
+[[ $(<"$state") == light && $(<"$appearance") == drawing-board && $(<"$extra") == on ]]
+[[ $(dconf read /org/gnome/desktop/interface/gtk-theme) == "'Mountainous-platinum-drawing-board'" ]]
+"$command_path" extra off >/dev/null
+[[ $(<"$appearance") == drawing-board && $(<"$state") == light ]]
+"$command_path" set memphis >/dev/null
+[[ $(<"$appearance") == drawing-board && $(<"$state") == light ]]
+if "$command_path" apply memphis drawing-board off; then exit 1; fi
+"$command_path" apply memphis brick off >/dev/null
+[[ $(<"$appearance") == brick && $(<"$state") == light ]]
+# A contradictory old mode must not win over a known saved appearance.
+printf dark > "$state"
+"$command_path" reapply >/dev/null
+[[ $(<"$state") == light && $(<"$appearance") == brick ]]
+# Super+X and omni's explicit mode commands select defaults, not a remembered
+# colour scheme. The stored Extra dark preference survives all three paths.
+while read -r theme selected toggled; do
+  "$command_path" apply "$theme" "$selected" on >/dev/null
+  "$command_path" toggle >/dev/null
+  [[ $(<"$appearance") == "$toggled" && $(<"$extra") == on ]]
+  if [[ $toggled == dark-grey ]]; then expected_mode=dark; else expected_mode=light; fi
+  [[ $(<"$state") == "$expected_mode" ]]
+  "$command_path" apply "$theme" "$selected" on >/dev/null
+  "$command_path" dark >/dev/null
+  [[ $(<"$appearance") == dark-grey && $(<"$state") == dark ]]
+  "$command_path" apply "$theme" "$selected" on >/dev/null
+  "$command_path" light >/dev/null
+  if [[ $theme == memphis ]]; then light_default=standard; else light_default=light; fi
+  [[ $(<"$appearance") == "$light_default" && $(<"$state") == light && $(<"$extra") == on ]]
+done <<'CASES'
+memphis brick dark-grey
+memphis high-contrast-black standard
+platinum drawing-board dark-grey
+CASES
+echo 'DESKTOP_THEME_TESTS_PASSED'

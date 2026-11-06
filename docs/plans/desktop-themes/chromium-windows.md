@@ -6,7 +6,7 @@ Normal Chromium, `--app` windows and installed PWAs now use client-only
 fullscreen. `hyprland.lua` matches `^(chromium-browser|chromium|chrome-.*)$`
 with `fullscreen_state = "0 2"` and `suppress_event = "fullscreen"`. Chromium
 hides its tab strip, toolbar and PWA title bar while Hyprland keeps it tiled.
-The hyprbars patch draws our Platinum or Windows 98 caption when the client
+The hyprbars patch draws our Platinum or Memphis caption when the client
 is fullscreen but the compositor is not, even for client-decorated windows.
 This replaces the old assumption below that installed PWAs must keep their
 Chromium frame. It does not ship the rejected extension popup conversion.
@@ -382,7 +382,7 @@ not only hosts, participate in that class. The standalone installed fixture
 has class `chrome-<app-id>-Default` and, without fake fullscreen, Chromium's
 own caption; the generic app
 has our SSD caption but no origin strip. Both launch shapes were captured
-under Platinum and Win98. This confirms cookie retention, not protocol-handler
+under Platinum and Memphis. This confirms cookie retention, not protocol-handler
 or installed-app parity.
 
 | Property | `--app-id` → same-profile `--app=start_url` |
@@ -408,11 +408,11 @@ without converting its window.
 ## Taskbar and Control Strip
 
 The taskbar and strip already enumerate **windows**, not an app count.
-`lanes.js` keeps every toplevel in its screen/page lane. Win98's task model also
+`lanes.js` keeps every toplevel in its screen/page lane. Memphis's task model also
 keeps minimized windows. `app-model.js` groups the same Wayland class into one
 Application-menu app **with all its windows**; that is not the tile/button
 model. The new 30-window test confirms one Chromium app group contains 30
-unique windows and Win98's window cycle contains all 30.
+unique windows and Memphis's window cycle contains all 30.
 
 ### Per-window favicons
 
@@ -445,7 +445,7 @@ the latter can retain the previous image's resolved decode size.
 
 Missing, ambiguous or failed page images still fall back to the existing themed
 app icon. A missing installed PWA PNG first falls back to page discovery. The
-Win98 taskbar keeps 16 units (32 physical pixels; 21 1/3 logical pixels at 1.5x).
+Memphis taskbar keeps 16 units (32 physical pixels; 21 1/3 logical pixels at 1.5x).
 A 16-logical-pixel Platinum row needs 24 physical pixels. Grouped Application-menu
 entries keep their app-level icon. Window submenu rows, Find results and
 individual Control Strip tiles use per-window icons.
@@ -456,7 +456,7 @@ and Teams lettermark expectations were obsolete after per-window icons, not
 production regressions. Lettermarks remain required when no site or installed
 icon exists. The check now gives each window a different original synthetic
 icon through private HTTP target lists and desktop entries. It compares each
-window separately with its own PNG (Win98) or the packaged renderer's 36 px
+window separately with its own PNG (Memphis) or the packaged renderer's 36 px
 token in the 32 px strip box (Platinum). Jellyfin has no matching CDP title;
 Teams has a conflicting page icon. Both must prefer their installed icon.
 A second session has neither site nor installed icons and must draw theme art,
@@ -533,7 +533,7 @@ The real Quickshell, both themes, Chromium and virtual keyboard ran in the
 private nested session. A separate native-popup test opened the real shell
 under both themes and navigated that popup without changing its target ID.
 The Chromium-native location/security row remained visible. Ctrl+L opened Go to Address / Open and navigated the
-existing page under Platinum light/dark and Win98 light/dark. Four snapshots
+existing page under Platinum light/dark and Memphis light/dark. Four snapshots
 of `/json/list` verify the resulting URL/title. A second real-key run with two
 identical page titles verifies Go/Enter changes neither target under all four
 light/dark theme combinations; the disabled buttons and explanation are
@@ -596,7 +596,7 @@ service. `PlatinumToken.qml` runs it asynchronously. `WindowIcon.qml` keeps toda
 icon until the cached PNG decodes. Late replies cannot replace a newer request.
 `PlatinumAppIcon`, Find and Go to Address opt in; the strip and window menu share
 that path. The PNG child draws at `S / devicePixelRatio` logical pixels with
-filtering off. Win98 does not opt in. No installed-app theme icons change here.
+filtering off. Memphis does not opt in. No installed-app theme icons change here.
 
 For installed apps, the same pure renderer runs at build time
 (`scripts/platinum-app-tokens.py`, `mountainous-platinum-app-tokens`). The

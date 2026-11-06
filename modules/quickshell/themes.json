@@ -6,14 +6,22 @@
     "picker": "PlatinumPickerView.qml",
     "appearances": [
       {
+        "id": "light",
         "mode": "light",
         "label": "Light",
         "thumbnail": "themes/platinum/previews/light.png"
       },
       {
+        "id": "dark-grey",
         "mode": "dark",
         "label": "Dark grey",
-        "thumbnail": "themes/platinum/previews/dark.png"
+        "thumbnail": "themes/platinum/previews/dark-grey.png"
+      },
+      {
+        "id": "drawing-board",
+        "mode": "light",
+        "label": "Drawing Board",
+        "thumbnail": "themes/platinum/previews/drawing-board.png"
       }
     ],
     "options": {
@@ -40,51 +48,174 @@
       "patterns": {
         "light": "themes/platinum/patterns/light.svg",
         "dark": "themes/platinum/patterns/dark.svg",
-        "extra": "themes/platinum/patterns/extra.svg"
+        "extra": "themes/platinum/patterns/extra.svg",
+        "drawing-board": "themes/platinum/patterns/drawing-board.svg"
       }
     }
   },
   {
-    "id": "win98",
-    "label": "Windows 98",
-    "desktop": "Win98Desktop.qml",
-    "picker": "Win98PickerView.qml",
+    "id": "memphis",
+    "label": "Memphis",
+    "desktop": "MemphisDesktop.qml",
+    "picker": "MemphisPickerView.qml",
     "appearances": [
       {
+        "id": "standard",
         "mode": "light",
-        "label": "Windows Standard",
-        "thumbnail": "themes/win98/previews/light.png"
+        "label": "Standard",
+        "thumbnail": "themes/memphis/previews/standard.png"
       },
       {
+        "id": "dark-grey",
         "mode": "dark",
         "label": "Dark grey",
-        "thumbnail": "themes/win98/previews/dark.png"
+        "thumbnail": "themes/memphis/previews/dark-grey.png"
+      },
+      {
+        "id": "brick",
+        "mode": "light",
+        "label": "Brick",
+        "thumbnail": "themes/memphis/previews/brick.png"
+      },
+      {
+        "id": "desert",
+        "mode": "light",
+        "label": "Desert",
+        "thumbnail": "themes/memphis/previews/desert.png"
+      },
+      {
+        "id": "eggplant",
+        "mode": "light",
+        "label": "Eggplant",
+        "thumbnail": "themes/memphis/previews/eggplant.png"
+      },
+      {
+        "id": "lilac",
+        "mode": "light",
+        "label": "Lilac",
+        "thumbnail": "themes/memphis/previews/lilac.png"
+      },
+      {
+        "id": "maple",
+        "mode": "light",
+        "label": "Maple",
+        "thumbnail": "themes/memphis/previews/maple.png"
+      },
+      {
+        "id": "marine",
+        "mode": "light",
+        "label": "Marine",
+        "thumbnail": "themes/memphis/previews/marine.png"
+      },
+      {
+        "id": "plum",
+        "mode": "light",
+        "label": "Plum",
+        "thumbnail": "themes/memphis/previews/plum.png"
+      },
+      {
+        "id": "pumpkin",
+        "mode": "light",
+        "label": "Pumpkin",
+        "thumbnail": "themes/memphis/previews/pumpkin.png"
+      },
+      {
+        "id": "rainy-day",
+        "mode": "light",
+        "label": "Rainy Day",
+        "thumbnail": "themes/memphis/previews/rainy-day.png"
+      },
+      {
+        "id": "red-white-blue",
+        "mode": "light",
+        "label": "Red, White and Blue",
+        "thumbnail": "themes/memphis/previews/red-white-blue.png"
+      },
+      {
+        "id": "rose",
+        "mode": "light",
+        "label": "Rose",
+        "thumbnail": "themes/memphis/previews/rose.png"
+      },
+      {
+        "id": "slate",
+        "mode": "light",
+        "label": "Slate",
+        "thumbnail": "themes/memphis/previews/slate.png"
+      },
+      {
+        "id": "spruce",
+        "mode": "light",
+        "label": "Spruce",
+        "thumbnail": "themes/memphis/previews/spruce.png"
+      },
+      {
+        "id": "storm",
+        "mode": "light",
+        "label": "Storm",
+        "thumbnail": "themes/memphis/previews/storm.png"
+      },
+      {
+        "id": "teal",
+        "mode": "light",
+        "label": "Teal",
+        "thumbnail": "themes/memphis/previews/teal.png"
+      },
+      {
+        "id": "wheat",
+        "mode": "light",
+        "label": "Wheat",
+        "thumbnail": "themes/memphis/previews/wheat.png"
+      },
+      {
+        "id": "high-contrast-black",
+        "mode": "dark",
+        "label": "High Contrast Black",
+        "thumbnail": "themes/memphis/previews/high-contrast-black.png"
+      },
+      {
+        "id": "high-contrast-white",
+        "mode": "light",
+        "label": "High Contrast White",
+        "thumbnail": "themes/memphis/previews/high-contrast-white.png"
+      },
+      {
+        "id": "high-contrast-1",
+        "mode": "dark",
+        "label": "High Contrast #1",
+        "thumbnail": "themes/memphis/previews/high-contrast-1.png"
+      },
+      {
+        "id": "high-contrast-2",
+        "mode": "dark",
+        "label": "High Contrast #2",
+        "thumbnail": "themes/memphis/previews/high-contrast-2.png"
       }
     ],
     "options": {
       "extraDark": false
     },
-    "qmlPrefix": "Win98",
+    "qmlPrefix": "Memphis",
     "pyxampFace": "winamp",
     "sounds": {
-      "menuOpen": "themes/win98/sounds/start-menu.wav",
-      "menuChoose": "themes/win98/sounds/menu-choose.wav",
-      "alert": "themes/win98/sounds/exclamation.wav",
-      "beep": "themes/win98/sounds/default-beep.wav",
-      "critical": "themes/win98/sounds/critical-stop.wav",
-      "notification": "themes/win98/sounds/asterisk.wav",
-      "emptyTrash": "themes/win98/sounds/exclamation.wav",
-      "minimize": "themes/win98/sounds/minimize.wav",
-      "restore": "themes/win98/sounds/restore.wav"
+      "menuOpen": "themes/memphis/sounds/start-menu.wav",
+      "menuChoose": "themes/memphis/sounds/menu-choose.wav",
+      "alert": "themes/memphis/sounds/exclamation.wav",
+      "beep": "themes/memphis/sounds/default-beep.wav",
+      "critical": "themes/memphis/sounds/critical-stop.wav",
+      "notification": "themes/memphis/sounds/asterisk.wav",
+      "emptyTrash": "themes/memphis/sounds/exclamation.wav",
+      "minimize": "themes/memphis/sounds/minimize.wav",
+      "restore": "themes/memphis/sounds/restore.wav"
     },
     "art": {
-      "icons": "Mountainous-win98",
-      "cursors": "Mountainous-win98-cursors",
+      "icons": "Mountainous-memphis",
+      "cursors": "Mountainous-memphis-cursors",
       "cursorSize": 24,
       "patternCell": 2,
       "patterns": {
-        "light": "themes/win98/patterns/light.svg",
-        "dark": "themes/win98/patterns/dark.svg"
+        "light": "themes/memphis/patterns/light.svg",
+        "dark": "themes/memphis/patterns/dark.svg"
       }
     }
   }

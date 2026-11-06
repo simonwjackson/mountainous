@@ -55,18 +55,14 @@ PanelWindow {
         width: root.tagPlan.width
         height: 26
 
-        // The menus' hard shadow, one rule down and right.
-        Rectangle {
-            x: root.hair
-            y: root.hair
-            width: parent.width
-            height: parent.height
-            color: Kit.PlatinumTokens.menuShadow
-        }
+        // The menus' hard shadow, one rule down and right (hatched, with
+        // crop marks, on Drawing Board).
+        PlatinumShadow { hairs: 1 }
         PlatinumBevel {
             anchors.fill: parent
             color: Kit.PlatinumTokens.menuSurface
         }
+        PlatinumCropMarks { visible: Kit.PlatinumTokens.drafting; z: 10 }
 
         Row {
             x: BarPlan.TAG.pad

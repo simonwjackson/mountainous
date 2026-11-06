@@ -37,7 +37,7 @@ Scope {
     property string cssText: ""
     property string pageText: ""
     readonly property string cssPath: Policy.cssPath(Theme.name)
-    readonly property var payload: Policy.payload(root.cssText, Theme.name, Theme.mode, Theme.extraDark)
+    readonly property var payload: Policy.payload(root.cssText, Theme.name, Theme.mode, Theme.extraDark, Theme.appearance)
     readonly property string source: root.pageText === "" ? "" : Policy.script(root.pageText, root.payload)
     onSourceChanged: root.pushAll()
 

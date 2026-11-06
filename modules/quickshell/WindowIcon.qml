@@ -12,7 +12,7 @@ Image {
     property var toplevel: null
     property string fallbackSource: ""
     property bool fallbackSmooth: true
-    // Explicit opt-in at Platinum surfaces. Win98 retains its existing path.
+    // Explicit opt-in at Platinum surfaces. Memphis retains its existing path.
     property bool platinumToken: false
     readonly property bool tokenReady: tokenImage.status === Image.Ready && tokenImage.source.toString() === token.cachedSource
     property real implicitSize: 16

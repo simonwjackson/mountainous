@@ -55,7 +55,7 @@ const commands = [
     ["Mirror workspace", "Super+Shift+G", "mirror"], ["Even / golden split", "Super+G", "split"],
     ["Interface scale up", "Super+=", "scaleup"], ["Interface scale down", "Super+-", "scaledown"],
     ["Interface scale 100%", "Super+0", "scalereset"], ["Toggle bars", "Super+I", "chrome"],
-    ["Dark appearance", "Super+D", "theme:dark"], ["Light appearance", "Super+D", "theme:light"],
+    ["Dark appearance", "Super+X", "theme:dark"], ["Light appearance", "Super+X", "theme:light"],
     ["Desktop theme…", "Appearance", "theme:picker"], ["Extra dark appearance", "dark only", "theme:extra"],
     ["Screenshot", "Super+S", "shot"],
 ].map(([label, detail, act]) => ({ kind: "cmd", label, detail, act }));

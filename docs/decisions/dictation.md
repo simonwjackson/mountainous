@@ -407,7 +407,7 @@ The visual design must separate them.
 ### D41. The bar is the only take indicator
 
 The user removed the bottom-centre overlay on 2026-10-25. It did not match the
-desktop themes. The Platinum top bar and the Win98 taskbar already show the
+desktop themes. The Platinum top bar and the Memphis taskbar already show the
 take, and they follow the theme.
 
 Cost of this decision: while Meta and I hide the bar and the dock, a take shows

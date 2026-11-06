@@ -113,7 +113,7 @@ const many = Array.from({ length: 60 }, (_, i) => row("m" + i, "app" + (i % 3), 
 const big = H.hideOthers(H.empty(), many, "app0", "eDP-1");
 assert.equal(big.moves.length, 40);
 assert.equal(Object.keys(big.state.windows).length, 40);
-// ---- Win98: Minimize All on one screen, Restore one window, Move to Page
+// ---- Memphis: Minimize All on one screen, Restore one window, Move to Page
 // while minimized
 const all = H.hideScreen(H.empty(), rows, "eDP-1");
 assert.deepEqual(plain(all.moves.map((m) => m.address)), ["a1", "a2", "a3", "a4"],
@@ -136,4 +136,4 @@ assert.equal(H.homeOf(H.setHome(st, hid, "w3", 4), "w3"), null, "a shown window 
 assert.equal(H.homeOf(H.setHome(st, hid, "w1", 0), "w1"), 7, "page 0 is ignored");
 const adoptedHome = H.setHome(H.empty(), hid, "w2", 2);
 assert.deepEqual(plain(adoptedHome.windows.w2), { app: "term", page: 2, screen: "eDP-1", title: "term w2" });
-console.log("window-hide: hide, show, restart, hide others per screen, adoption, bad files, Win98 minimize/restore pass");
+console.log("window-hide: hide, show, restart, hide others per screen, adoption, bad files, Memphis minimize/restore pass");

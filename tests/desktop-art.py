@@ -62,6 +62,21 @@ def lookup(theme, name, seen=()):
     return None
 
 
+KINDS = ["document", "text", "image", "audio", "video", "archive", "application", "folder"]
+PLACES = ["computer", "trash", "trash-full", "volume", "network", "libraries"]
+
+
+def lookup_size(theme, name, size):
+    """The theme's own file for name in a directory of this size, or None."""
+    parser = index(theme)
+    for directory in parser["Icon Theme"]["Directories"].split(","):
+        if parser.has_section(directory) and parser[directory].get("Size") == str(size):
+            file = icons / theme / directory / f"{name}.png"
+            if file.exists():
+                return file
+    return None
+
+
 for theme_id, entry in registry.items():
     check(
         manifest[theme_id] == {k: entry[k] for k in ("icons", "cursors", "cursorSize")},
@@ -110,6 +125,36 @@ for theme_id, entry in registry.items():
         found = lookup(theme, name)
         check(
             found is not None and found[0] != "hicolor", f"{theme}: {name} -> {found}"
+        )
+
+    # The desktop's icons (Hensou docs/design/desktop-icons.md): the kinds
+    # the Hensou resolver asks for and the places the shell draws resolve in
+    # the theme's own set, never Adwaita or hicolor, at 32 px and above.
+    own = {"platinum": {"Mountainous-platinum"}, "memphis": {"Mountainous-memphis", "Chicago95"}}[theme_id]
+    for name in [f"hensou-kind-{k}" for k in KINDS] + [f"hensou-place-{p}" for p in PLACES]:
+        found = lookup(theme, name)
+        check(
+            found is not None and found[0] in own and found[1].exists(),
+            f"{theme}: desktop icon {name} -> {found}",
+        )
+        if found and found[1].exists():
+            with Image.open(found[1]) as image:
+                check(image.size[0] >= 32 or any(
+                    lookup_size(theme, name, s) for s in (32, 48, 256)
+                ), f"{theme}: {name} has no 32 px or larger image")
+    # The Trash's full and empty art differ.
+    empty, full = lookup(theme, "hensou-place-trash"), lookup(theme, "hensou-place-trash-full")
+    check(
+        empty and full and empty[1].resolve() != full[1].resolve(),
+        f"{theme}: the full and the empty Trash are one image",
+    )
+    # The tray's app icons: the same rule (chrome draws a lettermark for an
+    # app the theme has no art for, lettermark.js needs()).
+    for name in ["com.mitchellh.ghostty", "chromium", "signal-desktop", "application-x-executable"]:
+        found = lookup(theme, name)
+        check(
+            found is not None and found[0] not in ("hicolor", "Adwaita"),
+            f"{theme}: tray icon {name} -> {found}",
         )
 
     # A class finds the same image as its lettermark, and lettermarks differ.

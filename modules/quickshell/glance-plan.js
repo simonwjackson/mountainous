@@ -19,7 +19,7 @@ var GP0 = GP;
  * @param {{gp?: object, from?: 'top'|'bottom'}} opt a theme's own margins
  *   and gaps (GP's fields, in its own unit), and the corner Clean Up starts
  *   from: 'top' (the top right, Platinum) or 'bottom' (the bottom right,
- *   mirrored: up a column, then the next column to the left; Win98, whose
+ *   mirrored: up a column, then the next column to the left; Memphis, whose
  *   transient windows rise from the taskbar). While the space scrolls,
  *   'bottom' measures from the bottom of the content.
  */

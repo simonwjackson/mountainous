@@ -13,6 +13,47 @@ validator = (
     Path(sys.argv[2]) if len(sys.argv) > 2 else root / "theme-dev/check-boundaries.py"
 )
 original = json.loads((root / "themes.json").read_text())
+assert sum(len(theme["appearances"]) for theme in original) == 25
+expected = {
+    "platinum": {"light", "dark-grey", "drawing-board"},
+    "memphis": {
+        "standard",
+        "dark-grey",
+        "brick",
+        "desert",
+        "eggplant",
+        "lilac",
+        "maple",
+        "marine",
+        "plum",
+        "pumpkin",
+        "rainy-day",
+        "red-white-blue",
+        "rose",
+        "slate",
+        "spruce",
+        "storm",
+        "teal",
+        "wheat",
+        "high-contrast-black",
+        "high-contrast-white",
+        "high-contrast-1",
+        "high-contrast-2",
+    },
+}
+for theme in original:
+    assert {appearance["id"] for appearance in theme["appearances"]} == expected[
+        theme["id"]
+    ]
+    for appearance in theme["appearances"]:
+        dark = appearance["id"] in {
+            "dark-grey",
+            "high-contrast-black",
+            "high-contrast-1",
+            "high-contrast-2",
+        }
+        assert appearance["mode"] == ("dark" if dark else "light")
+        assert "Windows" not in appearance["label"]
 with tempfile.TemporaryDirectory() as directory:
     staged = Path(directory) / "shell"
     shutil.copytree(root, staged, symlinks=True)
@@ -34,6 +75,21 @@ with tempfile.TemporaryDirectory() as directory:
             )
             assert result.returncode != 0, (theme["id"], value, "accepted invalid face")
             assert "pyxampFace" in result.stderr, result.stderr
+    for index, theme in enumerate(original):
+        entries = json.loads(json.dumps(original))
+        entries[index]["art"]["patterns"]["light"] = (
+            f"themes/{theme['id']}/patterns/missing.svg"
+        )
+        registry.write_text(json.dumps(entries))
+        result = subprocess.run(
+            [sys.executable, str(validator), str(staged)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert (
+            result.returncode != 0 and "missing registered pattern" in result.stderr
+        ), result.stderr
     registry.write_text(json.dumps(original))
     subprocess.run([sys.executable, str(validator), str(staged)], check=True)
 print("THEME_REGISTRY_TESTS_PASSED: missing/invalid faces rejected on every entry")

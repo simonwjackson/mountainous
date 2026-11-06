@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Icon and cursor themes for the Platinum and Windows 98 desktop themes.
+"""Icon and cursor themes for the Platinum and Memphis desktop themes.
 
 Everything that starts from Apple or Microsoft art is read from a locked flake
 input at build time and written only to the Nix store: Chi-Nata (CC BY-SA 4.0),
@@ -275,12 +275,12 @@ def retrosmart_shapes(root):
 
 
 # Chicago95 draws grab and grabbing as its copy arrow and closedhand as its
-# shortcut arrow. Windows 98 had no hand cursors; it dragged with Move.
+# shortcut arrow. Memphis had no hand cursors; it dragged with Move.
 CHICAGO = {"grab": "move", "grabbing": "move"}
 
 
 def chicago_shapes(root):
-    """Win98: Chicago95's standard (static) set, its 32 px 1x images."""
+    """Memphis: Chicago95's standard (static) set, its 32 px 1x images."""
     source = root / "Cursors/Chicago95_Standard_Cursors/cursors"
     shapes = {}
     for role, aliases in ROLES.items():
@@ -411,7 +411,7 @@ APP_NAMES = {
     "video": ["com.obsproject.Studio", "obs", "obs-studio"],
     "notes": ["obsidian", "md.obsidian.Obsidian"],
 }
-# The Chicago95 icon each Win98 role borrows when Chicago95 has none of the
+# The Chicago95 icon each Memphis role borrows when Chicago95 has none of the
 # names above (it has chromium, utilities-terminal, accessories-text-editor).
 CHICAGO_ROLES = {
     "terminal": "utilities-terminal",
@@ -521,6 +521,119 @@ def platinum_app(role):
     return image
 
 
+# The desktop's generic kind icons (the Hensou resolver's names, agreed
+# with Hensou Files) and the desktop's places, in both icon themes. The
+# shell draws the places by these names (desktop-icons-model.js artFor).
+KINDS = [
+    "document",
+    "text",
+    "image",
+    "audio",
+    "video",
+    "archive",
+    "application",
+    "folder",
+]
+PLACES = ["computer", "trash", "trash-full", "volume", "network", "libraries"]
+
+# Platinum: Chi-Nata's own icon where it has one (context, file), at every
+# size it has; the rest are drawn here in its style (platinum_place).
+CHI_NATA_KINDS = {
+    "document": ("mimes", "file-x-generic"),
+    "text": ("mimes", "text-x-generic"),
+    "image": ("mimes", "image-x-generic"),
+    "audio": ("mimes", "audio-x-generic"),
+    "video": ("mimes", "video-x-generic"),
+    "archive": ("mimes", "package-x-generic"),
+    "folder": ("places", "folder"),
+}
+CHI_NATA_PLACES = {
+    "network": ("places", "network-server"),
+    "libraries": ("places", "folder"),
+}
+
+# Memphis: Chicago95's Memphis icon for each (context, name).
+CHICAGO_KINDS = {
+    "document": ("mimes", "x-office-document"),
+    "text": ("mimes", "text-x-generic"),
+    "image": ("mimes", "image-x-generic"),
+    "audio": ("mimes", "audio-x-generic"),
+    "video": ("mimes", "video-x-generic"),
+    "archive": ("mimes", "package-x-generic"),
+    "application": ("mimes", "application-x-executable"),
+    "folder": ("places", "folder"),
+}
+CHICAGO_PLACES = {
+    "computer": ("devices", "computer"),
+    "trash": ("places", "user-trash"),
+    "trash-full": ("places", "user-trash-full"),
+    "volume": ("devices", "drive-removable-media"),
+    "network": ("places", "network-workgroup"),
+    "libraries": ("places", "folder"),
+}
+
+
+def shadow(draw, points):
+    draw.polygon(points, fill=(0, 0, 0, 80))
+
+
+def trash_can(full):
+    """A Mac OS 8 style ribbed trash can, front on, with its lid; full, the
+    lid sits askew on crumpled paper."""
+    image = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    shadow(draw, [(22, 28), (27, 23), (30, 23), (30, 26), (26, 30), (22, 30)])
+    body, rib, light = rgb("#c4c4c4"), rgb("#8a8a8a"), rgb("#ececec")
+    draw.polygon([(8, 11), (23, 11), (22, 29), (9, 29)], fill=body, outline=BLACK)
+    for x in (11, 14, 17, 20):
+        draw.line([(x, 13), (x, 27)], fill=rib)
+        draw.line([(x - 1, 13), (x - 1, 27)], fill=light)
+    if full:
+        paper = WHITE
+        draw.polygon([(9, 10), (12, 5), (15, 8), (18, 4), (21, 7), (23, 10)], fill=paper, outline=BLACK)
+        draw.line([(13, 8), (14, 9)], fill=rgb("#9a9a9a"))
+        draw.line([(18, 6), (19, 8)], fill=rgb("#9a9a9a"))
+        draw.polygon([(5, 6), (21, 1), (22, 4), (6, 9)], fill=body, outline=BLACK)
+        draw.polygon([(11, 4), (15, 3), (16, 4), (12, 5)], fill=rib, outline=BLACK)
+    else:
+        draw.rectangle([6, 8, 25, 10], fill=body, outline=BLACK)
+        draw.line([(7, 9), (24, 9)], fill=light)
+        draw.rectangle([13, 6, 18, 8], fill=rib, outline=BLACK)
+    return image
+
+
+def platinum_place(place):
+    """The places Chi-Nata has no usable icon for, in its style: a 1 px
+    black outline, oblique depth and a soft shadow."""
+    if place == "computer":
+        # A compact all-in-one: the screen and the floppy slot on the face.
+        image, draw = cube(rgb("#d8d4c8"))
+        draw.rectangle([5, 14, 16, 21], fill=rgb("#2c4a6e"), outline=BLACK)
+        draw.line([(6, 15), (9, 15)], fill=rgb("#8fb0d8"))
+        draw.point((6, 16), fill=rgb("#8fb0d8"))
+        draw.line([(10, 24), (15, 24)], fill=BLACK)
+        draw.point((6, 25), fill=rgb("#4a9a4a"))
+        return image
+    if place == "trash":
+        return trash_can(False)
+    if place == "trash-full":
+        return trash_can(True)
+    if place == "volume":
+        # A removable drive: a flat box, its light and its slot.
+        image = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        shadow(draw, [(10, 24), (24, 24), (30, 19), (30, 22), (25, 27), (10, 27)])
+        face = rgb("#d4d4d4")
+        draw.polygon([(3, 15), (10, 9), (29, 9), (22, 15)], fill=shade(face, 0.45), outline=BLACK)
+        draw.polygon([(22, 15), (29, 9), (29, 16), (22, 22)], fill=shade(face, -0.35), outline=BLACK)
+        draw.rectangle([3, 15, 22, 22], fill=face, outline=BLACK)
+        draw.line([(4, 16), (21, 16)], fill=shade(face, 0.6))
+        draw.line([(9, 19), (19, 19)], fill=BLACK)
+        draw.point((5, 19), fill=rgb("#33cc55"))
+        return image
+    raise SystemExit(place)
+
+
 def lettermark_platinum(letter, tint, font):
     image, draw = cube(rgb(tint))
     font = ImageFont.truetype(font, 12)
@@ -536,8 +649,8 @@ def lettermark_platinum(letter, tint, font):
     return image
 
 
-def lettermark_win98(letter, tint, font, size):
-    """A raised Win98 tile with the site's letter: white and light grey on
+def lettermark_memphis(letter, tint, font, size):
+    """A raised Memphis tile with the site's letter: white and light grey on
     the top left, dark grey and black on the bottom right."""
     image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
@@ -551,7 +664,7 @@ def lettermark_win98(letter, tint, font, size):
     draw.line([(lo + 1, hi - 1), (hi - 1, hi - 1)], fill=rgb("#808080"))
     draw.line([(hi - 1, lo + 1), (hi - 1, hi - 1)], fill=rgb("#808080"))
     # W95FA Grid is drawn on its 12 px grid, struck twice for bold (as
-    # Win98Text does), then doubled for the 32 px icon: whole pixels only.
+    # MemphisText does), then doubled for the 32 px icon: whole pixels only.
     glyph = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     pen = ImageDraw.Draw(glyph)
     pen.fontmode = "1"
@@ -612,6 +725,18 @@ def platinum_icons(out, name, chi_nata, web_apps, font):
             link(f"mountainous-{role}.png", apps / f"{alias}.png")
     png(platinum_app("application"), theme / "32x32/mimes/application-x-executable.png")
     link("../mimes/application-x-executable.png", apps / "application-x-executable.png")
+    # The desktop's kinds and places (hensou-kind-*, hensou-place-*).
+    for size in ("32x32", "256x256"):
+        for prefix, table in (("kind", CHI_NATA_KINDS), ("place", CHI_NATA_PLACES)):
+            for name, (context, original) in table.items():
+                if (theme / size / context / f"{original}.png").exists():
+                    link(f"{original}.png", theme / size / context / f"hensou-{prefix}-{name}.png")
+    link(
+        "application-x-executable.png",
+        theme / "32x32/mimes/hensou-kind-application.png",
+    )
+    for place in ("computer", "trash", "trash-full", "volume"):
+        png(platinum_place(place), theme / "32x32/places" / f"hensou-place-{place}.png")
     for app_id, app in sorted(web_apps.items()):
         png(
             lettermark_platinum(app["letter"], app["tint"], font),
@@ -679,7 +804,7 @@ def chicago95(out, chicago):
     return theme
 
 
-def win98_icons(out, name, chicago, web_apps, font):
+def memphis_icons(out, name, chicago, web_apps, font):
     base = chicago95(out, chicago)
     theme = out / "share/icons" / name
     directories = set()
@@ -701,10 +826,25 @@ def win98_icons(out, name, chicago, web_apps, font):
                     theme / "apps" / str(size) / f"{alias}.png",
                 )
                 directories.add((f"apps/{size}", size, "Applications"))
+    # The desktop's kinds and places (hensou-kind-*, hensou-place-*):
+    # Chicago95's own Memphis icons, at every size it has.
+    for prefix, table in (("kind", CHICAGO_KINDS), ("place", CHICAGO_PLACES)):
+        for name, (context, source) in table.items():
+            for size in (16, 22, 24, 32, 48):
+                file = base / context / str(size) / f"{source}.png"
+                if not file.exists() or not fits(file, size):
+                    continue
+                link(
+                    f"../../../Chicago95/{context}/{size}/{source}.png",
+                    theme / context / str(size) / f"hensou-{prefix}-{name}.png",
+                )
+                directories.add(
+                    (f"{context}/{size}", size, PLATINUM_CONTEXTS[context])
+                )
     for app_id, app in sorted(web_apps.items()):
         for size in (16, 32):
             png(
-                lettermark_win98(app["letter"], app["tint"], font, size),
+                lettermark_memphis(app["letter"], app["tint"], font, size),
                 theme / "apps" / str(size) / f"webapp-{app_id}.png",
             )
             for window_class in app["classes"]:
@@ -715,7 +855,7 @@ def win98_icons(out, name, chicago, web_apps, font):
             directories.add((f"apps/{size}", size, "Applications"))
     index_theme(
         theme,
-        "Mountainous Windows 98",
+        "Mountainous Memphis",
         "Chicago95 (grassmunk, GPL-3.0+/MIT) with Myoko's apps",
         "Chicago95,hicolor",
         sorted(directories),
@@ -774,7 +914,7 @@ def main():
     parser.add_argument("--chi-nata", type=Path, required=True)
     parser.add_argument("--retrosmart", type=Path, required=True)
     parser.add_argument("--platinum-font", type=Path, required=True)
-    parser.add_argument("--win98-font", type=Path, required=True)
+    parser.add_argument("--memphis-font", type=Path, required=True)
     args = parser.parse_args()
 
     registry = {
@@ -784,9 +924,9 @@ def main():
         json.loads(args.web_apps.read_text()), json.loads(args.pwas.read_text())
     )
     out = args.out
-    platinum, win98 = registry["platinum"], registry["win98"]
+    platinum, memphis = registry["platinum"], registry["memphis"]
     platinum_icons(out, platinum["icons"], args.chi_nata, web_apps, args.platinum_font)
-    win98_icons(out, win98["icons"], args.chicago, web_apps, args.win98_font)
+    memphis_icons(out, memphis["icons"], args.chicago, web_apps, args.memphis_font)
     cursor_theme(
         out,
         platinum["cursors"],
@@ -794,7 +934,7 @@ def main():
         retrosmart_shapes(args.retrosmart),
     )
     cursor_theme(
-        out, win98["cursors"], "Mountainous Windows 98", chicago_shapes(args.chicago)
+        out, memphis["cursors"], "Mountainous Memphis", chicago_shapes(args.chicago)
     )
     shutil.rmtree(out / "build")
 
@@ -825,7 +965,7 @@ def main():
         "cubes and web-app lettermarks are drawn by scripts/generate-desktop-art.py.\n"
         "Mountainous-platinum-cursors: Retrosmart X11 cursors by Manuel Domínguez\n"
         "López, GPL-3.0, black variant, scaled by whole factors.\n"
-        "Mountainous-win98 icons and cursors: Chicago95 by grassmunk\n"
+        "Mountainous-memphis icons and cursors: Chicago95 by grassmunk\n"
         "(GPL-3.0+/MIT per its README); cursors scaled by whole factors.\n"
     )
 

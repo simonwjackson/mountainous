@@ -34,7 +34,7 @@ Chromium then hides its tab strip, toolbar and installed-app title bar.
 `suppress_event = "fullscreen"` prevents client requests from changing that
 split. Our hyprbars patch treats a client-only fullscreen window as drawing
 no frame, even if it requested client-side decorations. Platinum light/dark
-and Windows 98 supply the caption and outer frame instead.
+and Memphis supply the caption and outer frame instead.
 
 Installed PWAs stay installed in their original profile. They keep periodic
 background sync, persistent storage grants, remembered File System Access,

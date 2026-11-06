@@ -328,5 +328,33 @@ for (const compactReadoutWidth of [-1, NaN]) assert.throws(() => model.plan(100,
     for (const w of [2400, 900, 500, 300]) model.plan(w, input);
     eq(JSON.stringify(input), before, "the planner does not change its input");
 }
+// The apps' tray icons (StatusNotifierItems) sit after the built-in
+// controls and go into » before any of them, the last one first. At
+// every width each one is on the bar or in », and the bar fits.
+{
+    const sni = ["sni:nm-applet", "sni:hensou-files", "sni:telegram"];
+    for (const base of [Q.calm, Q.wrong, Q.dictation]) {
+        const m = {...base, controls: base.controls.concat(sni.map(id => ({id, iconWidth: 16, readoutWidth: 0})))};
+        let builtinOutAt = -1;
+        for (let w = 2400; w >= 1; w--) {
+            const p = model.plan(w, m);
+            const all = p.controls.concat(p.overflow);
+            for (const id of sni) ok(all.indexOf(id) >= 0, id + " reachable at " + w);
+            const onBar = p.controls.filter(id => id.startsWith("sni:"));
+            eq(p.controls.slice(p.controls.length - onBar.length), onBar, "app icons after the built-in controls at " + w);
+            const outSni = p.overflow.filter(id => id.startsWith("sni:"));
+            eq(outSni, sni.slice().reverse().slice(0, outSni.length), "the last app icon leaves first at " + w);
+            const builtin = p.overflow.filter(id => OVERFLOW.indexOf(id) >= 0);
+            if (builtin.length) {
+                eq(outSni.length, sni.length, "every app icon is in » before a control at " + w);
+                if (builtinOutAt < 0) builtinOutAt = w;
+            }
+            const placed = model.place(w, m, p, widths(p, m));
+            if (!p.steps.includes("compact")) ok(placed.rightStart >= 0, "the right group stays on the bar at " + w);
+        }
+        ok(builtinOutAt > 0, "controls overflow at some width");
+    }
+    assert.throws(() => model.plan(100, {...Q.calm, controls: [{id: "sni:", iconWidth: 16, readoutWidth: 0}]}), /control/i);
+}
 console.log("bar-plan: " + checks + " checks; quiet glyphs, every threshold one px either side ("
     + Object.values(thresholds).reduce((s, l) => s + l.length, 0) + "), yield and overflow order, groups, Super+O placement, the tag and Balloon Help");

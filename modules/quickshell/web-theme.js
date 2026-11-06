@@ -34,7 +34,7 @@ function cssPath(themeName) {
 // comment for people and is dropped.
 function parse(cssText) {
     var out = { tokens: {}, levels: {} };
-    var marker = /\/\*\s*@(tokens|level)\s+([a-z-]+)\s*\*\//g;
+    var marker = /\/\*\s*@(tokens|level)\s+([a-z0-9-]+)\s*\*\//g;
     var text = cssText || "";
     var found = [];
     var m;
@@ -50,15 +50,16 @@ function parse(cssText) {
 
 // Which token block applies. Page controls keep dark unless a theme ships
 // an "extra" block, even when native surfaces and desktop chrome are black.
-function appearance(sections, mode, extraDark) {
+function appearance(sections, mode, extraDark, appearanceId) {
+    if (appearanceId && sections.tokens[appearanceId]) return appearanceId;
     var dark = mode !== "light";
     if (dark && extraDark && sections.tokens.extra) return "extra";
     return dark ? "dark" : "light";
 }
 
-function payload(cssText, themeName, mode, extraDark) {
+function payload(cssText, themeName, mode, extraDark, appearanceId) {
     var sections = parse(cssText);
-    var key = appearance(sections, mode, extraDark);
+    var key = appearance(sections, mode, extraDark, appearanceId);
     var enabled = !!(sections.tokens[key] || "") && levels.some(function (l) { return !!sections.levels[l]; });
     var sheetLevels = {};
     for (var i = 0; i < levels.length; i++) sheetLevels[levels[i]] = enabled ? (sections.levels[levels[i]] || "") : "";

@@ -120,7 +120,7 @@ Scope {
         return hider.run(WindowHide.showAll(hider.state, hider.rows, fallbackPage));
     }
 
-    // Win98: Minimize All Windows on one screen; Restore one window (its
+    // Memphis: Minimize All Windows on one screen; Restore one window (its
     // app's other windows stay hidden), focused in the same batch when
     // focus is true, then `after` (one more dispatch, such as maximize); a
     // minimized window's Move to Page changes only where Restore will put

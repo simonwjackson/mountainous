@@ -2,7 +2,7 @@
 
 Status: accepted 2026-10-28, and confirmed after review. Android builds were dropped. Slint (E) was also benchmarked: it was faster and lighter, but it cannot draw the shell in 2026, so it would mean two copies of every theme. See `docs/plans/desktop-themes/files.md`. Applies to Simon's own themed apps: Files first, then Pyxamp, settings and control panels, media players and remotes, chat and mail, fleet tools. Third-party apps keep the native GTK, Qt and web themes.
 
-Each app is one Rust process with a Qt Quick UI through cxx-qt. Its QML draws with the same Platinum and Windows 98 kit that the Quickshell shell uses, so an app matches the shell pixel for pixel and follows the live theme switch. The kit has no Quickshell imports. Each host feeds it the theme state: a Rust watcher in an app, a `FileView` feeder in the shell.
+Each app is one Rust process with a Qt Quick UI through cxx-qt. Its QML draws with the same Platinum and Memphis kit that the Quickshell shell uses, so an app matches the shell pixel for pixel and follows the live theme switch. The kit has no Quickshell imports. Each host feeds it the theme state: a Rust watcher in an app, a `FileView` feeder in the shell.
 
 ## Why
 
@@ -19,7 +19,7 @@ Performance did not decide it. On one 10,000-row list workload, a Quickshell win
   - the token singletons become `QtObject`;
   - theme file watching moves out of `Theme.qml` into a shell-only feeder;
   - icons are read without `FileView`;
-  - 36 files that use `QsWindow.window` for the Win98 unit get a per-window replacement. `Screen` is wrong at scale 1.5.
+  - 36 files that use `QsWindow.window` for the Memphis unit get a per-window replacement. `Screen` is wrong at scale 1.5.
 - The shell's flat-file, no-root-qmldir rule (`docs/plans/desktop-themes.md`, QML structure item 4) still holds. The kit loads in Quickshell as flat files, as a directory import or as a module.
 - Apps need their own menu host, because the shell's menus are layer-shell `PanelWindow`s. The plan is Qt 6.11 `Popup` with `popupType: Window`; whether it makes a real `xdg_popup` on Hyprland is untested.
 - Builds: cxx-qt 0.10 is pre-1.0 and not in nixpkgs. It needs Qt merged into one prefix (`qt6.env`). The first build took 941 s.
