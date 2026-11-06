@@ -74,7 +74,8 @@ in
         swapDevices = [ { device = "/dev/disk/by-partlabel/disk-nvme0-swap"; } ];
 
         # The second NVMe carries a spare ESP. Copy /boot to it after each
-        # install, so the machine still boots if nvme0 dies.
+        # install, as a backup of the boot files only. Root is RAID0 across
+        # both drives, so losing either drive still loses the system.
         boot.loader.systemd-boot.extraInstallCommands = ''
           mkdir -p /boot/efi-backup
           if ! ${pkgs.util-linux}/bin/mountpoint -q /boot/efi-backup; then
