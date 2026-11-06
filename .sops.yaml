@@ -25,6 +25,7 @@ keys:
   - &rakku  age15t6g4dck4vpkfg80303wy8fvl3ptczd7ehgd3ppqrcgv2fszkv4q50s2a4
   - &yari   age17cd96z69ajdlp0rhn8n2lkn4q7d297lnt3q9u6uanayn3l7r09jsmrgxrd
   - &fuji   age1uur583kgtw9avx5r3s5pnsgn0tqx8f8shknps56syrc7ndmcyczsknzrqv
+  - &aka    age1879n4r5xwla54yp6hngtlfx63a0zgh7q0h2mr7l36rsd09x74puswcn3em
 
 creation_rules:
   # Fleet-wide. Every machine needs these, so every machine can read them.
@@ -41,6 +42,7 @@ creation_rules:
           - *rakku
           - *yari
           - *fuji
+          - *aka
 
   # Per-host. A machine reads only its own file.
   - path_regex: secrets/hosts/fuji\.yaml$
@@ -48,6 +50,12 @@ creation_rules:
       - age:
           - *master
           - *fuji
+
+  - path_regex: secrets/hosts/aka\.yaml$
+    key_groups:
+      - age:
+          - *master
+          - *aka
 
   - path_regex: secrets/hosts/rakku\.yaml$
     key_groups:
@@ -158,3 +166,4 @@ creation_rules:
           - *rakku
           - *yari
           - *fuji
+          - *aka

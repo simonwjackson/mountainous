@@ -33,13 +33,13 @@ def main():
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Enroll pi members, excluding builder-only Fuji",
+        help="Enroll pi members, excluding Fuji and Aka",
     )
     args = parser.parse_args()
     hosts = sorted(p.stem for p in (ROOT / "modules/hosts").glob("*.nix"))
     if args.all == bool(args.host) or (args.host and args.host not in hosts):
         parser.error("pass one known host or --all")
-    selected = [h for h in hosts if h != "fuji"] if args.all else [args.host]
+    selected = [h for h in hosts if h not in ("fuji", "aka")] if args.all else [args.host]
     key = Path(
         os.environ.get("MOUNTAINOUS_MASTER_KEY", str(Path.home() / ".ssh/id_ed25519"))
     )

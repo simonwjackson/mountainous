@@ -219,7 +219,7 @@ let
         managed = mkOption {
           type = types.bool;
           default = true;
-          description = "Configured by this flake. False for Zao and Aka, which still run `unified`.";
+          description = "Configured by this flake. False for Zao, which still runs `unified`.";
         };
       };
     }
@@ -245,8 +245,8 @@ in
   };
 
   config = {
-    # Zao and Aka run `unified`. They are listed here so cairn hosts can use
-    # them; `unified` keeps a copy of this registry (features/nix-builders).
+    # Zao runs `unified`. It is listed here so cairn hosts can use it;
+    # `unified` keeps a copy of this registry (features/nix-builders).
     fleet.builders.zao = {
       cpus = 16;
       speedFactor = 3;
@@ -260,25 +260,8 @@ in
       hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICuVfNwnDbfncfJn0rmxnpbuI4AuwwTINc864esSjmqv";
       managed = false;
     };
-    fleet.builders.aka = {
-      cpus = 12;
-      speedFactor = 4;
-      sshUser = "simonwjackson";
-      features = [
-        "big-parallel"
-        "benchmark"
-        "kvm"
-        "nixos-test"
-      ];
-      hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII39/0ibgjRrTpAHgDu2oBDUPwEC/7mBwey3Km7ZNR5z";
-      # Room for a game and the local model before builds.
-      memoryHigh = "50%";
-      memoryMax = "60%";
-      managed = false;
-    };
     fleet.hostKeys = {
       zao = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICuVfNwnDbfncfJn0rmxnpbuI4AuwwTINc864esSjmqv";
-      aka = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII39/0ibgjRrTpAHgDu2oBDUPwEC/7mBwey3Km7ZNR5z";
     };
     fleet.homeMacs = [ "14:21:03:fe:01:37" ];
 

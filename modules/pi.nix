@@ -75,9 +75,13 @@ in
       };
     };
 
-  # Fuji remains a builder without Syncthing. Its pi settings stay local.
+  # Fuji (a builder) and Aka (a builder and Korri source) run without
+  # Syncthing. Their pi settings stay local.
   mountainous.fleetSync.folders.pi = {
-    hosts = lib.remove "fuji" (lib.attrNames flake.nixos.hosts);
+    hosts = lib.subtractLists [
+      "fuji"
+      "aka"
+    ] (lib.attrNames flake.nixos.hosts);
     files = [ "settings.json" ];
   };
 
