@@ -84,7 +84,7 @@ in
           # Copy only onto a mounted ESP. Without the mount, rsync would copy
           # /boot into itself and fill it.
           if ${pkgs.util-linux}/bin/mountpoint -q /boot/efi-backup; then
-            ${pkgs.rsync}/bin/rsync -a --delete --exclude='/efi-backup' /boot/ /boot/efi-backup/
+            ${pkgs.rsync}/bin/rsync -a --delete-before --exclude='/efi-backup' /boot/ /boot/efi-backup/
             ${pkgs.util-linux}/bin/umount /boot/efi-backup || true
           else
             echo "efi-backup: spare ESP not mounted; skipped the copy" >&2
