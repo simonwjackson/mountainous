@@ -206,6 +206,8 @@ in
                 readOnlyTools = [
                   "list_todos"
                   "board_state"
+                  "list_held"
+                  "list_ideas"
                 ];
               };
               apps.google = {
