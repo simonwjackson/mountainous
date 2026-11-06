@@ -152,13 +152,11 @@
           prefs=$(tailscale debug prefs)
           if ! printf '%s' "$prefs" | jq -e '
             type == "object" and
-            (.RunSSH == null or (.RunSSH | type == "boolean")) and
             (.OperatorUser == null or (.OperatorUser | type == "string"))
           ' >/dev/null 2>&1; then
             echo "invalid saved preferences; not registering" >&2
             exit 1
           fi
-          ssh_enabled=$(printf '%s' "$prefs" | jq -r '.RunSSH // false | tostring')
           operator=$(printf '%s' "$prefs" | jq -r '.OperatorUser // ""')
           netfilter=$(printf '%s' "$prefs" | jq -r '.NetfilterMode // 2')
           case "$netfilter" in
@@ -173,7 +171,7 @@
             --auth-key="$client_secret?ephemeral=false&preauthorized=true" \
             --advertise-tags="$TS_TAGS" \
             --hostname="$want" \
-            --ssh="$ssh_enabled" \
+            --ssh=false \
             --netfilter-mode="$netfilter" \
             --operator="$operator" >"$up_log" 2>&1; then
             sed -E 's/tskey-[^[:space:]]+/<REDACTED>/g' "$up_log"
@@ -348,6 +346,27 @@
           # systemd gives up after 5 starts in 10s by default. That would stop
           # the retry loop within the first minute, which is the one thing
           # this unit must not do.
+          unitConfig.StartLimitIntervalSec = 0;
+        };
+
+        # Tailscale SSH stays off on every host (decided 2026-11-06). It takes
+        # port 22 on the tailnet address and ignores authorized_keys, so the
+        # builders' forced commands, the restricted deploy keys and the pinned
+        # OpenSSH host keys would all stop working. OpenSSH is the one SSH
+        # server. The setting is saved inside tailscaled, so a hand-run
+        # `tailscale set --ssh` would outlive any rebuild; this puts it back.
+        systemd.services.tailscale-ssh-off = {
+          description = "Keep Tailscale SSH off";
+          after = [ "tailscaled.service" ];
+          requires = [ "tailscaled.service" ];
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${config.services.tailscale.package}/bin/tailscale set --ssh=false";
+            # tailscaled may still be starting. Retry instead of failing boot.
+            Restart = "on-failure";
+            RestartSec = "10s";
+          };
           unitConfig.StartLimitIntervalSec = 0;
         };
       };

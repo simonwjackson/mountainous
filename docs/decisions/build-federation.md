@@ -38,7 +38,7 @@ for the rest of that `nix build` (Nix 2.34.1, `build-remote.cc`).
 | unzen | 4 | MemoryMax 70% |
 | aka (unified) | 4 | MemoryMax 60%; games run in user slices, oomd off there |
 | zao (unified) | 3 | also a client; 32 GiB swapfile behind zram |
-| myoko | 1 | gate `home`, OpenSSH on 2222 (Tailscale SSH owns 22) |
+| myoko | 1 | gate `home` |
 | fuji, yari | 1 | aarch64 only |
 
 Rakku and Tate never build. Ibuki is a Korri device; Korri locks

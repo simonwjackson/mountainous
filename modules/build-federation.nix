@@ -194,7 +194,7 @@ let
         sshPort = mkOption {
           type = types.port;
           default = 22;
-          description = "Myoko uses 2222: Tailscale SSH answers on 22 there and ignores forced commands.";
+          description = "OpenSSH port for builds. Tailscale SSH is off fleet-wide (modules/tailscale.nix), so 22 works everywhere.";
         };
         hostKey = mkOption {
           type = types.str;
