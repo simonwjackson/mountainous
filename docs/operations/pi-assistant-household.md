@@ -30,6 +30,27 @@ Each unit's `ExecStartPre` writes the instance's `seed/` files and
 CLIProxyAPI on 8317 with the `pi-assistant-cliproxyapi-key` secret. The search
 keys stay in the unit's credentials; `web-search.json` names them with `!cat`.
 
+## Wind-down routing and notifications
+
+Personal instances send Household requests, including Simon's filtered
+`ShareWellbeing`, to `ASSISTANT_HOUSEHOLD_RPC_URL` on Household's loopback RPC
+port. Household and Laure get no `ASSISTANT_LOGBOOK_URL`. This change gives
+neither instance new Logbook access.
+
+Only Simon's unit gets the fleet `notify` CLI and `NOTIFY_URL`, with the agent
+and button tokens copied by systemd into its credentials directory. The
+existing `secrets/notify/fleet.yaml` is encrypted for Rakku. No new secret is
+needed. Core calls `notify send --name assistant <title> <body>`, like the Pi
+notification extension. It does not post raw messages with
+`ASSISTANT_NTFY_URL`/`ASSISTANT_NTFY_TOPIC`: ntfy denies anonymous access, and
+synced desktops require the fleet notification envelope. The CLI owns that
+envelope and the Bearer authentication, including the Done button token.
+
+`checks.pi-assistant-resources` checks the Household RPC port, Simon-only
+notification credentials and executable, and the lack of Logbook access on
+the other two instances. Zao's exporter timer is installed separately as
+plain user units, like its existing Forgerie units; Zao is not a Cairn host.
+
 ## Deploy the application
 
 The units run `/nix/var/nix/profiles/per-user/pi-assistant/application`, and

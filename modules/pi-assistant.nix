@@ -369,6 +369,14 @@ in
           # household-bound requests to Household's own RPC, never through tsgo.
           ASSISTANT_HOUSEHOLD_RPC_URL = "http://127.0.0.1:${toString cfg.household.voicePort}/rpc";
         }
+        // lib.optionalAttrs (instance.person == "simon") {
+          # The fleet CLI owns ntfy authentication and the notification schema.
+          NOTIFY_URL = config.mountainous.notifications.server;
+          NOTIFY_TOKEN_FILE = "/run/credentials/pi-assistant-${name}.service/notify-token";
+          NOTIFY_BUTTON_TOKEN_FILE = "/run/credentials/pi-assistant-${name}.service/notify-button-token";
+          # Simon approved the persona's therapy skill on 2026-11-05 (core ADR 0014).
+          ASSISTANT_THERAPY = "1";
+        }
         // lib.optionalAttrs (instance.person == null) { ASSISTANT_HOUSEHOLD = "1"; }
         // lib.optionalAttrs (cfg.speechUrl != null) { ASSISTANT_SPEECH_URL = cfg.speechUrl; }
         // lib.optionalAttrs frontDoor {
@@ -729,7 +737,12 @@ in
               environment = environmentOf name instance;
               # The application brings its own tools; the host adds the signed-in
               # gh and the commands the shared skills run.
-              path = cfg.sharedPackages ++ lib.optional (githubOf instance) config.mountainous.github.package;
+              path =
+                cfg.sharedPackages
+                ++ lib.optional (githubOf instance) config.mountainous.github.package
+                ++ lib.optional (
+                  instance.person == "simon"
+                ) self.packages.${pkgs.stdenv.hostPlatform.system}.notify-sync;
               unitConfig = {
                 ConditionPathExists = "${profile}/bin/assistant";
                 RequiresMountsFor = [
@@ -750,6 +763,10 @@ in
                 ++ lib.optional frontDoor "decide-api-key:${cfg.cliproxyapiKeyFile}"
                 ++ lib.optional (githubOf instance) "github-token:${config.sops.secrets.github-token.path}"
                 ++ lib.optional (cfg.groceries != null) "groceries-service-token:${cfg.groceries.tokenFile}"
+                ++ lib.optionals (instance.person == "simon") [
+                  "notify-token:${config.sops.secrets.notify-agent-token.path}"
+                  "notify-button-token:${config.sops.secrets.notify-button-token.path}"
+                ]
                 ++ lib.mapAttrsToList (name: file: "${name}:${file}") (instance.credentials or { });
                 # Scratch clones of repositories: on disk, never persisted,
                 # safe to delete. $CACHE_DIRECTORY points here.
