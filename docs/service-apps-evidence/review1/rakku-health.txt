@@ -1,0 +1,2 @@
+running
+System running; zero failed units; all required health units active

@@ -1,0 +1,3 @@
+groceries-3-link
+/nix/store/829wqbfk7icy5b55gfkcb302givkyxg3-activatable-groceries-0.1.0
+{"status":"ok","buildId":"da964fb179357a30","phase":"ready","shoppingEnabled":true}

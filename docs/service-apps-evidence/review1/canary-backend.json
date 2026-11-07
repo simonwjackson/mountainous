@@ -1,0 +1,28 @@
+{
+  "source_commit": "f821ce18402662eb548fd821bfedcec6de0d86b8",
+  "host": "rakku",
+  "app": "service-app-canary",
+  "fixture": "tests/fixtures/service-app-broken",
+  "app_revision": "f821ce18402662eb548fd821bfedcec6de0d86b8",
+  "broken_activation": "/nix/store/1ir7gsjw84y6rq13d2np5aqg8lk0vd9k-activatable-broken-canary-1.0.0",
+  "prebuilt_activation": "/nix/store/1ir7gsjw84y6rq13d2np5aqg8lk0vd9k-activatable-broken-canary-1.0.0",
+  "runtime_rejection": "activation readiness timed out",
+  "deploy_exit": 1,
+  "profile_before": "/nix/store/iimq5iay9kzcfqacgz2pidz1gisjfrv1-activatable-service-app-canary-1.0.0",
+  "profile_after": "/nix/store/iimq5iay9kzcfqacgz2pidz1gisjfrv1-activatable-service-app-canary-1.0.0",
+  "all_units_active": true,
+  "health_before": {
+    "status": "ok",
+    "phase": "ready",
+    "buildId": "canary-v1"
+  },
+  "health_after": {
+    "status": "ok",
+    "phase": "ready",
+    "buildId": "canary-v1"
+  },
+  "rollback": "verified-without-manual-repair",
+  "runtime_readiness_failure_seen": true,
+  "deploy_rollback_seen": true,
+  "log": "/var/lib/app-updater/receipts/review1-canary-backend-final.log"
+}

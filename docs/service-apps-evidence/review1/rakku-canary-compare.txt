@@ -1,0 +1,268 @@
+service-app-canary-service: ∅ → ε
+unit-service-app-canary-tsnet.service: ∅ → ε
+unit-service-app-canary.service: ∅ → ε
+--- old/dbus-1/session.conf
++++ new/dbus-1/session.conf
+@@ -73,4 +73,4 @@
+   <limit name="max_match_rules_per_connection">50000</limit>
+   <limit name="max_replies_per_connection">50000</limit>
+ 
+-<apparmor mode="disabled"/><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/session.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/session.d</includedir><servicedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/share/dbus-1/services</servicedir><includedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/etc/dbus-1/session.d</includedir><includedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/share/dbus-1/session.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/session.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/session.d</includedir></busconfig>
++<apparmor mode="disabled"/><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/session.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/session.d</includedir><servicedir>/nix/store/6fzwiqc4yjffwg4jbcxs92h4mj94x3vk-system-path/share/dbus-1/services</servicedir><includedir>/nix/store/6fzwiqc4yjffwg4jbcxs92h4mj94x3vk-system-path/etc/dbus-1/session.d</includedir><includedir>/nix/store/6fzwiqc4yjffwg4jbcxs92h4mj94x3vk-system-path/share/dbus-1/session.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/session.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/session.d</includedir></busconfig>
+--- old/dbus-1/system.conf
++++ new/dbus-1/system.conf
+@@ -119,4 +119,4 @@
+ 
+   
+ 
+-<apparmor mode="disabled"/><servicehelper>/run/wrappers/bin/dbus-daemon-launch-helper</servicehelper><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system-services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/system.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system.d</includedir><servicedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/share/dbus-1/system-services</servicedir><includedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/etc/dbus-1/system.d</includedir><includedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/share/dbus-1/system.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system-services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/system.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system.d</includedir></busconfig>
++<apparmor mode="disabled"/><servicehelper>/run/wrappers/bin/dbus-daemon-launch-helper</servicehelper><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system-services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/system.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system.d</includedir><servicedir>/nix/store/6fzwiqc4yjffwg4jbcxs92h4mj94x3vk-system-path/share/dbus-1/system-services</servicedir><includedir>/nix/store/6fzwiqc4yjffwg4jbcxs92h4mj94x3vk-system-path/etc/dbus-1/system.d</includedir><includedir>/nix/store/6fzwiqc4yjffwg4jbcxs92h4mj94x3vk-system-path/share/dbus-1/system.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system-services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/system.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system.d</includedir></busconfig>
+--- old/fstab
++++ new/fstab
+@@ -33,6 +33,7 @@
+ /tundra/permafrost/var/lib/pi-assistant-laure /var/lib/pi-assistant-laure auto x-systemd.requires-mounts-for=/tundra/permafrost,bind,X-fstrim.notrim,x-gvfs-hide 0 0
+ /tundra/permafrost/var/lib/pi-assistant-simon /var/lib/pi-assistant-simon auto x-systemd.requires-mounts-for=/tundra/permafrost,bind,X-fstrim.notrim,x-gvfs-hide 0 0
+ /tundra/permafrost/var/lib/pi-household-notebook /var/lib/pi-household-notebook auto x-systemd.requires-mounts-for=/tundra/permafrost,bind,X-fstrim.notrim,x-gvfs-hide 0 0
++/tundra/permafrost/var/lib/service-app-canary /var/lib/service-app-canary auto x-systemd.requires-mounts-for=/tundra/permafrost,bind,X-fstrim.notrim,x-gvfs-hide 0 0
+ /tundra/permafrost/var/lib/signal-responder /var/lib/signal-responder auto x-systemd.requires-mounts-for=/tundra/permafrost,bind,X-fstrim.notrim,x-gvfs-hide 0 0
+ /tundra/permafrost/var/lib/systemd/coredump /var/lib/systemd/coredump auto x-systemd.requires-mounts-for=/tundra/permafrost,bind,X-fstrim.notrim,x-gvfs-hide 0 0
+ /tundra/permafrost/var/lib/tailscale /var/lib/tailscale auto x-systemd.requires-mounts-for=/tundra/permafrost,bind,X-fstrim.notrim,x-gvfs-hide 0 0
+--- old/sudoers
++++ new/sudoers
+@@ -6,6 +6,7 @@
+ logbook     ALL=(ALL:ALL)    NOPASSWD: /nix/store/wcrmmxdksr1fja9djz89p3i8qkn382i7-logbook-service-control/bin/logbook-service-control start, NOPASSWD: /nix/store/wcrmmxdksr1fja9djz89p3i8qkn382i7-logbook-service-control/bin/logbook-service-control stop
+ cliproxyapi     ALL=(ALL:ALL)    NOPASSWD: /nix/store/qv417wmb433kpnp6y5qk22bx406i8fk6-cliproxyapi-service-control/bin/cliproxyapi-service-control *
+ app-deploy     ALL=(root)    NOPASSWD: /nix/store/a1fg591wz04vxbnv32662kmxqh9ssmim-groceries-service-control/bin/groceries-service-control start, NOPASSWD: /nix/store/a1fg591wz04vxbnv32662kmxqh9ssmim-groceries-service-control/bin/groceries-service-control stop
++app-deploy     ALL=(root)    NOPASSWD: /nix/store/2nczl1iizjmznn9ph6jjkcs1b99qrvmp-service-app-canary-service-control/bin/service-app-canary-service-control start, NOPASSWD: /nix/store/2nczl1iizjmznn9ph6jjkcs1b99qrvmp-service-app-canary-service-control/bin/service-app-canary-service-control stop
+ simonwjackson     ALL=(ALL:ALL)    NOPASSWD: ALL
+ 
+ 
+--- old/systemd/system/dbus-broker.service.d/overrides.conf
++++ new/systemd/system/dbus-broker.service.d/overrides.conf
+@@ -1,6 +1,6 @@
+ [Unit]
+ RequiresMountsFor=/tmp
+-X-Restart-Triggers=/nix/store/l6bk68wdf163pya3r47m3zfmwvhlvxki-X-Restart-Triggers-dbus-broker
++X-Restart-Triggers=/nix/store/3h36f42iil7c10c100hx297vk7aw2ghv-X-Restart-Triggers-dbus-broker
+ 
+ [Service]
+ Environment="LD_LIBRARY_PATH=/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/lib"
+--- old/systemd/system/multi-user.target.wants/service-app-canary-tsnet.service
++++ new/systemd/system/multi-user.target.wants/service-app-canary-tsnet.service
+@@ -0,0 +1,41 @@
++[Unit]
++After=network-online.target service-app-canary.service
++ConditionPathExists=/nix/var/nix/profiles/apps/service-app-canary/bin/service-app-canary-tsnet
++Description=service-app-canary dedicated tailnet node
++Wants=network-online.target service-app-canary.service
++
++[Service]
++Environment="HOME=/var/lib/service-app-canary"
++Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
++Environment="PATH=/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/bin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/bin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/bin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/bin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/bin:/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/sbin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/sbin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/sbin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/sbin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/sbin"
++Environment="TZDIR=/nix/store/fh8svr4ds87z84iarfnxrlfpjlbmc816-tzdata-2026c/share/zoneinfo"
++CapabilityBoundingSet=
++ExecStart=/nix/var/nix/profiles/apps/service-app-canary/bin/service-app-canary-tsnet --host 127.0.0.1 --port 4399
++Group=service-app-canary
++NoNewPrivileges=true
++PrivateDevices=true
++PrivateTmp=true
++ProtectControlGroups=true
++ProtectHome=true
++ProtectKernelModules=true
++ProtectKernelTunables=true
++ProtectSystem=strict
++ReadOnlyPaths=/var/lib/service-app-canary
++ReadWritePaths=/var/lib/service-app-canary/state/tsnet
++Restart=on-failure
++RestartSec=3
++RestrictAddressFamilies=AF_INET
++RestrictAddressFamilies=AF_INET6
++RestrictAddressFamilies=AF_UNIX
++RestrictAddressFamilies=AF_NETLINK
++RestrictRealtime=true
++RestrictSUIDSGID=true
++StateDirectory=service-app-canary/state/tsnet
++StateDirectoryMode=0700
++TimeoutStopSec=30
++UMask=0077
++User=service-app-canary
++WorkingDirectory=/var/lib/service-app-canary
++
++[Install]
++WantedBy=multi-user.target
+--- old/systemd/system/multi-user.target.wants/service-app-canary.service
++++ new/systemd/system/multi-user.target.wants/service-app-canary.service
+@@ -0,0 +1,40 @@
++[Unit]
++After=network-online.target
++ConditionPathExists=/nix/var/nix/profiles/apps/service-app-canary/bin/service-app-canary-server
++Description=service-app-canary loopback service app
++Wants=network-online.target
++
++[Service]
++Environment="HOME=/var/lib/service-app-canary"
++Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
++Environment="PATH=/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/bin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/bin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/bin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/bin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/bin:/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/sbin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/sbin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/sbin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/sbin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/sbin"
++Environment="TZDIR=/nix/store/fh8svr4ds87z84iarfnxrlfpjlbmc816-tzdata-2026c/share/zoneinfo"
++CapabilityBoundingSet=
++ExecStart=/nix/var/nix/profiles/apps/service-app-canary/bin/service-app-canary-server --host 127.0.0.1 --port 4398 --data-dir /var/lib/service-app-canary/data
++Group=service-app-canary
++NoNewPrivileges=true
++PrivateDevices=true
++PrivateTmp=true
++ProtectControlGroups=true
++ProtectHome=true
++ProtectKernelModules=true
++ProtectKernelTunables=true
++ProtectSystem=strict
++ReadWritePaths=/var/lib/service-app-canary
++Restart=on-failure
++RestartSec=3
++RestrictAddressFamilies=AF_INET
++RestrictAddressFamilies=AF_INET6
++RestrictAddressFamilies=AF_UNIX
++RestrictAddressFamilies=AF_NETLINK
++RestrictRealtime=true
++RestrictSUIDSGID=true
++StateDirectory=service-app-canary
++StateDirectoryMode=0700
++TimeoutStopSec=30
++UMask=0077
++User=service-app-canary
++WorkingDirectory=/var/lib/service-app-canary
++
++[Install]
++WantedBy=multi-user.target
+--- old/systemd/system/service-app-canary-tsnet.service
++++ new/systemd/system/service-app-canary-tsnet.service
+@@ -0,0 +1,41 @@
++[Unit]
++After=network-online.target service-app-canary.service
++ConditionPathExists=/nix/var/nix/profiles/apps/service-app-canary/bin/service-app-canary-tsnet
++Description=service-app-canary dedicated tailnet node
++Wants=network-online.target service-app-canary.service
++
++[Service]
++Environment="HOME=/var/lib/service-app-canary"
++Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
++Environment="PATH=/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/bin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/bin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/bin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/bin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/bin:/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/sbin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/sbin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/sbin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/sbin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/sbin"
++Environment="TZDIR=/nix/store/fh8svr4ds87z84iarfnxrlfpjlbmc816-tzdata-2026c/share/zoneinfo"
++CapabilityBoundingSet=
++ExecStart=/nix/var/nix/profiles/apps/service-app-canary/bin/service-app-canary-tsnet --host 127.0.0.1 --port 4399
++Group=service-app-canary
++NoNewPrivileges=true
++PrivateDevices=true
++PrivateTmp=true
++ProtectControlGroups=true
++ProtectHome=true
++ProtectKernelModules=true
++ProtectKernelTunables=true
++ProtectSystem=strict
++ReadOnlyPaths=/var/lib/service-app-canary
++ReadWritePaths=/var/lib/service-app-canary/state/tsnet
++Restart=on-failure
++RestartSec=3
++RestrictAddressFamilies=AF_INET
++RestrictAddressFamilies=AF_INET6
++RestrictAddressFamilies=AF_UNIX
++RestrictAddressFamilies=AF_NETLINK
++RestrictRealtime=true
++RestrictSUIDSGID=true
++StateDirectory=service-app-canary/state/tsnet
++StateDirectoryMode=0700
++TimeoutStopSec=30
++UMask=0077
++User=service-app-canary
++WorkingDirectory=/var/lib/service-app-canary
++
++[Install]
++WantedBy=multi-user.target
+--- old/systemd/system/service-app-canary.service
++++ new/systemd/system/service-app-canary.service
+@@ -0,0 +1,40 @@
++[Unit]
++After=network-online.target
++ConditionPathExists=/nix/var/nix/profiles/apps/service-app-canary/bin/service-app-canary-server
++Description=service-app-canary loopback service app
++Wants=network-online.target
++
++[Service]
++Environment="HOME=/var/lib/service-app-canary"
++Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
++Environment="PATH=/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/bin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/bin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/bin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/bin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/bin:/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/sbin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/sbin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/sbin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/sbin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/sbin"
++Environment="TZDIR=/nix/store/fh8svr4ds87z84iarfnxrlfpjlbmc816-tzdata-2026c/share/zoneinfo"
++CapabilityBoundingSet=
++ExecStart=/nix/var/nix/profiles/apps/service-app-canary/bin/service-app-canary-server --host 127.0.0.1 --port 4398 --data-dir /var/lib/service-app-canary/data
++Group=service-app-canary
++NoNewPrivileges=true
++PrivateDevices=true
++PrivateTmp=true
++ProtectControlGroups=true
++ProtectHome=true
++ProtectKernelModules=true
++ProtectKernelTunables=true
++ProtectSystem=strict
++ReadWritePaths=/var/lib/service-app-canary
++Restart=on-failure
++RestartSec=3
++RestrictAddressFamilies=AF_INET
++RestrictAddressFamilies=AF_INET6
++RestrictAddressFamilies=AF_UNIX
++RestrictAddressFamilies=AF_NETLINK
++RestrictRealtime=true
++RestrictSUIDSGID=true
++StateDirectory=service-app-canary
++StateDirectoryMode=0700
++TimeoutStopSec=30
++UMask=0077
++User=service-app-canary
++WorkingDirectory=/var/lib/service-app-canary
++
++[Install]
++WantedBy=multi-user.target
+--- old/systemd/system/sysinit-reactivation.target.requires/systemd-tmpfiles-resetup.service
++++ new/systemd/system/sysinit-reactivation.target.requires/systemd-tmpfiles-resetup.service
+@@ -4,7 +4,7 @@
+ Conflicts=shutdown.target
+ DefaultDependencies=false
+ Description=Re-setup tmpfiles on a system that is already running.
+-X-Restart-Triggers=/nix/store/q44qmllgj7s6syx6k9k88fjc9d40z1g3-X-Restart-Triggers-systemd-tmpfiles-resetup
++X-Restart-Triggers=/nix/store/iaxdxmsyvbd80pq5jjsyqwvmywnh1a7c-X-Restart-Triggers-systemd-tmpfiles-resetup
+ 
+ [Service]
+ Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
+--- old/systemd/system/systemd-tmpfiles-resetup.service
++++ new/systemd/system/systemd-tmpfiles-resetup.service
+@@ -4,7 +4,7 @@
+ Conflicts=shutdown.target
+ DefaultDependencies=false
+ Description=Re-setup tmpfiles on a system that is already running.
+-X-Restart-Triggers=/nix/store/q44qmllgj7s6syx6k9k88fjc9d40z1g3-X-Restart-Triggers-systemd-tmpfiles-resetup
++X-Restart-Triggers=/nix/store/iaxdxmsyvbd80pq5jjsyqwvmywnh1a7c-X-Restart-Triggers-systemd-tmpfiles-resetup
+ 
+ [Service]
+ Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
+--- old/systemd/user/dbus-broker.service.d/overrides.conf
++++ new/systemd/user/dbus-broker.service.d/overrides.conf
+@@ -1,5 +1,5 @@
+ [Unit]
+-X-Restart-Triggers=/nix/store/l6bk68wdf163pya3r47m3zfmwvhlvxki-X-Restart-Triggers-dbus-broker
++X-Restart-Triggers=/nix/store/3h36f42iil7c10c100hx297vk7aw2ghv-X-Restart-Triggers-dbus-broker
+ 
+ [Service]
+ Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
+--- old/tmpfiles.d/00-nixos.conf
++++ new/tmpfiles.d/00-nixos.conf
+@@ -41,6 +41,10 @@
+ d /var/lib/groceries/state 0700 groceries groceries -
+ d /var/lib/groceries/state/tsnet 0700 groceries groceries -
+ d /var/lib/groceries/.config/groceries 0700 groceries groceries -
++d /var/lib/service-app-canary 0700 service-app-canary service-app-canary -
++d /var/lib/service-app-canary/data 0700 service-app-canary service-app-canary -
++d /var/lib/service-app-canary/state 0700 service-app-canary service-app-canary -
++d /var/lib/service-app-canary/state/tsnet 0700 service-app-canary service-app-canary -
+ d /run/keys 0750 root 96
+ z /run/keys 0750 root 96
+ d  /run/lock                          0755 root root - -
+Reviewed diff SHA256: faf2ee183ef1890156f7576caf1425025bf904984e232ccc5ac459f3f4e22fa7

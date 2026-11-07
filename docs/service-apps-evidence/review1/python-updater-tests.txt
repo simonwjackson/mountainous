@@ -1,0 +1,14 @@
+test_arm_refuses_unprovisioned_native_build_transport (test_app_update.AppUpdateTests.test_arm_refuses_unprovisioned_native_build_transport) ... ok
+test_builds_are_bounded_and_do_not_delegate (test_app_update.AppUpdateTests.test_builds_are_bounded_and_do_not_delegate) ... ok
+test_failure_does_not_skip_later_hosts (test_app_update.AppUpdateTests.test_failure_does_not_skip_later_hosts) ... ok
+test_no_revision_downgrade (test_app_update.AppUpdateTests.test_no_revision_downgrade) ... ok
+test_no_version_downgrade (test_app_update.AppUpdateTests.test_no_version_downgrade) ... ok
+test_original_ref_tracks_branch_not_old_revision (test_app_update.AppUpdateTests.test_original_ref_tracks_branch_not_old_revision) ... ok
+test_receipt_is_private_and_atomic (test_app_update.AppUpdateTests.test_receipt_is_private_and_atomic) ... ok
+test_same_revision_can_retry_failed_hosts (test_app_update.AppUpdateTests.test_same_revision_can_retry_failed_hosts) ... ok
+test_unknown_transport_is_rejected (test_app_update.AppUpdateTests.test_unknown_transport_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.035s
+
+OK

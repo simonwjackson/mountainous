@@ -1,0 +1,9 @@
+accepted-groceries.json
+.cache
+enabled-groceries
+logbook
+receipts
+repository
+signing-key
+ssh
+update.lock

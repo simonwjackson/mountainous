@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/simonwjackson/code/github/simonwjackson/mountainous/.worktrees/c-b40a665b4e23213e53ef4e3f57933c67617da6cd9065a88ee8ab8526f64a48cf/scripts/service-apps-cutover", line 244, in <module>
+    source(plan)
+    ~~~~~~^^^^^^
+  File "/home/simonwjackson/code/github/simonwjackson/mountainous/.worktrees/c-b40a665b4e23213e53ef4e3f57933c67617da6cd9065a88ee8ab8526f64a48cf/scripts/service-apps-cutover", line 161, in source
+    require_cutover_ready(initial, False)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/simonwjackson/code/github/simonwjackson/mountainous/.worktrees/c-b40a665b4e23213e53ef4e3f57933c67617da6cd9065a88ee8ab8526f64a48cf/scripts/service_apps.py", line 58, in require_cutover_ready
+    raise RuntimeError("Refuse cutover: every source unit must already be active")
+RuntimeError: Refuse cutover: every source unit must already be active

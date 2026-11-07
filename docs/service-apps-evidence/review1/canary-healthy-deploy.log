@@ -1,0 +1,46 @@
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/repository', using 'master'
+warning: ignoring untrusted flake configuration setting 'extra-substituters'.
+Pass '--accept-flake-config' to trust it
+warning: ignoring untrusted flake configuration setting 'extra-trusted-public-keys'.
+Pass '--accept-flake-config' to trust it
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Evaluating flake in git+file:///var/lib/app-updater/repository?rev=c201e8ef0c78c7aff1477eae477d6fbf78594bc6
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/repository', using 'master'
+warning: ignoring untrusted flake configuration setting 'extra-substituters'.
+Pass '--accept-flake-config' to trust it
+warning: ignoring untrusted flake configuration setting 'extra-trusted-public-keys'.
+Pass '--accept-flake-config' to trust it
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] The following profiles are going to be deployed:
+[rakku.service-app-canary]
+user = "app-deploy"
+ssh_user = "app-deploy"
+path = "/nix/store/iimq5iay9kzcfqacgz2pidz1gisjfrv1-activatable-service-app-canary-1.0.0"
+hostname = "rakku.hummingbird-lake.ts.net"
+ssh_opts = ["-p", "22", "-F", "/dev/null", "-i", "/var/lib/app-updater/ssh/id_ed25519", "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o", "HostKeyAlias=rakku", "-o", "HostKeyAlgorithms=ssh-ed25519", "-o", "UserKnownHostsFile=/nix/store/nlk3wlr480wdd6d61bk3dj6vnf23g2kc-known_hosts", "-o", "GlobalKnownHostsFile=/dev/null", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4"]
+
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Building profile `service-app-canary` for node `rakku`
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Building profile `service-app-canary` for node `rakku`
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Signing key present! Signing profile `service-app-canary` for node `rakku`
+warning: 'sign-paths' is a deprecated alias for 'store sign'
+added 12 signatures
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Copying profile `service-app-canary` to node `rakku`
+copying 9 paths...
+copying path '/nix/store/a1i7s50bx21z81w6xkcr14vr6dn36c2n-server.py' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/d6i3wqm0rh78mibi1k2zs3cslqvc7axl-service-app-canary-1.0.0-activate-rs' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/j605vxjcib4a0m0z4k3zzp0cxhma5hd0-service-app-canary-smoke' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/19zn4k3gajqb9q7rzh1chygflq3vaj84-activate' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/7968nxfbl777449jq00bp5r7i29yjh64-service-app-canary-tsnet' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/y94sqb72cr4ah4pylzmgjsxmq23k9570-service-app-canary-server' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/cw2mnf24zxi2jy3ik7qayw1y2wkbkysi-service-app-canary-1.0.0' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/9p1vf1wf5ng2zz2rkvhn7vjlrxzjp4nf-service-app-canary-1.0.0-activate-path' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/iimq5iay9kzcfqacgz2pidz1gisjfrv1-activatable-service-app-canary-1.0.0' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Activating profile `service-app-canary` for node `rakku`
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Creating activation waiter
+📠 ⭐ ℹ️ [activate] [[38;5;51mINFO[0m] Activating profile
+📠 👀 ℹ️ [wait] [[38;5;51mINFO[0m] Waiting for confirmation event...
+📠 curl: (7) Failed to connect to 127.0.0.1:4398 after 0 ms: Could not connect to server
+📠 ⭐ ℹ️ [activate] [[38;5;51mINFO[0m] Activation succeeded!
+📠 ⭐ ℹ️ [activate] [[38;5;51mINFO[0m] Magic rollback is enabled, setting up confirmation hook...
+📠 ⭐ ℹ️ [activate] [[38;5;51mINFO[0m] Waiting for confirmation event...
+📠 👀 ℹ️ [wait] [[38;5;51mINFO[0m] Found canary file, done waiting!
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Success activating, attempting to confirm activation
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Deployment confirmed.

@@ -1,0 +1,10 @@
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/repository', using 'master'
+warning: ignoring untrusted flake configuration setting 'extra-substituters'.
+Pass '--accept-flake-config' to trust it
+warning: ignoring untrusted flake configuration setting 'extra-trusted-public-keys'.
+Pass '--accept-flake-config' to trust it
+these 2 derivations will be built:
+  /nix/store/vgqyhrsj00a8azxyxk9wjfp2bh2s7vnh-app-updates.json.drv
+  /nix/store/cfkqlinb736pwjrkaxswbay9v89vn3xj-app-updater-closure.drv
+building '/nix/store/vgqyhrsj00a8azxyxk9wjfp2bh2s7vnh-app-updates.json.drv'...
+building '/nix/store/cfkqlinb736pwjrkaxswbay9v89vn3xj-app-updater-closure.drv'...

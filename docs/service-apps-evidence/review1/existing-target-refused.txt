@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/nix/store/27474jh148wyxbd2fvrzsyk9za4fq8b5-service-app-tools/libexec/service-apps/service-apps-cutover", line 238, in <module>
+    target(a.action, a.contract)
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/27474jh148wyxbd2fvrzsyk9za4fq8b5-service-app-tools/libexec/service-apps/service-apps-cutover", line 68, in target
+    raise RuntimeError("Destination must be stopped and its profile absent")
+RuntimeError: Destination must be stopped and its profile absent

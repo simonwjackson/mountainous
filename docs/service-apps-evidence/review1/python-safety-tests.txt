@@ -1,0 +1,12 @@
+test_completed_cutover_never_stops_or_recovers_source (__main__.ServiceAppSafetyTests.test_completed_cutover_never_stops_or_recovers_source) ... ok
+test_health_contract_rejects_mismatch_and_non_public_transports (__main__.ServiceAppSafetyTests.test_health_contract_rejects_mismatch_and_non_public_transports) ... ok
+test_partly_running_source_is_not_a_cutover (__main__.ServiceAppSafetyTests.test_partly_running_source_is_not_a_cutover) ... ok
+test_real_cli_rejects_invalid_plan_before_transport (__main__.ServiceAppSafetyTests.test_real_cli_rejects_invalid_plan_before_transport) ... ok
+test_recovery_requires_confirmed_destination_stop (__main__.ServiceAppSafetyTests.test_recovery_requires_confirmed_destination_stop) ... ok
+test_requires_every_unit_not_any_unit (__main__.ServiceAppSafetyTests.test_requires_every_unit_not_any_unit) ... ok
+test_stage_accepts_a_different_branch_and_repo (__main__.ServiceAppSafetyTests.test_stage_accepts_a_different_branch_and_repo) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.082s
+
+OK
