@@ -639,11 +639,11 @@
         "proseql": "proseql_2"
       },
       "locked": {
-        "lastModified": 1794077152,
-        "narHash": "sha256-h7WPbhveusvtipFNKB6uPcrgCmlCax6nmF/DFyc4k4Y=",
+        "lastModified": 1794077686,
+        "narHash": "sha256-NXHmhsG43K3LWczIvaqxYLz8AdWgDflEI5ET8glGSik=",
         "ref": "service-app-rakku",
-        "rev": "5128f21e72551b7cb495a0016f5eb9deaa863f35",
-        "revCount": 9,
+        "rev": "442444b19b2785ebb1e76bd7d9c1b55af7a8cab7",
+        "revCount": 10,
         "type": "git",
         "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/meetings"
       },
@@ -1167,14 +1167,14 @@
       "locked": {
         "lastModified": 1791349930,
         "narHash": "sha256-aI6aS85RtAtAPJfOmQEMbsJNgqpCGWM7DMsrxTPOrPM=",
-        "ref": "main",
+        "ref": "meetings-source-pin",
         "rev": "5f83bdb238d21415c484e98c79d4500dd23bbc3b",
         "revCount": 1318,
         "type": "git",
         "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/github/simonwjackson/proseql"
       },
       "original": {
-        "ref": "main",
+        "ref": "meetings-source-pin",
         "type": "git",
         "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/github/simonwjackson/proseql"
       }
