@@ -113,6 +113,29 @@
           inputs.disko.nixosModules.disko
           ../../disks/unzen.nix
         ];
+        mountainous.serviceApps.ossicle = {
+          port = 4388;
+          serverArgs = [
+            "--cache"
+            "/var/lib/ossicle/data"
+          ];
+          sidecarArgs = [
+            "--name"
+            "podcasts"
+            "--upstream"
+            "http://127.0.0.1:4388"
+            "--state"
+            "/var/lib/ossicle/state/tsnet"
+          ];
+          environment = {
+            OSSICLE_CACHE = "/var/lib/ossicle/data";
+            OSSICLE_ALLOWED_ORIGINS = "https://vela.hummingbird-lake.ts.net";
+          };
+          schedule = "*-*-* 05:00:00 UTC";
+          ytDlpSchedule = "*-*-* 03:30:00 UTC";
+          smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 5 http://127.0.0.1:4388/healthz >/dev/null";
+          checkCommand = ''test "$($APP_PACKAGE/bin/ossicle-server --version)" = 'ossicle-server 0.1.0' '';
+        };
         mountainous.serviceApps.youtube = {
           port = 4491;
           serverArgs = [ ];
