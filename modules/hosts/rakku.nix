@@ -94,6 +94,27 @@ in
           port = 4390;
           schedule = "*-*-* 04:45:00 UTC";
         };
+        mountainous.serviceApps.synth = {
+          input = "synth";
+          server = "synth-serve";
+          sidecar = null;
+          port = 4180;
+          serverArgs = [
+            "--name"
+            "synth"
+            "--expected-fqdn"
+            "synth.hummingbird-lake.ts.net"
+            "--assets-dir"
+            "/nix/var/nix/profiles/apps/synth/share/synth/client"
+            "--state"
+            "/var/lib/synth/state/tsnet"
+            "--local-addr"
+            "127.0.0.1:4180"
+          ];
+          schedule = "*-*-* 04:50:00 UTC";
+          smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:4180/manifest.webmanifest >/dev/null";
+          checkCommand = ''test "$("$APP_PACKAGE/bin/synth-serve" --version)" = 'synth-serve 0.1.0' '';
+        };
         # Isolated rollback canary: no tailnet registration or production state.
         mountainous.serviceApps.service-app-canary = {
           package =

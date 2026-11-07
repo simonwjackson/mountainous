@@ -58,6 +58,10 @@ assert
   unzen.systemd.services.app-update-pi.unitConfig.ConditionPathExists
   == "/var/lib/app-updater/enabled";
 assert !(builtins.elem "hiyori" unzen.mountainous.appUpdates.pi.hosts);
+assert rakku.mountainous.serviceApps.synth.sidecar == null;
+assert rakku.mountainous.serviceApps.synth.unitNames == [ "synth.service" ];
+assert !(rakku.systemd.services ? synth-tsnet);
+assert unzen.mountainous.appUpdates.synth.hosts == [ "rakku" ];
 assert rakku.mountainous.serviceApps.service-app-single-canary.sidecar == null;
 assert
   rakku.mountainous.serviceApps.service-app-single-canary.unitNames
