@@ -39,6 +39,7 @@
     meetings.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/meetings?ref=service-app-rakku";
     storia.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/no-evil?ref=service-app-rakku";
     synth.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/synth?ref=service-app-rakku";
+    pace.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/pace?ref=service-app-rakku";
 
     pi.url = "github:lukasl-dev/pi.nix";
     # Pi extensions, each loaded with -e by the pi wrapper (modules/pi.nix).
