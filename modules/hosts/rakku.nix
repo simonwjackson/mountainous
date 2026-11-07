@@ -115,6 +115,11 @@ in
           smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:4180/manifest.webmanifest >/dev/null";
           checkCommand = ''test "$("$APP_PACKAGE/bin/synth-serve" --version)" = 'synth-serve 0.1.0' '';
         };
+        mountainous.serviceApps.pace = (import ../../lib/pace-service.nix { inherit pkgs inputs; }) // {
+          input = "pace";
+          port = 4321;
+          schedule = "*-*-* 04:55:00 UTC";
+        };
         # Isolated rollback canary: no tailnet registration or production state.
         mountainous.serviceApps.service-app-canary = {
           package =

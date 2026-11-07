@@ -58,6 +58,21 @@ assert
   unzen.systemd.services.app-update-pi.unitConfig.ConditionPathExists
   == "/var/lib/app-updater/enabled";
 assert !(builtins.elem "hiyori" unzen.mountainous.appUpdates.pi.hosts);
+assert rakku.mountainous.serviceApps.pace.port == 4321;
+assert
+  rakku.mountainous.serviceApps.pace.scheduledCommands.sync.gateFile == "/var/lib/pace/enabled-sync";
+assert
+  rakku.systemd.services.pace-sync.serviceConfig.ExecStart
+  == "/nix/var/nix/profiles/apps/pace/bin/pace-sync --data-dir /var/lib/pace/data";
+assert rakku.systemd.services.pace-sync.serviceConfig.User == "pace";
+assert
+  rakku.systemd.services.pace-sync.unitConfig.ConditionPathExists == [
+    "/nix/var/nix/profiles/apps/pace/bin/pace-sync"
+    "/var/lib/pace/enabled-sync"
+  ];
+assert rakku.systemd.timers.pace-sync.timerConfig.OnCalendar == "*-*-* 00,06,12,18:17:00";
+assert rakku.sops.secrets.pace-simplefin.owner == "pace";
+assert unzen.mountainous.appUpdates.pace.hosts == [ "rakku" ];
 assert rakku.mountainous.serviceApps.synth.sidecar == null;
 assert rakku.mountainous.serviceApps.synth.unitNames == [ "synth.service" ];
 assert !(rakku.systemd.services ? synth-tsnet);
