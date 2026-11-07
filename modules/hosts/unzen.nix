@@ -113,6 +113,19 @@
           inputs.disko.nixosModules.disko
           ../../disks/unzen.nix
         ];
+        mountainous.serviceApps.youtube = {
+          port = 4491;
+          serverArgs = [ ];
+          sidecarArgs = [ "--name" "youtube" "--upstream" "http://127.0.0.1:4491" "--state" "/var/lib/youtube/state/tsnet" ];
+          environment.YOUTUBE_STATE_DIR = "/var/lib/youtube/data";
+          environment.YOUTUBE_YT_DLP_DATA_DIR = "/var/lib/youtube/data/yt-dlp-bin";
+          secrets.youtube-env = ".config/youtube/env";
+          schedule = "*-*-* 04:45:00 UTC";
+          ytDlpSchedule = "*-*-* 04:15:00 UTC";
+          smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 5 http://127.0.0.1:4491/health >/dev/null";
+          checkCommand = ''test "$($APP_PACKAGE/bin/youtube-server --version)" = 'youtube 0.1.0' '';
+        };
+        systemd.services.youtube.serviceConfig.EnvironmentFile = config.sops.secrets.youtube-env.path;
         # The enclosure is attached to Unzen. The library is the local pool.
         mountainous.features.towada = {
           enable = lib.mkDefault true;
