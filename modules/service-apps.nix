@@ -96,6 +96,11 @@ in
               type = lib.types.str;
               default = "*-*-* 04:00:00 UTC";
             };
+            ytDlpSchedule = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = "Optional nightly refresh of mutable yt-dlp, independent of the app input.";
+            };
             port = lib.mkOption { type = lib.types.port; };
             server = lib.mkOption {
               type = lib.types.strMatching "[a-zA-Z0-9_-]+";
@@ -318,6 +323,29 @@ in
               );
             };
           };
+          systemd.timers = lib.optionalAttrs (app.ytDlpSchedule != null) {
+            "${name}-ytdlp-update" = {
+              wantedBy = [ "timers.target" ];
+              timerConfig = {
+                OnCalendar = app.ytDlpSchedule;
+                RandomizedDelaySec = "45min";
+                Persistent = true;
+              };
+            };
+          };
+          systemd.services."${name}-ytdlp-update" = lib.mkIf (app.ytDlpSchedule != null) {
+            description = "Refresh ${name}'s mutable yt-dlp nightly";
+            wants = [ "network-online.target" ];
+            after = [ "network-online.target" ];
+            environment = { HOME = home; } // app.environment;
+            unitConfig.ConditionPathExists = "${profile name}/bin/${name}-ytdlp-update";
+            serviceConfig = common // {
+              Type = "oneshot";
+              Restart = "no";
+              ExecStart = "${profile name}/bin/${name}-ytdlp-update";
+              TimeoutStartSec = "15min";
+            };
+          };
           systemd.services."${name}-tsnet" = unit app.sidecar // {
             description = "${name} dedicated tailnet node";
             wants = [
@@ -380,6 +408,7 @@ in
           security.sudo.extraRules = lib.concatMap (r: r.security.sudo.extraRules) resources;
           sops.secrets = lib.mkMerge (map (r: r.sops.secrets) resources);
           systemd.services = lib.mkMerge (map (r: r.systemd.services) resources);
+          systemd.timers = lib.mkMerge (map (r: r.systemd.timers) resources);
           systemd.tmpfiles.rules = lib.concatMap (r: r.systemd.tmpfiles.rules) resources;
         }
         (lib.optionalAttrs (options.environment ? persistence) {

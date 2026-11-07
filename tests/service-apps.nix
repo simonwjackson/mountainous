@@ -68,4 +68,18 @@ assert builtins.any (
 ) rakku.environment.persistence."/tundra/permafrost".directories;
 assert unzen.mountainous.appUpdates.knowledge.hosts == [ "rakku" ];
 assert deploy.nodes.rakku.profiles.knowledge.profilePath == "/nix/var/nix/profiles/apps/knowledge";
+assert !(rakku.systemd.services ? groceries-ytdlp-update);
+assert lib.all (name:
+  let
+    refresh = unzen.systemd.services."${name}-ytdlp-update";
+    timer = unzen.systemd.timers."${name}-ytdlp-update";
+  in
+  refresh.serviceConfig.User == name
+  && refresh.serviceConfig.ProtectSystem == "strict"
+  && refresh.serviceConfig.ReadWritePaths == [ "/var/lib/${name}" ]
+  && refresh.serviceConfig.Type == "oneshot"
+  && refresh.unitConfig.ConditionPathExists == "/nix/var/nix/profiles/apps/${name}/bin/${name}-ytdlp-update"
+  && timer.timerConfig.Persistent
+  && timer.timerConfig.OnCalendar == unzen.mountainous.serviceApps.${name}.ytDlpSchedule
+) (lib.attrNames (lib.filterAttrs (_: app: app.ytDlpSchedule != null) unzen.mountainous.serviceApps));
 true
