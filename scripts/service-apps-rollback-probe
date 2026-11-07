@@ -109,7 +109,7 @@ else:
 if a.health_identity_key and after_health[a.health_identity_key] != before_health[a.health_identity_key]:
     raise RuntimeError("Health identity changed during rollback")
 receipt = {"source_commit": a.expected_sha, "host": a.host, "app": a.app, "fixture": str(fixture_path),
-    "app_revision": locked["rev"], "broken_activation": activated[0], "prebuilt_activation": activation,
+    "app_revision": locked.get("rev", a.expected_sha), "broken_activation": activated[0], "prebuilt_activation": activation,
     "runtime_rejection": rejection, "deploy_exit": deployed.returncode,
     "profile_before": before, "profile_after": current(), "all_units_active": active(),
     "health_before": before_health, "health_after": after_health,
