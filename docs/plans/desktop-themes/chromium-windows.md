@@ -55,7 +55,9 @@ Myoko desktop-entry inventory; this worker did not SSH to Myoko.
   for Chromium. Other clients receive their original key, without a synthetic
   `pass` dispatcher. The bind does not depend on the desktop theme.
 - Chromium's Nix wrapper adds `--remote-debugging-port=0`. This selects a
-  random **loopback** port. It does not move or copy the profile.
+  random **loopback** port. It does not move or copy the profile. It also
+  adds `--disable-blink-features=AutomationControlled`, because the port
+  alone sets `navigator.webdriver = true` and sites then treat Simon as a bot.
 - `CdpBrowser` discovers both the existing web-app root
   (`~/.local/share/mountainous/browser`) and normal Chromium's root
   (`$XDG_CONFIG_HOME/chromium`, normally `~/.config/chromium`). Each browser

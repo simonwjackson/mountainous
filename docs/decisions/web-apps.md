@@ -81,6 +81,7 @@ All web-app launches route through `web-app`:
 1. Shared `--user-data-dir`: Secondary `--app` launches join the existing browser process and share a single Chrome DevTools Protocol (CDP) endpoint.
 2. `--remote-debugging-port=0`: Chromium selects a random loopback port and writes it to `<profile>/DevToolsActivePort`.
 3. The flag must be present on every launch command so the initial instance binds the debugging port regardless of which app was opened first.
+4. `--disable-blink-features=AutomationControlled`: the debugging port alone makes Chromium report `navigator.webdriver = true` to every page. Bot checks read that as automation and challenge or block the user. This flag keeps CDP and reports `false`, so sites cannot see that the browser accepts automation.
 
 ## Normal browser system-frame preference: Phase A (2026-10-27)
 

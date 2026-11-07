@@ -30,6 +30,7 @@
             --ozone-platform=wayland \
             --user-data-dir="$profile" \
             --remote-debugging-port=0 \
+            --disable-blink-features=AutomationControlled \
             --no-first-run \
             --no-default-browser-check \
             --enable-features=TurnOffStreamingMediaCachingOnBattery,QuickIntensiveWakeUpThrottlingAfterLoading \
