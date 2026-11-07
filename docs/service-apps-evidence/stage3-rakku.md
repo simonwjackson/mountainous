@@ -9,6 +9,8 @@ All source data and definition links remain on Zao. No rollback probe targeted a
 | knowledge | Cutover rejected; source restored and verified | https://knowledge.hummingbird-lake.ts.net | 72 KiB (`~/knowledge`), 12 KiB tsnet | `knowledge`, `knowledge-proxy`: active, enabled | `knowledge`, `knowledge-tsnet`: stopped; unaccepted profile quarantined |
 | meetings | Signed deployment accepted; existing transcript export identical | https://meetings.hummingbird-lake.ts.net | 3.8 MiB data, 13 MiB rollbacks; tsnet retained | `meetings`, `meetings-proxy`: inactive, disabled | `meetings`, `meetings-tsnet`: active |
 | storia | Signed deployment accepted; campaign and practice GetGame RPCs identical | https://storia.hummingbird-lake.ts.net | 152 KiB SQLite data, 28 KiB tsnet | `storia`, `storia-proxy`: inactive, linked, not enabled | `storia`, `storia-tsnet`: active |
+| storybook | Blocked: installed dirty-tree source is not a Git revision; left untouched | https://storybook.hummingbird-lake.ts.net | 56 MiB data, 32 KiB tsnet | `storybook`, `storybook-proxy`: active on Zao | None |
+| synth | Signed native single-process deployment accepted | https://synth.hummingbird-lake.ts.net | 28 KiB tsnet; documents remain in browser storage | `synth`: inactive, linked, not enabled | `synth`: active (no sidecar) |
 | irori-sync | Retired, not moved | No replacement | 4 KiB data, 28 KiB tsnet retained | `irori-sync`, `irori-sync-proxy`: inactive, linked, not enabled; definitions retained | None |
 
 Knowledge's package build passed 67 tests in 13 files, plus both TypeScript checks. Its compiled server tree is byte-identical to the installed Zao server. Its existing two cards, two chat records and empty vocabulary were checked through the public API; Pi inference succeeded on Zao before and after recovery. Signed deployment receipt `1794076854535476991.json` rejected startup: the settings bind created root-owned `.pi/agent`, so ExecStartPre could not copy the SOPS credential. The generic cutover stopped the destination and quarantined its canonical profile before restoring Zao. Only the failed destination unit's failure marker was cleared. No retry was attempted.
@@ -16,6 +18,12 @@ Knowledge's package build passed 67 tests in 13 files, plus both TypeScript chec
 Meetings uses a packaging-only adapter from `--host 127.0.0.1 --port PORT` to the unchanged `meetings serve --listen 127.0.0.1:PORT`. The package tests stayed enabled. Its existing proseQL dependency revision `5f83bdb238d21415c484e98c79d4500dd23bbc3b` is unchanged; the Git transport now uses SSH and an advertised source-pin branch. The first remote check failed because that old commit was not fetchable through the advertised main ref; adding the exact existing pin as a branch fixed it before any outage. Signed deployment receipt: `1794077972243823147.json`. The existing meeting's read-only export SHA256 stayed `d187bb0f8cf1ed4abef63dccc196faa7bb84d50f93d2556a404a0313a4180407`.
 
 Storia's two AI gateway credentials moved to SOPS. The old drop-in URLs are retained in the app environment. Native build passed typecheck, lint and 100 tests. Signed receipt: `1794078782817192483.json`. Campaign and practice were read through the real GetGame RPC before/after cutover; both response digests stayed identical. The scoped tmpfiles create ran after the new persistence bind was mounted, before cutover. All source SQLite files and backups remain on Zao. Its canonical `no-evil` repository has branch `service-app-rakku`, commit `6c108b1` (version wrapper only).
+
+Storybook's canonical checkout `/home/simonwjackson/code/sandbox/storybook` has 115 dirty/untracked entries across server, browser code, family content and assets. Its installed profile source is a dirty `path:` snapshot with narHash `sha256-YnRu+C3Giu5uvOJVyXwqLkAedzjIfl33zKYweJk7qNA=`. The user must first commit or stash that work so main builds the version that runs; then the normal service-app move applies. This worker did not reconstruct or change the dirty checkout.
+
+Knowledge's follow-up: make the Pi configuration directories service-owned, reconcile and retain the unaccepted destination state/snapshot, then attempt a fresh guarded migration in a separate run. Its gate stays closed until that migration succeeds.
+
+Synth keeps its existing native `synth-serve` process and its tsnet identity. The only source-package change is a tested `--version` wrapper on branch `service-app-rakku` (`d84e30a`). Its full asset tree is byte-identical to the installed source. The package's behavior harness passed in Nix and in its commit hook. Signed receipt: `1794081055483702329.json`. Public root, manifest, service worker and main-module bytes, cache headers and security policy were identical before/after migration. No claim of interactive audio verification is made; documents are stored in the browser and the HTTPS origin is unchanged.
 
 ## Loss checks and host health
 
@@ -28,6 +36,10 @@ Storia's two AI gateway credentials moved to SOPS. The old drop-in URLs are reta
 
 | Rakku / Storia | `gz04m34s` | `lylhzywb` | Only Storia resources and existing module-derived secret-parent directory additions; four unit/wants additions, no removals |
 | Unzen / Storia updater | `47bk1l2x` | `b7fqwqb8` | Only Storia updater entries and derived updater-config paths; three unit/wants additions, no removals |
+
+| Rakku / single-process canary | `lylhzywb` | `3gscgzm2` | Only new canary resources and authoritative app-unit manifests; two unit/wants additions, zero removed |
+| Rakku / Synth | `3gscgzm2` | `wz9nqn3q` | Only Synth resources and manifest; two unit/wants additions, zero removed |
+| Unzen / Synth updater | `jccq5jzx` | `g8a1nicd` | Only Synth updater, existing-app unit manifests and derived updater-config paths; three unit/wants additions, zero removed |
 
 Every actual switch passed `systemctl is-system-running`, zero failed units, and the host's core-unit checks. Rakku checks included Home Assistant, Z-Wave, all three assistants, Beszel, CLIProxyAPI, Groceries and Logbook. Unzen checks included Jellyfin, Scryer, Prowlarr, Transmission, NZBFAST, the VPN and Beszel. Unzen's pre-existing failed `cliproxyapi-update` was observed before work; it was no longer failed after the switch. This worker did not change it.
 
