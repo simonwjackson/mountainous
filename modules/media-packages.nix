@@ -8,12 +8,15 @@
         system = pkgs.stdenv.hostPlatform.system;
         config.allowUnfree = true;
       };
+      transmissionPackages = import inputs.nixpkgs-unstable {
+        system = pkgs.stdenv.hostPlatform.system;
+      };
       releases = {
         sonarr = "4.0.16.2944";
         radarr = "6.0.4.10291";
         prowlarr = "2.3.0.5236";
         nzbget = "26.0";
-        transmission = "4.1.1";
+        transmission = "4.1.4";
       }
       // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 { nzbfast = "1.7.1"; };
       runtime = {
@@ -23,7 +26,7 @@
           prowlarr
           nzbget
           ;
-        transmission = media.transmission_4;
+        transmission = transmissionPackages.transmission_4;
       }
       // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isx86_64 {
         nzbfast = inputs.nix-extras.packages.${pkgs.stdenv.hostPlatform.system}.nzbfast;
@@ -62,7 +65,7 @@
         media-state = import ../tests/media-state.nix {
           inherit pkgs;
           nzbget = media.nzbget;
-          transmission = media.transmission_4;
+          transmission = transmissionPackages.transmission_4;
         };
         media-runtime = import ../tests/media-runtime.nix { inherit pkgs inputs; };
         media-storage-health = import ../tests/media-storage-health.nix { inherit pkgs inputs; };

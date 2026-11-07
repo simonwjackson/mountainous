@@ -7,6 +7,9 @@ let
       (
         { lib, ... }:
         {
+          # This fixture exercises the NFS library contract, independently of
+          # Unzen's now-local Towada placement.
+          mountainous.features.towada.enable = lib.mkForce false;
           mountainous.features.media-applications = {
             # The ARR contract: Unzen itself now runs library = "scryer".
             library = lib.mkForce "arr";
@@ -117,7 +120,7 @@ let
     radarr = "6.0.4.10291";
     prowlarr = "2.3.0.5236";
     nzbget = "26.0";
-    transmission = "4.1.1";
+    transmission = "4.1.4";
   };
 in
 assert nzbgetOnly.services.nzbget.enable && !nzbgetOnly.services.nzbfast.enable;
@@ -220,7 +223,7 @@ assert builtins.all (
 assert builtins.all (
   name: builtins.length target.systemd.services.${name}.unitConfig.ConditionFileNotEmpty > 0
 ) apps;
-assert builtins.length target.systemd.services.transmission.serviceConfig.ExecStartPre == 1;
+assert builtins.length target.systemd.services.transmission.serviceConfig.ExecStartPre == 2;
 assert
   builtins.match ".*media-state-ready.py transmission" (
     builtins.head target.systemd.services.transmission.serviceConfig.ExecStartPre

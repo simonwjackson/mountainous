@@ -81,6 +81,7 @@
       "media-scryer"
       "media-runtime"
       "media-identities"
+      "torrents"
       "media-placement-unzen"
       "media-jellyfin"
       "towada"
@@ -224,6 +225,7 @@
           libraryMediaGid = 390;
         };
         mountainous.features.media-jellyfin.enable = towadaHere;
+        mountainous.features.torrents.enable = true;
         # Vela's routing server. The tiles live on the root NVMe pool (2 TB,
         # three devices), not Towada: the first build's writes stalled
         # media-storage-health past its 20 s deadline, and the guard stopped the

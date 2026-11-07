@@ -441,7 +441,7 @@ in
                 };
                 url = lib.mkOption {
                   type = lib.types.strMatching "https?://[^[:space:]]+";
-                  description = "The module's HTTP(S) MCP endpoint.";
+                  description = "The module's HTTP(S) MCP endpoint, including /mcp. Use its full tailnet name for HTTPS.";
                 };
               };
             }

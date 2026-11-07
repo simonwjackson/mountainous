@@ -37,6 +37,9 @@
         system = pkgs.stdenv.hostPlatform.system;
         config.allowUnfree = true;
       };
+      transmissionPackages = import inputs.nixpkgs-unstable {
+        system = pkgs.stdenv.hostPlatform.system;
+      };
       apps = [
         "sonarr"
         "radarr"
@@ -141,6 +144,11 @@
           type = lib.types.bool;
           default = true;
           description = "Keep NZBFAST paused and offline even when global processing is enabled.";
+        };
+        transmissionRpcPasswordFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "Runtime RPC password file; merged into existing Transmission state at start.";
         };
         enable = lib.mkEnableOption "state-preserving portable media applications";
         placement = lib.mkOption {
@@ -251,7 +259,7 @@
           };
           transmission = {
             enable = present "transmission";
-            package = media.transmission_4;
+            package = transmissionPackages.transmission_4;
             group = "media";
             home = "/var/lib/transmission";
             extraFlags = lib.optionals held [
@@ -352,9 +360,15 @@
             transmission = lib.mkIf (present "transmission") {
               # Current upstream regenerates settings.json. Keep the complete
               # transferred file, including credentials and non-Nix UI settings.
-              serviceConfig.ExecStartPre = lib.mkForce [
-                "${pkgs.python3}/bin/python3 ${arrStateScript} transmission"
-              ];
+              serviceConfig.LoadCredential = lib.optional (
+                cfg.transmissionRpcPasswordFile != null
+              ) "transmission-rpc-password:${cfg.transmissionRpcPasswordFile}";
+              serviceConfig.ExecStartPre = lib.mkForce (
+                [ "${pkgs.python3}/bin/python3 ${arrStateScript} transmission" ]
+                ++ lib.optional (
+                  cfg.transmissionRpcPasswordFile != null
+                ) "${pkgs.python3}/bin/python3 ${./media-transmission-auth.py} ${configs.transmission}"
+              );
               serviceConfig.BindPaths = lib.mkAfter [ "/srv/basin/downloads/torrents" ];
             };
           }
