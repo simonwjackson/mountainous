@@ -13,6 +13,7 @@ import ssl
 import subprocess
 import time
 import urllib.request
+import urllib.error
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("expected_source_sha")
@@ -58,19 +59,28 @@ log = args.output.with_suffix(".log")
 with log.open("w") as output:
     deployed = subprocess.run(["nix", "run", "--max-jobs", "2", "--option", "builders", "", ".#app-deployer", "--", ".#rakku.groceries", "--skip-checks", "--checksigs", "--auto-rollback", "true", "--magic-rollback", "true", "--", *flags], stdout=output, stderr=subprocess.STDOUT, text=True)
 assert deployed.returncode != 0, "Broken service was incorrectly accepted"
+log_text = log.read_text()
+assert "activation readiness timed out" in log_text, "Candidate did not reach the runtime readiness check"
+assert "rolled back to previous generation" in log_text, "Deploy-rs did not report rollback"
 # Wait only for deploy-rs' old activation to finish; never repair it ourselves.
 for _ in range(90):
     active = subprocess.run(ssh + ["systemctl", "is-active", "--quiet", "groceries.service", "groceries-tsnet.service"]).returncode == 0
     if current() == before and active:
-        break
+        # deploy-rs may return while the previous activation is still starting.
+        # Type=simple being active is not proof of backend or proxy readiness.
+        try:
+            after_health = health()
+        except (urllib.error.URLError, TimeoutError, AssertionError):
+            pass
+        else:
+            break
     time.sleep(1)
 else:
     raise RuntimeError("Previous profile and units did not recover")
-after_health = health()
 assert after_health["buildId"] == before_health["buildId"]
 receipt = {"source_commit": args.expected_source_sha, "app_revision": node["rev"], "broken_activation": activation,
            "deploy_exit": deployed.returncode, "profile_before": before, "profile_after": current(),
            "both_units_active": active, "health_before": before_health, "health_after": after_health,
-           "rollback": "verified-without-manual-repair", "log": str(log)}
+           "rollback": "verified-without-manual-repair", "runtime_readiness_failure_seen": True, "deploy_rollback_seen": True, "log": str(log)}
 args.output.write_text(json.dumps(receipt, indent=2) + "\n")
 print(json.dumps(receipt, indent=2))

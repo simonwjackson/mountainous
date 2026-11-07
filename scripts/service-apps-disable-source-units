@@ -1,0 +1,34 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils systemd
+# Disable stopped user units without losing externally linked definitions.
+set -euo pipefail
+(($# > 0))
+declare -A links=()
+for unit in "$@"; do
+  [[ $unit != */* && $unit == *.service ]]
+  [[ $(systemctl --user is-active "$unit" || true) == inactive ]]
+  path=$HOME/.config/systemd/user/$unit
+  [[ ! -L $path ]] || links[$unit]=$(readlink "$path")
+done
+# systemctl disable also removes unit-definition links into the Nix store.
+# Restore only those definitions; do not recreate any *.target.wants links.
+for unit in "$@"; do
+  if systemctl --user is-enabled --quiet "$unit"; then
+    systemctl --user disable "$unit"
+  fi
+done
+for unit in "${!links[@]}"; do
+  path=$HOME/.config/systemd/user/$unit
+  [[ -e $path || -L $path ]] || ln -s "${links[$unit]}" "$path"
+  [[ $(readlink "$path") == "${links[$unit]}" ]]
+done
+systemctl --user daemon-reload
+for unit in "$@"; do
+  if systemctl --user is-enabled --quiet "$unit"; then
+    echo "$unit is unexpectedly enabled" >&2; exit 1
+  fi
+  state=$(systemctl --user is-enabled "$unit" || true)
+  [[ $state == disabled || $state == linked ]]
+  [[ $(systemctl --user is-active "$unit" || true) == inactive ]]
+  printf '%s: %s (not enabled), inactive; definition retained\n' "$unit" "$state"
+done

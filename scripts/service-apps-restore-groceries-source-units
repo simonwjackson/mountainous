@@ -1,0 +1,23 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils systemd
+# Restore only the original source unit links removed by systemctl disable.
+set -euo pipefail
+[[ $(hostname) == zao && $EUID != 0 ]]
+original=/nix/store/hd7x2gnyprhlq76vp329r87bsbz50z8z-groceries-0.1.0/share/systemd/user
+for unit in groceries.service groceries-proxy.service; do
+  target=$HOME/.config/systemd/user/$unit
+  [[ -f $original/$unit && ! -e $target && ! -L $target ]]
+  ln -s "$original/$unit" "$target"
+done
+systemctl --user daemon-reload
+systemctl --user stop groceries.service groceries-proxy.service
+for unit in groceries.service groceries-proxy.service; do
+  printf '%s -> %s\n' "$unit" "$(readlink "$HOME/.config/systemd/user/$unit")"
+  enabled=$(systemctl --user is-enabled "$unit" || true)
+  active=$(systemctl --user is-active "$unit" || true)
+  printf '%s: enabled=%s active=%s\n' "$unit" "$enabled" "$active"
+  # External-store definitions are labelled linked, but is-enabled exits 1.
+  [[ $enabled == disabled || $enabled == linked ]]
+  [[ $active == inactive ]]
+  if systemctl --user is-enabled --quiet "$unit"; then exit 1; fi
+done

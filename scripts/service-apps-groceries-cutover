@@ -91,5 +91,5 @@ bash "$repo/scripts/service-apps-assistant-probes" "$python" /tmp/service-apps-g
 "$python" -c 'import json,sys; a,b=map(lambda p:json.load(open(p)),sys.argv[1:]); assert a["lines_sha256"]==b["lines_sha256"] and a["buildId"]==b["buildId"]' "$evidence/groceries-zao-before.json" "$evidence/groceries-zao-after.json"
 ssh -F /dev/null root@rakku bash /tmp/service-apps-host-target health > "$evidence/rakku-after-cutover-health.txt"
 step='disable-source'
-systemctl --user disable groceries.service groceries-proxy.service
+bash "$repo/scripts/service-apps-disable-source-units" groceries.service groceries-proxy.service > "$evidence/groceries-zao-disabled.txt"
 printf 'Groceries cut over with unchanged data, build and FQDN; all three assistant credentials work. Old Zao files retained.\n'

@@ -10,7 +10,9 @@ let
   sidecar = rakku.systemd.services.groceries-tsnet;
   path = "/nix/var/nix/profiles/apps/groceries";
   rules = lib.filter (rule: builtins.elem "app-deploy" rule.users) rakku.security.sudo.extraRules;
-  commands = lib.concatMap (rule: map (command: command.command) rule.commands) rules;
+  commands = lib.filter (lib.hasInfix "/groceries-service-control ") (
+    lib.concatMap (rule: map (command: command.command) rule.commands) rules
+  );
 in
 assert app.port == 4382;
 assert rakku.users.users.groceries.isSystemUser;
