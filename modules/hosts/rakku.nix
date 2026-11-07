@@ -71,6 +71,11 @@ in
           port = 4382;
           schedule = "*-*-* 04:15:00 UTC";
         };
+        mountainous.serviceApps.knowledge = (import ../../lib/knowledge-service.nix { inherit pkgs inputs; }) // {
+          input = "knowledge";
+          port = 4381;
+          schedule = "*-*-* 04:35:00 UTC";
+        };
         # Isolated rollback canary: no tailnet registration or production state.
         mountainous.serviceApps.service-app-canary = {
           package =

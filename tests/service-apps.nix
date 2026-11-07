@@ -58,4 +58,14 @@ assert
   unzen.systemd.services.app-update-pi.unitConfig.ConditionPathExists
   == "/var/lib/app-updater/enabled";
 assert !(builtins.elem "hiyori" unzen.mountainous.appUpdates.pi.hosts);
+assert rakku.mountainous.serviceApps.knowledge.port == 4381;
+assert rakku.mountainous.serviceApps.knowledge.serverArgs == [
+  "--data-dir" "/var/lib/knowledge/data" "--origin" "https://knowledge.hummingbird-lake.ts.net"
+];
+assert rakku.sops.secrets.knowledge-pi-cliproxyapi.owner == "knowledge";
+assert builtins.any (
+  entry: entry.directory == "/var/lib/knowledge" && entry.mode == "0700"
+) rakku.environment.persistence."/tundra/permafrost".directories;
+assert unzen.mountainous.appUpdates.knowledge.hosts == [ "rakku" ];
+assert deploy.nodes.rakku.profiles.knowledge.profilePath == "/nix/var/nix/profiles/apps/knowledge";
 true
