@@ -133,6 +133,12 @@ in
         };
         systemd.services.usb-gadget.enable = false;
 
+        # Korri's device-cache policy forces max-jobs to 0, meant for handheld
+        # devices. Aka is a fleet builder (fleet.builders.aka above), so it must
+        # build what it is sent. Priority 49 beats that module's mkForce (50).
+        # Its forwarding stays off (builders = "", distributedBuilds = false).
+        nix.settings.max-jobs = lib.mkOverride 49 "auto";
+
         # Gaming belongs to Korri. Steam is the one exception: Korri has no
         # Steam provider for x86_64.
         programs.steam.enable = true;
