@@ -207,7 +207,7 @@ in
             checkCommand = lib.mkOption {
               type = lib.types.lines;
               default = "true";
-              description = "Sandboxed build smoke check; APP_PACKAGE points to the candidate. No network or secrets.";
+              description = "Sandboxed build smoke check; APP_PACKAGE and APP_VERSION describe the candidate. No network or secrets.";
             };
             activationTimeout = lib.mkOption {
               type = lib.types.ints.between 5 240;
@@ -644,10 +644,12 @@ in
             scheduledCanary.mountainous.serviceApps.service-app-single-canary.unitNames
             == [ "service-app-single-canary.service" ];
           pkgs.runCommand "service-app-scheduled-contract" { } ''
-            grep -F 'ConditionPathExists=/var/lib/service-app-single-canary/enabled-audit' \
-              ${
-                scheduledCanary.systemd.units."service-app-single-canary-audit.service".unit
-              }/service-app-single-canary-audit.service
+            ${lib.optionalString (system == "x86_64-linux") ''
+              grep -F 'ConditionPathExists=/var/lib/service-app-single-canary/enabled-audit' \
+                ${
+                  scheduledCanary.systemd.units."service-app-single-canary-audit.service".unit
+                }/service-app-single-canary-audit.service
+            ''}
             touch "$out"
           '';
         service-app-tools =
@@ -684,6 +686,12 @@ in
               grep -F 'systemctl show service-app-single-canary.service -p ActiveState' "$activation"
               ! grep -F 'service-app-single-canary-tsnet' "$activation"
               grep -F 'activation stability check failed' "$activation"
+              # A later package version must not require editing its host declaration.
+              export APP_VERSION=9.8.7 APP_PACKAGE="$TMPDIR/version-candidate"
+              mkdir -p "$APP_PACKAGE/bin"
+              printf '%s\n' '#!${pkgs.runtimeShell}' 'echo "synth-serve 9.8.7"' > "$APP_PACKAGE/bin/synth-serve"
+              chmod +x "$APP_PACKAGE/bin/synth-serve"
+              ${self.nixosConfigurations.rakku.config.mountainous.serviceApps.synth.checkCommand}
             ''}
             touch "$out"
           '';
@@ -697,6 +705,7 @@ in
         pkgs.runCommand "check-${key}"
           {
             APP_PACKAGE = packageFor name system;
+            APP_VERSION = (packageFor name system).version;
             nativeBuildInputs = [
               pkgs.curl
               pkgs.python3

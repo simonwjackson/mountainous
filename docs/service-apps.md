@@ -58,7 +58,7 @@ Impermanence persistence is automatic; Rakku uses
 directory with the app's ownership, including `.config`. Mutable OAuth state belongs in persistent data,
 not fixed secrets. `readOnlyBinds` adapts legacy credential paths in the unit's
 mount namespace. Do not embed credentials in arguments, health contracts or the
-store. `checkCommand` is secret/network-free and gets `APP_PACKAGE` in the build
+store. `checkCommand` is secret/network-free and gets the candidate's `APP_PACKAGE` and `APP_VERSION` in the build
 sandbox. `smokeCommand` runs as `app-deploy`, not root. Use bounded checks and
 absolute binary paths. Input and schedule must agree across destination hosts.
 

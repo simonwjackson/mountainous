@@ -2,7 +2,7 @@
 
 **Four apps accepted:** Knowledge, Meetings, Storia and Synth. Pace rolled back safely. Storybook and voice-gateway remain on Zao with concrete blockers. Irori sync is retired. All source data, definition links, stopped snapshots and unaccepted profile generations remain available.
 
-Unit names below mean `.service` unless `.timer` is shown explicitly. Source sidecars are named `*-proxy`, not the `*-tsnet` names in the initial brief.
+Unit names below mean `.service` unless `.timer` is shown explicitly. Knowledge and Meetings source sidecars are named `*-proxy`, not the `*-tsnet` names in the initial brief.
 
 | App | Result and address | Source state size | Old Zao user units | New Rakku system units |
 |---|---|---|---|---|
@@ -54,7 +54,7 @@ Read-only verification: `/health` (not `/healthz`) returned status `ok` with com
 ### Pace: two separate failures
 
 1. **Existing sync failure, not fixed:** Zao's `pace-sync` exits 1 with “SimpleFIN reported incomplete data. Automatic allocation remains paused until a complete sync.” Its original six-hour calendar and five-minute boot trigger remain declared unchanged. The new periodic-command gate stays closed because the app cutover was rejected.
-2. **Migration failure:** signed receipt `1794082909971514688.json` rejected activation during the five-second stability window when a three-second loopback smoke request timed out. The backend was CPU-active during startup; its recorded peak was 316.9 MiB. The guard stopped/confirmed both Rakku units, quarantined the canonical profile and restored only the previously active Zao server, proxy and timer. It did not restart the already-failed oneshot. All 4,629 ledger rows and the current-month snapshot match their pre-cutover hashes. No second attempt was made in this batch. An isolated startup/performance investigation is needed before another cutover; do not remove stability checks to force acceptance.
+2. **Migration failure:** signed receipt `1794082909971514688.json` rejected activation during the five-second stability window when a three-second loopback smoke request timed out. The backend was CPU-active during startup; its recorded peak was 316.9 MiB. The guard stopped/confirmed both Rakku units, quarantined the canonical profile and restored only the previously active Zao server, proxy and timer. It did not restart the already-failed oneshot. All 4,629 ledger rows and the current-month snapshot match their pre-cutover hashes. No second attempt was made in this batch. The rejected destination still has all 311 original files, a changed lock and assistance-job metadata, and one extra temporary observations file; these are retained for reconciliation. An isolated startup/performance investigation and state comparison are needed before another cutover; do not remove stability checks to force acceptance.
 
 An earlier Unzen package rebuild timed out in the existing browser overflow gate. The identical closure had passed its enabled tests and all browser gates on Zao. That tested closure was copied to Unzen; the installed updater's subsequent check-only passed (`1794082802419463568.json`). No tests were disabled and no application behavior changed. The package's underlying server/sync output stayed `/nix/store/4gqry6wmrxdsvyqxpsyzfn6mn2426ic6-pace-server-0.1.0`.
 
@@ -82,7 +82,7 @@ Store prefixes abbreviate `nixos-system-<host>-26.11.20260923.4975466` paths. Fu
 
 Every actual switch passed `systemctl is-system-running`, zero failed units and the host's core checks. Rakku checks covered Home Assistant, Z-Wave, all three assistants, Beszel, CLIProxyAPI, Groceries and Logbook. Unzen checks included Jellyfin, Scryer, Prowlarr, Transmission, NZBFAST, VPN and Beszel. Unzen's pre-existing failed `cliproxyapi-update` was observed before work and was no longer failed after the first switch; this worker did not modify that service.
 
-A 30-second MemAvailable watcher ran throughout. No sample crossed the 2 GiB stop threshold. Later shared-checkout operations held `stage3-migration.lock` across pin/preflight/deploy/result. An Unzen switch took `unzen-switch.lock` inside it. All native builds used two jobs and empty builders.
+A 30-second MemAvailable watcher ran throughout. Its minimum across all 358 samples was **3,383,816 KiB (3.23 GiB)**. No sample crossed the 2 GiB stop threshold. Later shared-checkout operations held `stage3-migration.lock` across pin/preflight/deploy/result. An Unzen switch took `unzen-switch.lock` inside it. All native builds used two jobs and empty builders.
 
 ## Canonical private source branches added
 
@@ -108,6 +108,27 @@ Mountainous work used branch `c-012cce184a9a45028af9658a1f5c508ceb9450b33fe372ff
 - Safe periodic jobs/timers and explicit legacy-link retention: `dd429045`, `08542962`.
 - Shared Pi runtime: `d12ccc85`, `85ef5581`.
 - Pace: `b21fdd4a`, `2c7112c6`, `9aa7b4b4`.
-- Earlier result/evidence commits: `c66763ea`, `a87afa8f`, `65943cd5`. The final report commit is identified in the agent's handoff.
+- Earlier result/evidence commits: `c66763ea`, `a87afa8f`, `65943cd5`, `08c5246d`. The final validation/report commit is identified in the agent's handoff.
+
+## Final focused checks
+
+| Check | Result |
+|---|---|
+| `bash scripts/check-flake-inputs.sh` | Passed, also at every push hook |
+| `nix eval .#nixosConfigurations.rakku.config.system.build.toplevel.drvPath --raw --max-jobs 2 --option builders ''` | Passed; drvPath `asfzkip1…` builds the running `bnc7k06j…` system |
+| `python3 -m unittest tests/test_service_apps.py` | 13 passed |
+| Python compilation and Ruff unused/import checks | Passed for changed helpers/tests |
+| ShellCheck | Passed for source-disable helper and all five upstream packaging wrappers |
+| Nixfmt check | Passed for changed Nix module, host, runtime libraries, contracts and fixtures |
+| Individual Nix checks: `service-apps`, `service-app-scheduled`, `service-app-tools` | All built successfully, one attribute at a time, two jobs, builders disabled |
+| Individual Nix app checks: Knowledge, Meetings, Storia, Synth, Pace | All five built successfully against candidate `APP_VERSION`, not a pinned release literal |
+| Future-version regression | Candidate `9.8.7` failed the old `08c5246d` host check (exit 1) and passes the new check (exit 0); retained in the Nix contract |
+| ARM scheduled contract | Single-attribute evaluation passed; rendered-unit probe stays native to x86 Rakku; structural assertions remain unconditional |
+| Exact single-process compatibility comparison | All 46 pre-existing app service/timer/updater/profile drvPaths unchanged at the module commit |
+| Bootstrap/rollback proof | New isolated single canary rejected a failing process and automatically restored its healthy profile and HTTP identity; production bootstrap refused |
+| Known-credential evidence audit | Zero matches across 34 changed/evidence files against seven known credentials (`stage3-rakku-audit.json`) |
+| Final host checks | Rakku and Unzen running; zero failed units; required core services active |
+
+Statix/Deadnix were also run on the module. They reported existing style and unused-argument warnings; no unrelated formatting refactor was made to silence them.
 
 All listed commits are ancestors of `origin/cairn`; push hooks passed. No aggregate flake check was run. Private plans, unit inventories, data digests and full logs remain under `/tmp/rakku-stage3`; signed receipts remain under `/var/lib/app-updater/receipts` on Unzen. Do not publish private inventories without auditing them.

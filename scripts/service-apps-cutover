@@ -18,7 +18,6 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import time
 import uuid
 from service_apps import Health, SSH, declared_units, migration_source_units, state_exclusions, name, recovery_units, require_cutover_ready, run
 

@@ -86,7 +86,7 @@ in
           schedule = "*-*-* 04:40:00 UTC";
           smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:8179/healthz >/dev/null";
           checkCommand = ''
-            test "$("$APP_PACKAGE/bin/meetings-server" --version)" = 'meetings-server 0.1.0'
+            test "$("$APP_PACKAGE/bin/meetings-server" --version)" = "meetings-server $APP_VERSION"
           '';
         };
         mountainous.serviceApps.storia = (import ../../lib/storia-service.nix { inherit pkgs; }) // {
@@ -113,7 +113,7 @@ in
           ];
           schedule = "*-*-* 04:50:00 UTC";
           smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:4180/manifest.webmanifest >/dev/null";
-          checkCommand = ''test "$("$APP_PACKAGE/bin/synth-serve" --version)" = 'synth-serve 0.1.0' '';
+          checkCommand = ''test "$("$APP_PACKAGE/bin/synth-serve" --version)" = "synth-serve $APP_VERSION" '';
         };
         mountainous.serviceApps.pace = (import ../../lib/pace-service.nix { inherit pkgs inputs; }) // {
           input = "pace";

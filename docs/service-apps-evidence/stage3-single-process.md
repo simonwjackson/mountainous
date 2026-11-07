@@ -4,7 +4,7 @@ The module supports `sidecar = null` for apps that already serve their own tsnet
 
 ## Compatibility proof
 
-Before the change (source `a87afa8f`), and after it, each existing app's backend unit drvPath, sidecar unit drvPath and deploy-profile drvPath were evaluated separately. All **21 drvPaths** match exactly. Compare `stage3-single-before.json` and `stage3-single-after.json`. That includes Groceries and the existing paired canary. Added `/etc/service-apps/*.json` manifests contain only the derived unit list, and do not change old units or activation profiles.
+The first comparison recorded **21 identical drvPaths** (`stage3-single-before.json` and `stage3-single-after.json`). The final, complete comparison pins the module commit's exact parent `963a921e51aa38478350cfdff9b6b32c0202e613` and module commit `e712d639b29e1c1772fc0bcb1d9fdd2b3e94908d`. All **46 existing app service/timer, updater and deploy-profile drvPaths** match exactly, including Pyxis added concurrently and YouTube's yt-dlp units. See `stage3-single-complete-compatibility.json`. This includes Groceries and the existing paired canary. Added `/etc/service-apps/*.json` manifests contain only the derived unit list and do not change old units or activation profiles.
 
 Single-process controllers, readiness, five-second incarnation stability, SOPS restarts, rollback probes and cutover stop/ready confirmation use the one declared unit. The module emits the authoritative unit manifest; migration tools refuse missing/invalid manifests rather than assuming two processes.
 
@@ -28,7 +28,7 @@ The migration lock was held on Unzen for staging, bootstrap signing/deploy and t
 - Python service-app tests: **11 passed**, including single/paired authoritative manifests, invalid/missing manifests, all-unit status, and bootstrap argument boundaries.
 - Python compilation: passed for the shared module, cutover and rollback probe.
 - `checks.x86_64-linux.service-apps`: passed, including actual single controller and activation scripts.
-- `checks.x86_64-linux.service-app-tools`: passed (rebuild after bootstrap mode also required in final checks).
+- `checks.x86_64-linux.service-app-tools`: passed again after bootstrap mode and later timer/link safety changes; final Python suite: **13 passed**.
 - `nixfmt`: applied to changed Nix files.
 - Statix and Deadnix: ran on the module; reported existing style/unused-argument warnings, no implementation failure.
 - Input guard and `git diff --check`: passed. No aggregate flake check was run.

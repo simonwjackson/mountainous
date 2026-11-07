@@ -30,7 +30,7 @@ runtime
   };
   smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:4321/manifest.webmanifest >/dev/null";
   checkCommand = ''
-    test "$("$APP_PACKAGE/bin/pace-server" --version)" = 'pace-server 0.1.0'
+    test "$("$APP_PACKAGE/bin/pace-server" --version)" = "pace-server $APP_VERSION"
     "$APP_PACKAGE/bin/pace-sync" --help >/dev/null
   '';
 }

@@ -16,6 +16,6 @@
   };
   smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:4390/healthz >/dev/null";
   checkCommand = ''
-    test "$("$APP_PACKAGE/bin/storia-server" --version)" = 'storia-server 0.1.0'
+    test "$("$APP_PACKAGE/bin/storia-server" --version)" = "storia-server $APP_VERSION"
   '';
 }
