@@ -337,7 +337,10 @@ in
             description = "Refresh ${name}'s mutable yt-dlp nightly";
             wants = [ "network-online.target" ];
             after = [ "network-online.target" ];
-            environment = { HOME = home; } // app.environment;
+            environment = {
+              HOME = home;
+            }
+            // app.environment;
             unitConfig.ConditionPathExists = "${profile name}/bin/${name}-ytdlp-update";
             serviceConfig = common // {
               Type = "oneshot";

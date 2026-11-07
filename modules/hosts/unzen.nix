@@ -116,7 +116,14 @@
         mountainous.serviceApps.youtube = {
           port = 4491;
           serverArgs = [ ];
-          sidecarArgs = [ "--name" "youtube" "--upstream" "http://127.0.0.1:4491" "--state" "/var/lib/youtube/state/tsnet" ];
+          sidecarArgs = [
+            "--name"
+            "youtube"
+            "--upstream"
+            "http://127.0.0.1:4491"
+            "--state"
+            "/var/lib/youtube/state/tsnet"
+          ];
           environment.YOUTUBE_STATE_DIR = "/var/lib/youtube/data";
           environment.YOUTUBE_YT_DLP_DATA_DIR = "/var/lib/youtube/data/yt-dlp-bin";
           secrets.youtube-env = ".config/youtube/env";

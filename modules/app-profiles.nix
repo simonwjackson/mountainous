@@ -193,6 +193,18 @@ in
 
     perSystem =
       { pkgs, system, ... }:
+      let
+        graph = {
+          nodes = lib.filterAttrs (name: _: hosts.${name}.system == system) self.deploy.nodes;
+        };
+        # JSON schema validation must not realize every referenced app profile.
+        # Keep deploy-activate's real dependencies; remove context only here.
+        schemaCheck =
+          graph:
+          (inputs.deploy-rs.lib.${system}.deployChecks (
+            builtins.fromJSON (builtins.unsafeDiscardStringContext (builtins.toJSON graph))
+          )).deploy-schema;
+      in
       {
         packages =
           (lib.mapAttrs' (name: app: lib.nameValuePair "app-${name}" (app.package system)) registry)
@@ -200,9 +212,18 @@ in
             app-deployer = inputs.deploy-rs.packages.${system}.default;
           };
         checks =
-          (inputs.deploy-rs.lib.${system}.deployChecks {
-            nodes = lib.filterAttrs (name: _: hosts.${name}.system == system) self.deploy.nodes;
-          })
+          (inputs.deploy-rs.lib.${system}.deployChecks graph)
+          // {
+            deploy-schema = schemaCheck graph;
+            # The schema checks strings, not executable contents. This real
+            # failing derivation must never become a schema-build dependency.
+            deploy-schema-isolated = schemaCheck {
+              nodes.fixture = {
+                hostname = "fixture.invalid";
+                profiles.fixture.path = pkgs.runCommand "schema-must-not-build-app" { } "exit 1";
+              };
+            };
+          }
           // lib.mapAttrs' (
             name: app:
             lib.nameValuePair "app-${name}" (
