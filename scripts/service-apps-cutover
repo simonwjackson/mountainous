@@ -1,0 +1,244 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3 openssh systemd
+"""Guarded service-app migration. Run source with a reviewed JSON plan.
+
+The target subcommand must run from the same repo-built tools package on the
+already-provisioned destination. It never switches a system or deletes app data.
+"""
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path, PurePosixPath
+import pwd
+import shutil
+import socket
+import subprocess
+import sys
+import tarfile
+import tempfile
+import time
+import uuid
+from service_apps import Health, SSH, name, recovery_units, require_cutover_ready, run
+
+
+def relative(value):
+    path = PurePosixPath(value)
+    if path.is_absolute() or not path.parts or any(x in ("..", ".migration") for x in path.parts):
+        raise ValueError("State destinations must be private home-relative paths")
+    return str(path)
+
+
+def state_roots(plan):
+    roots = [relative(item["relative"]) for item in plan["state_paths"]]
+    if not roots or any(a == b or a.startswith(b + "/") or b.startswith(a + "/")
+                        for index, a in enumerate(roots) for b in roots[index + 1:]):
+        raise ValueError("State path mappings must be nonempty and non-overlapping")
+    return roots
+
+
+def destination(plan):
+    app = name(plan["app"])
+    home = Path("/var/lib") / app
+    profile = Path("/nix/var/nix/profiles/apps") / app
+    units = [app + ".service", app + "-tsnet.service"]
+    return home, profile, units
+
+
+def properties(command, unit):
+    value = run(command + ["show", unit, "-p", "ActiveState", "-p", "MainPID"])
+    return dict(line.split("=", 1) for line in value.splitlines())
+
+
+def stopped(command, units):
+    for unit in units:
+        props = properties(command, unit)
+        if props["ActiveState"] not in ("inactive", "failed") or props["MainPID"] != "0":
+            return False
+    return True
+
+
+def target(action, plan):
+    if os.getuid() != 0 or socket.gethostname() != plan["destination_host"]:
+        raise RuntimeError("Wrong target host/account")
+    home, profile, units = destination(plan)
+    if action in ("guard", "stage"):
+        if os.path.lexists(profile) or not stopped(["systemctl"], units):
+            raise RuntimeError("Destination must be stopped and its profile absent")
+    if action == "guard":
+        if not os.path.samefile(home, plan["persistent_home"]):
+            raise RuntimeError("Destination persistence bind is not installed")
+    elif action == "ready":
+        for unit in units:
+            if properties(["systemctl"], unit)["ActiveState"] != "active":
+                raise RuntimeError("Destination unit is not active: " + unit)
+    elif action == "stop":
+        subprocess.run(["systemctl", "stop", *units], check=True)
+        if not stopped(["systemctl"], units):
+            raise RuntimeError("Destination stop is not confirmed")
+        if profile.is_symlink():
+            profile.rename(profile.with_name(profile.name + "-unaccepted-" + uuid.uuid4().hex))
+        elif os.path.lexists(profile):
+            raise RuntimeError("Unexpected non-symlink profile; refusing source recovery")
+    elif action == "stage":
+        roots = state_roots(plan)
+        for root in roots:
+            path = home / root
+            if os.path.lexists(path) and (path.is_symlink() or not path.is_dir() or any(path.iterdir())):
+                raise RuntimeError("Refuse replacing existing destination state: " + root)
+        # No parent may redirect privileged writes outside the private home.
+        for root in [".migration", *roots]:
+            path = home / root
+            for parent in [path, *path.parents]:
+                if parent == home.parent:
+                    break
+                if parent.is_symlink():
+                    raise RuntimeError("Destination state path contains a symlink")
+        migration = home / ".migration"
+        migration.mkdir(exist_ok=True, mode=0o700)
+        os.chown(migration, 0, 0)
+        os.chmod(migration, 0o700)
+        snapshot = migration / uuid.uuid4().hex
+        snapshot.mkdir(mode=0o700)
+        archive = snapshot / "source.tar"
+        with archive.open("xb") as output:
+            os.chmod(archive, 0o600)
+            shutil.copyfileobj(sys.stdin.buffer, output)
+        extracted = snapshot / "files"
+        extracted.mkdir(mode=0o700)
+        with tarfile.open(archive) as source:
+            members = source.getmembers()
+            for member in members:
+                member.name = relative(member.name)
+                if not (member.isfile() or member.isdir()):
+                    raise RuntimeError("Only regular files/directories may be migrated")
+                if not any(member.name == root or member.name.startswith(root + "/") for root in roots):
+                    raise RuntimeError("Archive contains an undeclared state path")
+                member.uid, member.gid = 0, 0
+                member.mode = 0o700 if member.isdir() or member.mode & 0o100 else 0o600
+            source.extractall(extracted, members=members, filter="data")
+        account = pwd.getpwnam(plan["destination_user"])
+        for root in roots:
+            path = home / root
+            # Remove only empty directories made by platform provisioning.
+            if path.exists():
+                path.rmdir()
+            path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            shutil.copytree(extracted / root, path, copy_function=shutil.copy2)
+            for parent, directories, files in os.walk(path):
+                os.chown(parent, account.pw_uid, account.pw_gid)
+                os.chmod(parent, 0o700)
+                for filename in files:
+                    file = Path(parent, filename)
+                    original = extracted / file.relative_to(home)
+                    with file.open("rb") as copied, original.open("rb") as saved:
+                        if hashlib.file_digest(copied, "sha256").digest() != hashlib.file_digest(saved, "sha256").digest():
+                            raise RuntimeError("Copied state differs from stopped snapshot")
+                    os.chown(file, account.pw_uid, account.pw_gid)
+            # Intermediate private parents must belong to the application too.
+            for parent in [path.parent, *path.parent.parents]:
+                if parent == home.parent:
+                    break
+                os.chown(parent, account.pw_uid, account.pw_gid)
+                os.chmod(parent, 0o700)
+        print("Stopped snapshot retained; private state copied and verified")
+
+
+def source(plan):
+    if socket.gethostname() != plan["source_host"]:
+        raise RuntimeError("Wrong source host")
+    app = name(plan["app"])
+    units = plan["source_units"]
+    if not units or any("/" in unit or not unit.endswith(".service") for unit in units):
+        raise ValueError("Explicit source service unit names are required")
+    scope = plan.get("source_scope", "user")
+    if scope not in ("user", "system"):
+        raise ValueError("source_scope must be user or system")
+    command = ["systemctl"] + (["--user"] if scope == "user" else [])
+    initial = {unit: properties(command, unit)["ActiveState"] == "active" for unit in units}
+    # Reject a completed/invalid migration before any stop, transfer or recovery.
+    require_cutover_ready(initial, False)
+    transport = SSH(plan["destination_host"], "root", tuple(plan.get("ssh_options", [])))
+    tools = plan["target_tools"]
+    if not tools.startswith("/nix/store/"):
+        raise ValueError("Target tools must be a repo-built immutable store path")
+    target_plan = {key: plan[key] for key in ("app", "destination_host", "destination_user", "persistent_home", "state_paths")}
+    encoded = json.dumps(target_plan)
+    def remote(action, **kwargs):
+        return subprocess.run(transport.command(tools + "/bin/service-apps-cutover", "target", action,
+                                                "--contract", encoded), check=True, **kwargs)
+    remote("guard")
+    health = Health(**plan["health"])
+    health.read()
+    state_roots(plan)
+    for item in plan["state_paths"]:
+        root = Path(item["source"])
+        if not root.is_absolute() or not root.is_dir() or root.is_symlink():
+            raise ValueError("State sources must be absolute regular directories")
+        for parent, directories, files in os.walk(root):
+            if any(Path(parent, filename).is_symlink() for filename in directories + files):
+                raise ValueError("State sources must not contain symlinks")
+    # Validate recovery and deployment contracts before the first outage.
+    for field in ("deploy_command", "verify_command"):
+        if not isinstance(plan[field], list) or not plan[field] or not all(isinstance(x, str) for x in plan[field]):
+            raise ValueError(field + " must be a nonempty argv array without credential values")
+    stopping = False
+    accepted = False
+    with tempfile.TemporaryDirectory(prefix="service-app-cutover-" + app + "-") as directory:
+        try:
+            stopping = True
+            subprocess.run(command + ["stop", *units], check=True)
+            if not stopped(command, units):
+                raise RuntimeError("Source stop is not confirmed")
+            archive = Path(directory) / "state.tar"
+            with tarfile.open(archive, "w") as output:
+                for item in plan["state_paths"]:
+                    output.add(item["source"], arcname=relative(item["relative"]))
+            archive.chmod(0o600)
+            with archive.open("rb") as data:
+                remote("stage", stdin=data)
+            subprocess.run(plan["deploy_command"], check=True)
+            remote("ready")
+            health.read()
+            subprocess.run(plan["verify_command"], check=True)
+            accepted = True
+            # Preserve externally linked unit definitions while disabling.
+            definitions = Path.home() / ".config/systemd/user" if scope == "user" else Path("/etc/systemd/system")
+            links = {unit: os.readlink(definitions / unit) for unit in units if (definitions / unit).is_symlink()}
+            subprocess.run(command + ["disable", *units], check=True)
+            for unit, link in links.items():
+                path = definitions / unit
+                if not os.path.lexists(path):
+                    path.symlink_to(link)
+                if os.readlink(path) != link:
+                    raise RuntimeError("Source unit definition changed concurrently")
+            subprocess.run(command + ["daemon-reload"], check=True)
+            print("Cutover accepted; source units stopped/disabled; all source state retained")
+        except BaseException:
+            if stopping and not accepted:
+                # If this fails, exit WITHOUT starting any source unit.
+                remote("stop")
+                restore = recovery_units(initial, True)
+                if restore:
+                    subprocess.run(command + ["start", *restore], check=True)
+            raise
+
+
+p = argparse.ArgumentParser(description=__doc__)
+sub = p.add_subparsers(dest="mode", required=True)
+s = sub.add_parser("source")
+s.add_argument("--plan", type=Path, required=True)
+t = sub.add_parser("target")
+t.add_argument("action", choices=["guard", "stage", "stop", "ready"])
+t.add_argument("--contract", type=json.loads, required=True)
+a = p.parse_args()
+os.umask(0o077)
+if a.mode == "target":
+    target(a.action, a.contract)
+else:
+    plan = json.loads(a.plan.read_text())
+    lock_path = Path.home() / (".service-app-cutover-" + name(plan["app"]) + ".lock")
+    with lock_path.open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        source(plan)

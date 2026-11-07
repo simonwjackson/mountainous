@@ -1,86 +1,97 @@
 #!/usr/bin/env nix-shell
 #! nix-shell -i python3 -p python3 nix git openssh
-"""Deploy the deliberately failing service candidate and verify real rollback.
-
-Run as root on Unzen, from the clean mountainous checkout at EXPECTED_SOURCE_SHA.
-No service data or credentials are read. The application must already be healthy.
-"""
+"""Sign/deploy one failing fixture and prove recovery of every unit and health."""
 import argparse
 import json
 import os
 from pathlib import Path
-import ssl
 import subprocess
 import time
-import urllib.request
 import urllib.error
+from service_apps import Health, SSH, build_flags, local_host, name, native, pinned, run
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("expected_source_sha")
-parser.add_argument("output", type=Path)
-args = parser.parse_args()
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument("--runner-host", required=True)
+p.add_argument("--repo", type=Path, required=True)
+p.add_argument("--expected-sha", required=True)
+p.add_argument("--state", type=Path, required=True, help="Updater key directory; keys never enter the store")
+p.add_argument("--host", type=name, required=True)
+p.add_argument("--app", type=name, required=True)
+p.add_argument("--system", required=True)
+p.add_argument("--fixture", type=Path, required=True, help="Fixture directory relative to the pinned repository")
+p.add_argument("--health-url", required=True)
+p.add_argument("--health-equals", type=json.loads, required=True, help="Public JSON dot-path equality contract")
+p.add_argument("--health-identity-key", help="Public health field that must not change")
+p.add_argument("--output", type=Path, required=True)
+p.add_argument("--recovery-timeout", type=int, default=90)
+a = p.parse_args()
 os.umask(0o077)
-repo = Path.cwd()
-state = Path("/var/lib/app-updater")
-assert os.getuid() == 0 and os.uname().nodename == "unzen"
-assert subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip() == args.expected_source_sha
-assert not subprocess.check_output(["git", "status", "--porcelain"], text=True).strip()
-known = str(repo / "deploy/known_hosts")
-os.environ["LOCAL_KEY"] = str(state / "signing-key")
-os.environ["GIT_SSH_COMMAND"] = f"ssh -F /dev/null -i {state}/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={known}"
-ssh = ["ssh", "-F", "/dev/null", "-i", str(state / "ssh/id_ed25519"), "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o", "HostKeyAlias=rakku", "-o", f"UserKnownHostsFile={known}", "app-deploy@rakku"]
-profile = "/nix/var/nix/profiles/apps/groceries"
-
-def run(command):
-    return subprocess.check_output(command, text=True).strip()
-
-def current():
-    return run(ssh + ["readlink", "-f", profile])
-
-def health():
-    context = ssl.create_default_context(cafile="/etc/ssl/certs/ca-certificates.crt")
-    with urllib.request.urlopen("https://groceries.hummingbird-lake.ts.net/healthz", context=context, timeout=20) as response:
-        result = json.load(response)
-    assert result["status"] == "ok" and result["phase"] == "ready"
-    return result
-
+local_host(a.runner_host)
+native(a.system)
+ref = pinned(a.repo, a.expected_sha)
+repo = a.repo.resolve()
+fixture_path = (repo / a.fixture).resolve().relative_to(repo)
+health = Health(a.health_url, a.health_equals, a.health_identity_key)
+node = json.loads(run(["nix", "eval", "--json", f"{ref}#deploy.nodes.{a.host}", "--apply",
+    f"n: {{ inherit (n) hostname sshUser sshOpts; profilePath = n.profiles.{a.app}.profilePath; }}"]))
+ssh = SSH(node["hostname"], node["sshUser"], tuple(node["sshOpts"]))
+profile = node["profilePath"]
+units = [a.app + ".service", a.app + "-tsnet.service"]
+current = lambda: ssh.read("readlink", "-e", profile)
 before = current()
-before_health = health()
+before_health = health.read()
+# Each remote unit query must be one escaped command, not an SSH argument list.
+def active():
+    return all(subprocess.run(ssh.command("systemctl", "is-active", "--quiet", unit),
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 for unit in units)
+
+if not active():
+    raise RuntimeError("Refuse probe: every original app unit must be active")
+app_input = run(["nix", "eval", "--raw", f"{ref}#nixosConfigurations.{a.host}.config.mountainous.serviceApps.{a.app}.input"])
 lock = json.loads((repo / "flake.lock").read_text())
-node = lock["nodes"][lock["nodes"][lock["root"]]["inputs"]["groceries"]]["locked"]
-application = "git+" + node["url"] + "?rev=" + node["rev"]
-fixture = f"git+file://{repo}?rev={args.expected_source_sha}&dir=tests/fixtures/service-app-broken"
-flags = ["--override-input", "groceries", fixture, "--override-input", "groceries/application", application, "--no-write-lock-file", "--max-jobs", "2", "--option", "builders", ""]
-activation = run(["nix", "build", "--no-link", "--print-out-paths", ".#deploy.nodes.rakku.profiles.groceries.path", *flags]).splitlines()[-1]
-subprocess.run(["nix", "store", "sign", "--recursive", "--key-file", str(state / "signing-key"), activation], check=True)
-assert run(["git", "rev-parse", "HEAD"]) == args.expected_source_sha
-args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-log = args.output.with_suffix(".log")
+locked = lock["nodes"][lock["nodes"][lock["root"]]["inputs"][app_input]]["locked"]
+if locked["type"] == "git":
+    application = "git+" + locked["url"] + "?rev=" + locked["rev"]
+elif locked["type"] == "github":
+    application = f'github:{locked["owner"]}/{locked["repo"]}/{locked["rev"]}'
+else:
+    raise ValueError("Fixture application input must be pinned git or GitHub source")
+flags = ["--override-input", app_input, f"{ref}&dir={fixture_path}",
+         "--override-input", app_input + "/application", application, "--no-write-lock-file", *build_flags()]
+os.environ["LOCAL_KEY"] = str(a.state / "signing-key")
+os.environ["GIT_SSH_COMMAND"] = f"ssh -F /dev/null -i {a.state}/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={repo}/deploy/known_hosts"
+activation = run(["nix", "build", "--no-link", "--print-out-paths", f"{ref}#deploy.nodes.{a.host}.profiles.{a.app}.path", *flags])
+subprocess.run(["nix", "store", "sign", "--recursive", "--key-file", str(a.state / "signing-key"), activation], check=True)
+pinned(repo, a.expected_sha)
+a.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+log = a.output.with_suffix(".log")
 with log.open("w") as output:
-    deployed = subprocess.run(["nix", "run", "--max-jobs", "2", "--option", "builders", "", ".#app-deployer", "--", ".#rakku.groceries", "--skip-checks", "--checksigs", "--auto-rollback", "true", "--magic-rollback", "true", "--", *flags], stdout=output, stderr=subprocess.STDOUT, text=True)
-assert deployed.returncode != 0, "Broken service was incorrectly accepted"
-log_text = log.read_text()
-assert "activation readiness timed out" in log_text, "Candidate did not reach the runtime readiness check"
-assert "rolled back to previous generation" in log_text, "Deploy-rs did not report rollback"
-# Wait only for deploy-rs' old activation to finish; never repair it ourselves.
-for _ in range(90):
-    active = subprocess.run(ssh + ["systemctl", "is-active", "--quiet", "groceries.service", "groceries-tsnet.service"]).returncode == 0
-    if current() == before and active:
-        # deploy-rs may return while the previous activation is still starting.
-        # Type=simple being active is not proof of backend or proxy readiness.
+    deployed = subprocess.run(["nix", "run", *build_flags(), f"{ref}#app-deployer", "--",
+        f"{ref}#{a.host}.{a.app}", "--skip-checks", "--checksigs", "--auto-rollback", "true",
+        "--magic-rollback", "true", "--", *flags], stdout=output, stderr=subprocess.STDOUT, text=True)
+if deployed.returncode == 0:
+    raise RuntimeError("Broken service was incorrectly accepted")
+text = log.read_text()
+if "activation readiness timed out" not in text or "rolled back to previous generation" not in text:
+    raise RuntimeError("Missing evidence of runtime readiness rejection and deploy-rs rollback")
+for _ in range(a.recovery_timeout):
+    if current() == before and active():
         try:
-            after_health = health()
-        except (urllib.error.URLError, TimeoutError, AssertionError):
+            after_health = health.read()
+        except (urllib.error.URLError, TimeoutError, RuntimeError, KeyError):
             pass
         else:
             break
     time.sleep(1)
 else:
-    raise RuntimeError("Previous profile and units did not recover")
-assert after_health["buildId"] == before_health["buildId"]
-receipt = {"source_commit": args.expected_source_sha, "app_revision": node["rev"], "broken_activation": activation,
-           "deploy_exit": deployed.returncode, "profile_before": before, "profile_after": current(),
-           "both_units_active": active, "health_before": before_health, "health_after": after_health,
-           "rollback": "verified-without-manual-repair", "runtime_readiness_failure_seen": True, "deploy_rollback_seen": True, "log": str(log)}
-args.output.write_text(json.dumps(receipt, indent=2) + "\n")
+    raise RuntimeError("Old profile, all app units and public health did not recover; no manual repair attempted")
+if a.health_identity_key and after_health[a.health_identity_key] != before_health[a.health_identity_key]:
+    raise RuntimeError("Health identity changed during rollback")
+receipt = {"source_commit": a.expected_sha, "host": a.host, "app": a.app, "fixture": str(fixture_path),
+    "app_revision": locked["rev"], "broken_activation": activation, "deploy_exit": deployed.returncode,
+    "profile_before": before, "profile_after": current(), "all_units_active": active(),
+    "health_before": before_health, "health_after": after_health,
+    "rollback": "verified-without-manual-repair", "runtime_readiness_failure_seen": True,
+    "deploy_rollback_seen": True, "log": str(log)}
+a.output.write_text(json.dumps(receipt, indent=2) + "\n")
 print(json.dumps(receipt, indent=2))

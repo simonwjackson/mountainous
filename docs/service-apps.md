@@ -1,13 +1,14 @@
 # Service apps
 
 Mountainous owns accounts, units, storage, secrets and tailnet identity. The
-signed app profile owns only executables. Logbook and CLIProxyAPI keep their
-existing deploy paths.
+signed app profile owns executables. Logbook and CLIProxyAPI retain their own
+deploy paths. The completed groceries pilot is recorded in
+[`service-apps-evidence/README.md`](service-apps-evidence/README.md).
 
-## Add an app
+## Declare an app
 
 Add a Git flake input exposing `packages.<system>.default` with a `version`.
-Declare the service on its destination host:
+Declare its destination:
 
 ```nix
 mountainous.serviceApps.example = {
@@ -19,133 +20,144 @@ mountainous.serviceApps.example = {
 };
 ```
 
-Defaults: account/group `<name>`, 0700 home `/var/lib/<name>`, data in
-`data`, tailnet state in `state/tsnet`, binaries `<name>-server` and
-`<name>-tsnet`, profile `/nix/var/nix/profiles/apps/<name>`. The server gets
-`--host 127.0.0.1 --port PORT --data-dir HOME/data`. The sidecar gets `--name`,
-`--expected-fqdn`, `--upstream` and `--state`. Override `server`, `serverArgs`,
-`sidecar`, `sidecarArgs`, `tailnet`, or `environment` for other CLI contracts.
-Both units skip startup until their binary exists. Only the sidecar's tsnet
-directory is writable in its sandbox. Persistence is automatic when the host
-has impermanence; Rakku uses `/tundra/permafrost`.
+Defaults: account/group `<name>`, 0700 `/var/lib/<name>`, data in `data`, tsnet
+state in `state/tsnet`, binaries `<name>-server` and `<name>-tsnet`, profile
+`/nix/var/nix/profiles/apps/<name>`. Override CLI arguments, environment and
+binary names for other upstream contracts. The backend binds loopback only.
+Both units are gated on their profile binary. Only tsnet state is writable by
+the sidecar. Impermanence persistence is automatic; Rakku uses
+`/tundra/permafrost`.
 
-`secrets` maps host SOPS keys to home-relative destinations. The service reads
-the 0400 SOPS files and copies them to owned regular 0600 files before start.
-This supports programs which reject symlinks. Do not use this for mutable
-OAuth refresh state: persist that state instead. `readOnlyBinds` supports
-legacy fixed credential paths without changing the upstream app.
+`secrets` maps host SOPS keys to home-relative regular 0600 files copied from
+0400 SOPS files before startup. Mutable OAuth state belongs in persistent data,
+not fixed secrets. `readOnlyBinds` adapts legacy credential paths in the unit's
+mount namespace. Do not embed credentials in arguments, health contracts or the
+store. `checkCommand` is secret/network-free and gets `APP_PACKAGE` in the build
+sandbox. `smokeCommand` runs as `app-deploy`, not root. Use bounded checks and
+absolute binary paths. Input and schedule must agree across destination hosts.
 
-`checkCommand` optionally runs in the build sandbox with `APP_PACKAGE` set to
-the candidate. It must not need secrets or network access. `smokeCommand` runs
-on the destination as `app-deploy`, not root. Use an absolute binary path and
-a bounded command. `activationTimeout` defaults to 60 seconds (5–240 allowed).
-Keep public checks free of personal data. App-specific CLI/secret adapters
-belong in `lib/`, not copies of the unit or deploy machinery.
-
-The module derives Unzen's `appUpdates` entry and destination hosts from the
-host declarations. No second app/host registry is needed. An app's input and
-update schedule must agree between hosts.
+The host declarations derive app packages, checks, deploy profiles and Unzen's
+updater entries. There is no separate app/host registry.
 
 ## Deploy and rollback
 
-Unzen's updater requires a clean, pinned mountainous checkout. It follows the
-app input, pins the selected revision, rejects downgrades, and builds only that
-app's check and deploy-rs attributes. Native x86 jobs are bounded to two with
-`builders = ""`. ARM builds currently fail closed with
-`blocked-native-build-transport`: remote-store builds do not forward that
-builder policy to the target daemon. The existing Fuji key allows only the
-daemon protocol, not a native build command. Do not use it for remote builds.
-Receipts record the source commit, candidate, builds and per-host outcomes in
-`/var/lib/app-updater`. A scoped native build key/controller is a follow-up,
-not provisioned in this stage.
+The updater requires a clean pinned checkout, follows the app's input, pins its
+selected revision, rejects downgrades, and builds only the selected app/check
+attributes. Native builds use two jobs and empty builders. ARM updater builds
+still fail closed until an approved native execution transport exists. A remote
+`--store` does not constrain the remote daemon's builders.
 
-The updater signs the activation closure with `app-updater-1`. Deploy-rs uses
-`app-deploy`, strict SSH pins and `--checksigs`, with automatic and magic
-rollback. It atomically changes only that app's profile. Activation resolves
-the fixed controller from `/run/current-system/sw/bin/<name>-service-control`,
-then invokes `sudo -n` with exactly `stop` and `start`. Sudo permits only those
-two complete commands at that controller's immutable store path. The controller
-can affect only `<name>.service` and `<name>-tsnet.service`; it accepts no unit
-name, executable, shell command or extra argument.
+Activation resolves the platform's installed immutable controller and uses only
+its two permitted sudo commands, `start` and `stop`. The controller controls only
+that app's two units. Readiness requires **each unit separately** to be active,
+plus the app smoke contract, then a three-second stability check. A timeout or
+failure rejects activation. Deploy-rs restores the previous executable profile
+and runs its activation. Data is not rolled back. Each actual activation briefly
+interrupts requests; incompatible data schemas require a separate backup plan.
 
-Activation waits for both units to become active and the smoke check to pass,
-then checks them again after three seconds. A failure or timeout fails the
-deploy. Deploy-rs restores the previous profile and runs its activation, which
-restarts the old executables. Data is **not** rolled back. An incompatible data
-schema needs its own backup and restore plan. Every update briefly interrupts
-requests. Keep the previous generation and test rollback before enabling a new
-app's automatic deployment. On a first install there is no previous accepted
-profile. A failed deploy can leave its candidate link in place. Stop both units
-and quarantine that link (retain its generation links) before restarting an
-old source node. Otherwise a later reboot can start the unaccepted destination.
-Each service app uses its own
-`/var/lib/app-updater/enabled-<name>` gate. Create it only after the signed
-pilot deploy and rollback proof. Pi retains the separate `enabled` gate.
+A first install has no previous accepted profile. On migration failure, stop and
+confirm both destination units, quarantine the unaccepted canonical profile link
+without deleting generations, and only then resume the previously active source
+units. Never start two copies of a tsnet identity.
 
-## Cut over an existing node
+Service apps have separate `enabled-<name>` gates. Open one only after signed
+healthy deployment and rollback proofs. Pi's global `enabled` gate remains closed.
+The approved pi check in this stage was x86-only, not deployment/convergence proof.
 
-1. Read both source units and all drop-ins. Record flags, home, data, config,
-   private credentials, OAuth state and the exact tsnet directory. Confirm
-   that the assistant's service token matches without printing either copy.
-2. Add the source input, destination declaration and SOPS values. Stage new
-   files before evaluating. Build only the relevant app/check and system
-   attributes, one at a time, with `--max-jobs 2`.
-3. Copy the system closure with `nix copy --no-check-sigs --to ssh-ng://root@HOST`.
-   Run `scripts/service-apps-host-target compare OLD NEW` on the host. Save and
-   inspect the closure diff and **file-content** diffs for all of `NEW/etc`,
-   including units. A missing running feature is a stop condition: find the
-   source branch instead of switching. Recheck the running path at switch.
-4. With the destination app profile absent, activate the reviewed system with
-   `scripts/service-apps-host-target switch OLD NEW`. It sets the system
-   profile, switches without rebooting, and checks system health. On Rakku all
-   seven household core units must remain active. Check that the installed
-   controller resolves with `readlink -e`, and test its exact scoped sudo stop
-   before stopping the source. The profile gate prevents premature startup.
-5. Test assistant credentials against the still-running old address. Read each
-   assistant unit's `User=` with `systemctl show`; the unit name is not its
-   account name. `service-apps-assistant-probes` performs these real requests.
-6. Stop only the source app and proxy. Do not delete their files. Copy data,
-   config (including mutable refresh tokens) and tsnet state while stopped.
-   Keep the old directories untouched. Verify hashes and set ownership and
-   0700 private directories. Take a fresh stopped snapshot after any backout.
-   A loopback-only backend preflight can test copied data and private binds
-   without starting a second tsnet node. Never run two copies of an identity.
-7. Run the signed app deployment from Unzen. Check old data and the unchanged
-   tailnet FQDN through HTTPS, including authenticated requests as each Rakku
-   assistant. Only then disable the two source units. Use
-   `service-apps-disable-source-units` to retain unit-definition symlinks:
-   plain `systemctl disable` removes these as well as target enablement links.
-   External-store definitions report `linked` with exit 1, not `enabled`.
-   Leave both source units inactive, with no `*.target.wants` links.
-8. Deploy an intentionally failing candidate and save its runtime failure,
-   deploy exit status, before/after profile targets, and old HTTPS health as
-   rollback evidence. Wait for HTTPS readiness, not only Type=simple active.
-   If data or node identity cannot be carried, stop the destination, quarantine
-   its unaccepted profile, and start the source units again. Preserve any new
-   destination writes for recovery. Never start both nodes to diagnose it.
+## Install reusable tools from the repository
 
-## Groceries source
+Build `.#packages.SYSTEM.service-app-tools` on a native builder with
+`--max-jobs 2 --option builders ''`. Copy the closure to execution hosts with
+`NIX_SSHOPTS='-F /dev/null' nix copy --no-check-sigs --to ssh-ng://root@HOST STORE`.
+Invoke `STORE/bin/service-apps-*`; do not leave loose helper copies on a host.
+Every helper has `--help`. Required inputs replace all pilot host/app/branch
+constants:
 
-Groceries' canonical source is Zao's Git repository at
-`/home/simonwjackson/code/sandbox/groceries`, branch `main`; it has no published
-remote. The input follows it over SSH. Unzen's existing app key has a forced
-`git-upload-pack` command restricted to this one repository. The verified Zao
-host key is in `deploy/known_hosts`. The updater's `GIT_SSH_COMMAND` supplies
-that key and pin. `scripts/service-apps-provision-groceries-source` installs
-only this read authorization and preserves existing keys. Zao remains a
-source availability dependency, but not a runtime dependency after cutover.
-A future source relocation must retain Git history and update this input.
+| Tool | Contract |
+|---|---|
+| `service-apps-check-source-target` | `--runner-host --repo --expected-sha --system`, optional `--bundle --attribute` |
+| `service-apps-build-system-target` | `--runner-host --repo --expected-sha --system --host` |
+| `service-apps-stage-source-target` | `--runner-host --repo --bundle --branch --expected-sha`; locks against active updater jobs and preserves the previous ref |
+| `service-apps-host-target` | `health/compare/switch --host`, repeated `--health-unit`; compare/switch also need `--old --new`; switch requires the exact `--reviewed-diff-sha256` printed by compare |
+| `service-apps-run-update-target` | `--runner-host --app --expected-sha --system`; check-only by default; deployment requires explicit `--deploy` |
+| `service-apps-rollback-probe` | `--runner-host --repo --expected-sha --state --host --app --system --fixture --health-url --health-equals --output`; optional stable public `--health-identity-key` |
 
-`lib/groceries-service.nix` adapts the existing private-file contract, including
-Kroger's fixed `/run/agenix` paths. `scripts/service-apps-import-groceries-secrets`
-imports six fixed credentials without printing them and verifies that every
-existing Rakku SOPS value stays unchanged. Mutable credentials/config are
-copied with the service state, not embedded in a Nix derivation. The server's
-`groceries-assistant-service-token` and clients' existing
-`pi-assistant-groceries-token` must stay equal; rotate both SOPS entries together.
+The host comparison covers closure changes and all `/etc` file contents,
+including unit files. Inspect it for feature losses before switching. Recheck
+current-system identity; do not override a concurrent switch. On Rakku supply
+all seven household core units as repeated health arguments.
 
-Hiyori is excluded from pi updates while offline and without a verified SSH
-pin. Myoko's OpenSSH deploy port is 2222; port 22 still reaches Tailscale SSH.
-The global updater gate remains closed while ARM's native transport is absent.
-The approved pi run in this stage is x86-only and `--check-only`: it does not
-deploy pi or create the gate. Do not open it on a partial receipt.
+Rollback fixtures expose the healthy app as their `application` input. The probe
+pins that nested input to the real app's locked revision, signs the broken
+activation, uses deployment graph SSH options/port, and requires runtime rejection,
+deploy-rs rollback, the original profile, **all units**, and the supplied public
+health contract. It never repairs the destination manually. Backend and sidecar
+failures each need their own proof. Myoko now uses the default OpenSSH port 22;
+Tailscale SSH is off. Hiyori remains excluded while offline/unpinned.
+
+## One guarded cutover command
+
+Provision and review the destination system first, with its app profile absent.
+Inventory source units/drop-ins, absolute data/config/tsnet directories, ownership,
+CLI flags, private-file requirements and exact tailnet identity. Import app secrets
+through the established SOPS workflow without logging their values. Keep the
+central app update gate closed during migration.
+
+Prepare a private JSON plan (all paths/argv are metadata, never secret values):
+
+```json
+{
+  "app": "example",
+  "source_host": "source-host",
+  "source_scope": "user",
+  "source_units": ["example.service", "example-proxy.service"],
+  "destination_host": "destination-host",
+  "destination_user": "example",
+  "persistent_home": "/tundra/permafrost/var/lib/example",
+  "ssh_options": ["-o", "UserKnownHostsFile=/absolute/pinned-known-hosts"],
+  "target_tools": "/nix/store/REVIEWED-service-app-tools",
+  "state_paths": [
+    {"source": "/absolute/source/data", "relative": "data"},
+    {"source": "/absolute/source/config", "relative": ".config/example"},
+    {"source": "/absolute/source/tsnet", "relative": "state/tsnet"}
+  ],
+  "health": {"url": "https://example.TAILNET/healthz", "equals": {"status": "ok", "phase": "ready"}},
+  "deploy_command": ["/absolute/reviewed-deploy-command", "public-argument"],
+  "verify_command": ["/absolute/app-specific-read-only-integration-test"]
+}
+```
+
+Run `STORE/bin/service-apps-cutover source --plan PLAN` on the source host.
+It refuses before any outage unless **every source unit is active**, both
+destination units are stopped, the destination profile is absent, and the
+persistence bind and old public health contract pass. Source/state path mappings
+must be non-overlapping regular directories without symlinks. Platform-provisioned
+destination directories may be empty; existing state is never overwritten.
+
+The tool snapshots active source units, stops and confirms them, retains a stopped
+archive on the destination, copies and verifies private state, then executes the
+reviewed deploy and integration commands. On a pre-acceptance failure it stops
+**and confirms** the destination and quarantines its unaccepted profile before
+restoring **only units originally active**. If confirmation fails, the source stays
+stopped. On success it disables source units while retaining exact definition
+symlinks. External-store definitions report `linked` (exit 1, not enabled), and
+remain inactive. Source data and destination snapshots are retained. A completed
+migration cannot be rerun: its source is inactive and its destination profile exists.
+
+No system switch occurs inside cutover. Do not use it for symlink-heavy state or
+unreviewed data-schema changes. Source data remains authoritative until acceptance;
+preserve destination writes for reconciliation if any client writes during backout.
+This is an operator-coordinated migration, not a concurrent failover controller.
+
+Groceries-specific credential/persona probes live under `tests/integration/groceries/`.
+The pilot-only cutover, staging, preflight, secret-import, source-auth and restoration
+scripts were retired after completion; their commands/results remain in evidence.
+Zao's original groceries definition symlinks remain linked, inactive and not enabled.
+Do not start them while Rakku serves the node.
+
+Groceries' private source remains Zao's repository at
+`/home/simonwjackson/code/sandbox/groceries`, main. The existing updater key has
+read-only forced `git-upload-pack` authorization for that repository. Zao is an
+update-source availability dependency, not a runtime dependency. Rotate both
+`groceries-assistant-service-token` and clients' `pi-assistant-groceries-token`
+SOPS entries together.

@@ -1,13 +1,24 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p bash nix git
-# Native x86 build on Unzen; never --store ssh-ng:// for a build.
-set -euo pipefail
-host=${1:?Expected rakku or unzen}
-expected=${2:?Expected mountainous SHA}
-[[ $(hostname) == unzen && $EUID == 0 ]]
-case $host in rakku|unzen) ;; *) exit 2;; esac
-repo=/var/lib/app-updater/repository
-test "$(git -C "$repo" rev-parse HEAD)" = "$expected"
-nix build "git+file://$repo?rev=$expected#nixosConfigurations.$host.config.system.build.toplevel" \
-  --no-link --print-out-paths --max-jobs 2 --cores 4 --option builders ''
-test "$(git -C "$repo" rev-parse HEAD)" = "$expected"
+#! nix-shell -i python3 -p python3 nix git
+"""Build one host system locally with bounded jobs and no remote builders."""
+import argparse
+from pathlib import Path
+import subprocess
+from service_apps import build_flags, local_host, name, native, pinned, run
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument("--runner-host", required=True)
+p.add_argument("--host", type=name, required=True)
+p.add_argument("--system", required=True)
+p.add_argument("--repo", type=Path, required=True)
+p.add_argument("--expected-sha", required=True)
+a = p.parse_args()
+local_host(a.runner_host)
+native(a.system)
+ref = pinned(a.repo, a.expected_sha)
+actual = run(["nix", "eval", "--raw", f"{ref}#nixosConfigurations.{a.host}.pkgs.stdenv.hostPlatform.system"])
+if actual != a.system:
+    raise RuntimeError("Target host does not match requested native architecture")
+subprocess.run(["nix", "build", f"{ref}#nixosConfigurations.{a.host}.config.system.build.toplevel",
+                "--no-link", "--print-out-paths", *build_flags()], check=True)
+pinned(a.repo, a.expected_sha)

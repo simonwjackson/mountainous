@@ -26,8 +26,6 @@
     module =
       { pkgs, ... }:
       {
-        # Port 22 still reaches Tailscale SSH on the running host; OpenSSH is 2222.
-        mountainous.appDeployment.sshPort = 2222;
         # Track the newest kernel in the locked nixpkgs revision on Myoko.
         # Keep Hiyori's recovery USB on the default kernel.
         boot.kernelPackages = pkgs.linuxPackages_latest;

@@ -30,7 +30,8 @@ let
       /run/wrappers/bin/sudo -n "$control" start
       deadline=$((SECONDS + ${toString app.activationTimeout}))
       ready() {
-        ${pkgs.systemd}/bin/systemctl is-active --quiet ${name}.service ${name}-tsnet.service && ${smoke}
+        ${pkgs.systemd}/bin/systemctl is-active --quiet ${name}.service &&
+          ${pkgs.systemd}/bin/systemctl is-active --quiet ${name}-tsnet.service && ${smoke}
       }
       until ready; do
         if (( SECONDS >= deadline )); then
@@ -373,11 +374,31 @@ in
 
   config.perSystem =
     { pkgs, system, ... }:
+    let
+      tools = import ../lib/service-app-tools.nix { inherit pkgs lib; };
+    in
     {
-      packages = lib.genAttrs (map (name: "app-${name}") names) (
-        key: packageFor (lib.removePrefix "app-" key) system
-      );
+      packages =
+        (lib.genAttrs (map (name: "app-${name}") names) (
+          key: packageFor (lib.removePrefix "app-" key) system
+        ))
+        // {
+          service-app-tools = tools;
+        };
       checks = {
+        service-app-tools =
+          pkgs.runCommand "service-app-tools-contract"
+            {
+              nativeBuildInputs = [
+                pkgs.python3
+                pkgs.git
+              ];
+              SERVICE_APP_SCRIPTS = "${tools}/libexec/service-apps";
+            }
+            ''
+              python3 ${../tests/test_service_apps.py}
+              touch "$out"
+            '';
         service-apps =
           assert import ../tests/service-apps.nix {
             rakku = self.nixosConfigurations.rakku.config;

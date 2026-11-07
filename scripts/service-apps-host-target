@@ -1,44 +1,67 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -i bash -p bash coreutils findutils diffutils gnugrep systemd nix
-# Run as root on the target. Compare first, inspect locally, then switch with
-# the exact old/new paths. Never overwrites a concurrently changed system.
-set -euo pipefail
-core=(home-assistant zwave-js pi-assistant-simon pi-assistant-laure pi-assistant-household beszel-hub cliproxyapi)
-health() {
-  systemctl is-system-running --wait
-  systemctl --failed --no-legend --no-pager
-  test "$(systemctl --failed --no-legend --no-pager | wc -l)" = 0
-  if [[ $(hostname) == rakku ]]; then
-    for unit in "${core[@]}"; do systemctl is-active "$unit"; done
-  fi
-}
-action=${1:?Expected compare, switch, or health}
-if [[ $action == health ]]; then health; exit; fi
-old=${2:?Expected old system path}
-new=${3:?Expected new system path}
-[[ $old == /nix/store/*-nixos-system-* && $new == /nix/store/*-nixos-system-* ]]
-[[ $(readlink -f /run/current-system) == "$old" ]] || { echo 'Running system changed. Stop and compare again.' >&2; exit 2; }
-[[ -x $new/bin/switch-to-configuration ]]
-printf 'Running: %s\nCandidate: %s\n' "$old" "$new"
-nix store diff-closures "$old" "$new"
-removed=0
-while IFS= read -r -d '' file; do
-  if [[ ! -e $new/etc/$file ]]; then
-    printf 'LOSS: %s\n' "$file"
-    removed=1
-  fi
-  if ! cmp -s "$old/etc/$file" "$new/etc/$file"; then
-    printf '\n### %s\n' "$file"
-    before=$old/etc/$file; after=$new/etc/$file
-    [[ -e $before ]] || before=/dev/null
-    [[ -e $after ]] || after=/dev/null
-    diff -u --label "old/$file" --label "new/$file" "$before" "$after" || true
-  fi
-done < <({ find -L "$old/etc" -type f -printf '%P\0'; find -L "$new/etc" -type f -printf '%P\0'; } | sort -zu)
-(( removed == 0 )) || { echo 'Stop: candidate loses files. Find their source branch.' >&2; exit 3; }
-if [[ $action == compare ]]; then exit; fi
-[[ $action == switch ]] || exit 2
-[[ $(readlink -f /run/current-system) == "$old" ]]
-nix-env -p /nix/var/nix/profiles/system --set "$new"
-"$new/bin/switch-to-configuration" switch
-health
+#! nix-shell -i python3 -p python3 nix coreutils diffutils systemd
+"""Compare/switch exactly one target system; health units are caller policy."""
+import argparse
+import hashlib
+import os
+from pathlib import Path
+import subprocess
+from service_apps import all_units_active, local_host, run
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument("action", choices=["health", "compare", "switch"])
+p.add_argument("--host", required=True)
+p.add_argument("--health-unit", action="append", default=[])
+p.add_argument("--old", type=Path)
+p.add_argument("--new", type=Path)
+p.add_argument("--reviewed-diff-sha256", help="Required for switch; hash printed by compare")
+a = p.parse_args()
+local_host(a.host)
+
+def health():
+    subprocess.run(["systemctl", "is-system-running", "--wait"], check=True)
+    failed = run(["systemctl", "--failed", "--no-legend", "--no-pager"])
+    if failed:
+        raise RuntimeError("System has failed units")
+    if not all_units_active(["systemctl"], a.health_unit):
+        raise RuntimeError("Required health unit is not active")
+    print("System running; zero failed units; all required health units active")
+
+if a.action == "health":
+    health()
+    raise SystemExit(0)
+if not a.old or not a.new or not all(str(x).startswith("/nix/store/") and "-nixos-system-" in x.name for x in (a.old, a.new)):
+    p.error("compare/switch require --old and --new NixOS store paths")
+if Path("/run/current-system").resolve() != a.old:
+    raise RuntimeError("Running system changed; compare again")
+
+def files(root):
+    return {str(Path(parent, filename).relative_to(root))
+            for parent, _, names in os.walk(root, followlinks=True) for filename in names}
+
+output = run(["nix", "store", "diff-closures", str(a.old), str(a.new)]) + "\n"
+loss = []
+for file in sorted(files(a.old / "etc") | files(a.new / "etc")):
+    old, new = a.old / "etc" / file, a.new / "etc" / file
+    if old.is_file() and not new.is_file():
+        loss.append(file)
+    before = old if old.is_file() else Path("/dev/null")
+    after = new if new.is_file() else Path("/dev/null")
+    diff = subprocess.run(["diff", "-u", "--label", "old/" + file, "--label", "new/" + file,
+                           str(before), str(after)], text=True, capture_output=True)
+    if diff.returncode not in (0, 1):
+        raise RuntimeError("Cannot compare complete etc contents: " + file)
+    output += diff.stdout
+print(output, end="")
+digest = hashlib.sha256(output.encode()).hexdigest()
+print("Reviewed diff SHA256: " + digest)
+if loss:
+    raise RuntimeError("Candidate loses files; find their source branch: " + ", ".join(loss))
+if a.action == "switch":
+    if a.reviewed_diff_sha256 != digest:
+        raise RuntimeError("Switch requires the exact reviewed comparison SHA256")
+    if Path("/run/current-system").resolve() != a.old:
+        raise RuntimeError("Running system changed after comparison")
+    subprocess.run(["nix-env", "-p", "/nix/var/nix/profiles/system", "--set", str(a.new)], check=True)
+    subprocess.run([str(a.new / "bin/switch-to-configuration"), "switch"], check=True)
+    health()
