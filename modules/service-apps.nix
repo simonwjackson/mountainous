@@ -104,6 +104,45 @@ in
               default = null;
               description = "Optional nightly refresh of mutable yt-dlp, independent of the app input.";
             };
+            scheduledCommands = lib.mkOption {
+              default = { };
+              description = "Profile-owned periodic commands, gated until their migration is accepted.";
+              type =
+                let
+                  appName = name;
+                in
+                lib.types.attrsOf (
+                  lib.types.submodule (
+                    { name, ... }:
+                    {
+                      options = {
+                        binary = lib.mkOption {
+                          type = lib.types.strMatching "[a-zA-Z0-9_-]+";
+                          default = "${appName}-${name}";
+                        };
+                        args = lib.mkOption {
+                          type = lib.types.listOf lib.types.str;
+                          default = [ ];
+                        };
+                        onCalendar = lib.mkOption { type = lib.types.str; };
+                        onBootSec = lib.mkOption {
+                          type = lib.types.nullOr lib.types.str;
+                          default = null;
+                        };
+                        timeoutSec = lib.mkOption {
+                          type = lib.types.str;
+                          default = "5min";
+                        };
+                        gateFile = lib.mkOption {
+                          type = lib.types.str;
+                          readOnly = true;
+                          default = "/var/lib/${appName}/enabled-${name}";
+                        };
+                      };
+                    }
+                  )
+                );
+            };
             port = lib.mkOption { type = lib.types.port; };
             server = lib.mkOption {
               type = lib.types.strMatching "[a-zA-Z0-9_-]+";
@@ -243,10 +282,58 @@ in
           };
         in
         {
+          scheduledServices = lib.mapAttrs' (
+            jobName: job:
+            lib.nameValuePair "${name}-${jobName}" {
+              description = "${name} scheduled ${jobName}";
+              wants = [ "network-online.target" ];
+              after = [
+                "network-online.target"
+                "${name}.service"
+              ];
+              environment = {
+                HOME = home;
+              }
+              // app.environment;
+              unitConfig.ConditionPathExists = [
+                "${profile name}/bin/${job.binary}"
+                job.gateFile
+              ];
+              serviceConfig = common // {
+                Type = "oneshot";
+                Restart = "no";
+                ExecStart = lib.escapeShellArgs ([ "${profile name}/bin/${job.binary}" ] ++ job.args);
+                TimeoutStartSec = job.timeoutSec;
+              };
+            }
+          ) app.scheduledCommands;
+          scheduledTimers = lib.mapAttrs' (
+            jobName: job:
+            lib.nameValuePair "${name}-${jobName}" {
+              wantedBy = [ "timers.target" ];
+              timerConfig = {
+                OnCalendar = job.onCalendar;
+                Persistent = true;
+                Unit = "${name}-${jobName}.service";
+              }
+              // lib.optionalAttrs (job.onBootSec != null) { OnBootSec = job.onBootSec; };
+            }
+          ) app.scheduledCommands;
           assertions = [
             {
               assertion = builtins.match "[a-z][a-z0-9-]{0,30}" name != null;
               message = "serviceApps names must be safe system account and unit names.";
+            }
+            {
+              assertion = lib.all (
+                jobName:
+                builtins.match "[a-z][a-z0-9-]{0,30}" jobName != null
+                && !(builtins.elem jobName [
+                  "tsnet"
+                  "ytdlp-update"
+                ])
+              ) (lib.attrNames app.scheduledCommands);
+              message = "serviceApps.${name}: scheduled command names must be safe and must not replace the sidecar or yt-dlp unit.";
             }
             {
               assertion = (app.input != null) != (app.package != null);
@@ -437,8 +524,8 @@ in
           environment.etc = lib.mkMerge (map (r: r.environment.etc) resources);
           security.sudo.extraRules = lib.concatMap (r: r.security.sudo.extraRules) resources;
           sops.secrets = lib.mkMerge (map (r: r.sops.secrets) resources);
-          systemd.services = lib.mkMerge (map (r: r.systemd.services) resources);
-          systemd.timers = lib.mkMerge (map (r: r.systemd.timers) resources);
+          systemd.services = lib.mkMerge (map (r: r.systemd.services // r.scheduledServices) resources);
+          systemd.timers = lib.mkMerge (map (r: r.systemd.timers // r.scheduledTimers) resources);
           systemd.tmpfiles.rules = lib.concatMap (r: r.systemd.tmpfiles.rules) resources;
         }
         (lib.optionalAttrs (options.environment ? persistence) {
@@ -512,6 +599,22 @@ in
     { pkgs, system, ... }:
     let
       tools = import ../lib/service-app-tools.nix { inherit pkgs lib; };
+      scheduledCanary =
+        (self.nixosConfigurations.rakku.extendModules {
+          modules = [
+            {
+              mountainous.serviceApps.service-app-single-canary.scheduledCommands.audit = {
+                binary = "service-app-single-canary-server";
+                args = [
+                  "--port"
+                  "4401"
+                ];
+                onCalendar = "daily";
+                onBootSec = "5min";
+              };
+            }
+          ];
+        }).config;
     in
     {
       packages =
@@ -522,6 +625,31 @@ in
           service-app-tools = tools;
         };
       checks = {
+        service-app-scheduled =
+          let
+            job = scheduledCanary.systemd.services.service-app-single-canary-audit;
+          in
+          assert job.serviceConfig.User == "service-app-single-canary";
+          assert job.serviceConfig.Type == "oneshot";
+          assert job.serviceConfig.Restart == "no";
+          assert job.serviceConfig.ProtectSystem == "strict";
+          assert
+            job.unitConfig.ConditionPathExists == [
+              "/nix/var/nix/profiles/apps/service-app-single-canary/bin/service-app-single-canary-server"
+              "/var/lib/service-app-single-canary/enabled-audit"
+            ];
+          assert
+            scheduledCanary.systemd.timers.service-app-single-canary-audit.timerConfig.OnBootSec == "5min";
+          assert
+            scheduledCanary.mountainous.serviceApps.service-app-single-canary.unitNames
+            == [ "service-app-single-canary.service" ];
+          pkgs.runCommand "service-app-scheduled-contract" { } ''
+            grep -F 'ConditionPathExists=/var/lib/service-app-single-canary/enabled-audit' \
+              ${
+                scheduledCanary.systemd.units."service-app-single-canary-audit.service".unit
+              }/service-app-single-canary-audit.service
+            touch "$out"
+          '';
         service-app-tools =
           pkgs.runCommand "service-app-tools-contract"
             {

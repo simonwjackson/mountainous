@@ -13,7 +13,7 @@ from urllib.error import HTTPError
 
 SCRIPTS = Path(os.environ.get("SERVICE_APP_SCRIPTS", Path(__file__).parents[1] / "scripts"))
 sys.path.insert(0, str(SCRIPTS))
-from service_apps import Health, all_units_active, declared_units, package_canary_expression, recovery_units, require_cutover_ready
+from service_apps import Health, all_units_active, declared_units, migration_source_units, package_canary_expression, recovery_units, require_cutover_ready
 
 
 class ServiceAppSafetyTests(unittest.TestCase):
@@ -62,6 +62,17 @@ class ServiceAppSafetyTests(unittest.TestCase):
             package_canary_expression(ref, "host", "canary", "x86_64-linux", "../outside.nix")
         with self.assertRaises(ValueError):
             package_canary_expression(ref, "host", "canary", "x86_64-linux", "/outside.nix")
+
+    def test_migration_includes_timers_but_recovers_only_previously_active_units(self):
+        primary = ["pace.service", "pace-proxy.service"]
+        auxiliary = ["pace-sync.service", "pace-sync.timer"]
+        self.assertEqual(migration_source_units(primary, auxiliary), primary + auxiliary)
+        states = {"pace.service": True, "pace-proxy.service": True, "pace-sync.service": False, "pace-sync.timer": True}
+        self.assertEqual(require_cutover_ready({unit: states[unit] for unit in primary}, False), primary)
+        self.assertEqual(recovery_units(states, True), primary + ["pace-sync.timer"])
+        for invalid_primary, invalid_auxiliary in (([], []), (["pace.timer"], []), (primary, ["../pace.timer"]), (primary, ["pace.service"])):
+            with self.assertRaises(ValueError):
+                migration_source_units(invalid_primary, invalid_auxiliary)
 
     def test_declared_units_follow_installed_single_and_paired_manifests(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -20,7 +20,7 @@ import tarfile
 import tempfile
 import time
 import uuid
-from service_apps import Health, SSH, declared_units, name, recovery_units, require_cutover_ready, run
+from service_apps import Health, SSH, declared_units, migration_source_units, name, recovery_units, require_cutover_ready, run
 
 
 def relative(value):
@@ -54,7 +54,7 @@ def properties(command, unit):
 def stopped(command, units):
     for unit in units:
         props = properties(command, unit)
-        if props["ActiveState"] not in ("inactive", "failed") or props["MainPID"] != "0":
+        if props["ActiveState"] not in ("inactive", "failed") or props.get("MainPID", "0") != "0":
             return False
     return True
 
@@ -149,16 +149,15 @@ def source(plan):
     if socket.gethostname() != plan["source_host"]:
         raise RuntimeError("Wrong source host")
     app = name(plan["app"])
-    units = plan["source_units"]
-    if not units or any("/" in unit or not unit.endswith(".service") for unit in units):
-        raise ValueError("Explicit source service unit names are required")
+    primary = plan["source_units"]
+    units = migration_source_units(primary, plan.get("source_auxiliary_units", []))
     scope = plan.get("source_scope", "user")
     if scope not in ("user", "system"):
         raise ValueError("source_scope must be user or system")
     command = ["systemctl"] + (["--user"] if scope == "user" else [])
     initial = {unit: properties(command, unit)["ActiveState"] == "active" for unit in units}
     # Reject a completed/invalid migration before any stop, transfer or recovery.
-    require_cutover_ready(initial, False)
+    require_cutover_ready({unit: initial[unit] for unit in primary}, False)
     transport = SSH(plan["destination_host"], "root", tuple(plan.get("ssh_options", [])))
     tools = plan["target_tools"]
     if not tools.startswith("/nix/store/"):

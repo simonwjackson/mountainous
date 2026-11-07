@@ -5,7 +5,7 @@ set -euo pipefail
 (($# > 0))
 declare -A links=()
 for unit in "$@"; do
-  [[ $unit != */* && $unit == *.service ]]
+  [[ $unit != */* && ( $unit == *.service || $unit == *.timer ) ]]
   [[ $(systemctl --user is-active "$unit" || true) == inactive ]]
   path=$HOME/.config/systemd/user/$unit
   [[ ! -L $path ]] || links[$unit]=$(readlink "$path")

@@ -63,6 +63,19 @@ def package_canary_expression(ref: str, host: str, app: str, system: str, fixtur
     )
 
 
+def migration_source_units(primary: list[str], auxiliary: list[str]) -> list[str]:
+    """Keep mandatory live servers distinct from possibly inactive jobs/timers."""
+    if not isinstance(primary, list) or not primary or not isinstance(auxiliary, list):
+        raise ValueError("Explicit source service units are required")
+    units = primary + auxiliary
+    for unit in units:
+        if not isinstance(unit, str) or not re.fullmatch(r"[a-zA-Z0-9_.@-]+\.(service|timer)", unit):
+            raise ValueError("Expected safe service/timer source unit names")
+    if any(not unit.endswith(".service") for unit in primary) or len(set(units)) != len(units):
+        raise ValueError("Primary units must be distinct services; auxiliary units cannot overlap")
+    return units
+
+
 def declared_units(app: str, directory: Path = Path("/etc/service-apps")) -> list[str]:
     """Read the platform's authoritative app unit list; missing metadata fails closed."""
     name(app)

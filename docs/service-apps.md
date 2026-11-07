@@ -65,6 +65,20 @@ absolute binary paths. Input and schedule must agree across destination hosts.
 The host declarations derive app packages, checks, deploy profiles and Unzen's
 updater entries. There is no separate app/host registry.
 
+## Periodic commands
+
+An app can declare `scheduledCommands.sync = { args = [ "--data-dir" "/var/lib/example/data" ]; onCalendar = "*-*-* 00,06,12,18:17:00"; onBootSec = "5min"; };`.
+The binary defaults to `<app>-sync` in the signed profile. The oneshot and timer
+use the app's account, home, environment and hardening. They remain gated on both
+the profile binary and `/var/lib/<app>/enabled-sync`; open that file only after
+cutover acceptance and source-timer disablement. A periodic command is not a
+long-running readiness unit. The default timeout is five minutes.
+
+A migration plan can list `source_auxiliary_units` for old periodic services and
+timers. They are stopped and disabled with the app, but need not be active before
+cutover. Recovery restores only units that were active in the initial snapshot,
+including timers; it does not start a previously failed oneshot.
+
 ## Deploy and rollback
 
 The updater requires a clean pinned checkout, follows the app's input, pins its
