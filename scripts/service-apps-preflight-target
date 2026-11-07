@@ -1,0 +1,64 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils systemd util-linux curl jq
+# Root on Rakku. Never starts the tailnet sidecar. Run each action separately.
+set -euo pipefail
+[[ $(hostname) == rakku && $EUID == 0 ]]
+case ${1:-} in
+  quarantine)
+    expected=${2:?Failed activation path to preserve}
+    profile=/nix/var/nix/profiles/apps/groceries
+    [[ $(readlink -f "$profile") == "$expected" ]]
+    for unit in groceries.service groceries-tsnet.service; do
+      [[ $(systemctl show "$unit" -p MainPID --value) == 0 ]]
+      case $(systemctl show "$unit" -p ActiveState --value) in inactive|failed) ;; *) exit 1;; esac
+    done
+    backup=$profile-aborted-$(date +%s)
+    [[ ! -e $backup && ! -L $backup ]]
+    mv "$profile" "$backup"
+    # Keep the relative generation link in the same directory. Nothing is deleted.
+    printf 'Preserved unaccepted profile as %s -> %s; canonical profile absent\n' "$backup" "$(readlink -f "$backup")"
+    ;;
+  scope)
+    controller=$(readlink -e /run/current-system/sw/bin/groceries-service-control)
+    test -x "$controller"
+    runuser -u app-deploy -- /run/wrappers/bin/sudo -n "$controller" stop
+    # -l only asks the policy; it does not execute the unrelated command.
+    if runuser -u app-deploy -- /run/wrappers/bin/sudo -n -l /run/current-system/sw/bin/systemctl restart home-assistant.service; then
+      echo 'Unexpected broad sudo permission' >&2; exit 1
+    fi
+    printf 'Scoped controller stop permitted: %s; unrelated restart denied\n' "$controller"
+    ;;
+  server)
+    package=${2:?Checked groceries package path}
+    [[ $package == /nix/store/*-groceries-* && -x $package/bin/groceries-server ]]
+    for unit in groceries.service groceries-tsnet.service; do
+      [[ $(systemctl show "$unit" -p MainPID --value) == 0 ]]
+    done
+    [[ $(stat -c %a /var/lib/groceries) == 700 ]]
+    # Production validates its saved staple proposals at startup. Use an
+    # isolated copy of the staged data, not an unseeded empty directory.
+    mkdir -p /var/lib/groceries/.preflight-data
+    cp -a /var/lib/groceries/data/. /var/lib/groceries/.preflight-data/
+    systemd-run --unit groceries-preflight --collect --service-type=exec \
+      --property User=groceries --property Group=groceries \
+      --property WorkingDirectory=/var/lib/groceries --setenv HOME=/var/lib/groceries \
+      --property NoNewPrivileges=true --property ProtectSystem=strict --property ProtectHome=true \
+      --property PrivateTmp=true --property PrivateDevices=true --property ReadWritePaths=/var/lib/groceries \
+      --property 'BindReadOnlyPaths=/run/secrets/groceries-kroger-client-id:/run/agenix/kroger-client-id /run/secrets/groceries-kroger-client-secret:/run/agenix/kroger-client-secret' \
+      "$package/bin/groceries-server" --host 127.0.0.1 --port 4399 --data-dir /var/lib/groceries/.preflight-data
+    for _ in {1..30}; do
+      if body=$(curl -fsS --max-time 2 http://127.0.0.1:4399/healthz); then
+        printf '%s\n' "$body" | jq -e '.status == "ok" and .phase == "ready" and .shoppingEnabled == true'
+        echo 'Checked binary, private credentials and legacy file binds work; no tailnet node started'
+        exit 0
+      fi
+      sleep 1
+    done
+    journalctl -u groceries-preflight -n 30 --no-pager
+    exit 1
+    ;;
+  stop)
+    systemctl stop groceries-preflight.service
+    ;;
+  *) echo 'Expected quarantine FAILED_ACTIVATION, scope, server PACKAGE, or stop' >&2; exit 2 ;;
+esac

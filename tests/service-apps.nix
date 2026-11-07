@@ -29,6 +29,10 @@ assert rakku.sops.secrets.groceries-proxy-token.mode == "0400";
 assert builtins.any (
   entry: entry.directory == "/var/lib/groceries" && entry.mode == "0700"
 ) rakku.environment.persistence."/tundra/permafrost".directories;
+# Impermanence must compose with, not replace, the controller package list.
+assert builtins.any (
+  package: (package.name or "") == "groceries-service-control"
+) rakku.environment.systemPackages;
 assert builtins.length commands == 2;
 assert lib.all (
   command: lib.hasInfix "groceries-service-control " command && !(lib.hasInfix "*" command)

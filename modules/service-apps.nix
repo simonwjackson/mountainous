@@ -22,7 +22,10 @@ let
     in
     inputs.deploy-rs.lib.${system}.activate.custom (packageFor name system) ''
       set -euo pipefail
-      control=$(${pkgs.coreutils}/bin/readlink -f /run/current-system/sw/bin/${name}-service-control)
+      control=$(${pkgs.coreutils}/bin/readlink -e /run/current-system/sw/bin/${name}-service-control) || {
+        echo '${name}: controller is missing from the running system' >&2
+        exit 1
+      }
       /run/wrappers/bin/sudo -n "$control" stop
       /run/wrappers/bin/sudo -n "$control" start
       deadline=$((SECONDS + ${toString app.activationTimeout}))
@@ -307,49 +310,51 @@ in
         type = lib.types.attrsOf serviceType;
         default = { };
       };
-      config = {
-        mountainous.appProfiles = lib.genAttrs names (_: {
-          enable = false;
-        });
-        mountainous.appUpdates = lib.mkIf (config.networking.hostName == "unzen") (
-          lib.genAttrs names (name: {
-            inherit (appFor name) input schedule;
-            gateFile = "/var/lib/app-updater/enabled-${name}";
-            hosts = lib.filter (host: appsFor host ? ${name}) (lib.attrNames hosts);
-          })
-        );
-        assertions =
-          lib.concatMap (r: r.assertions) resources
-          ++ map (name: {
-            assertion = lib.all (
-              host:
-              let
-                app = (appsFor host).${name};
-                canonical = appFor name;
-              in
-              app.input == canonical.input && app.schedule == canonical.schedule
-            ) (lib.filter (host: appsFor host ? ${name}) (lib.attrNames hosts));
-            message = "serviceApps.${name} input and schedule must agree between hosts.";
-          }) names;
-        users.users = lib.mkMerge (map (r: r.users.users) resources);
-        users.groups = lib.mkMerge (map (r: r.users.groups) resources);
-        environment.systemPackages = lib.concatMap (r: r.environment.systemPackages) resources;
-        security.sudo.extraRules = lib.concatMap (r: r.security.sudo.extraRules) resources;
-        sops.secrets = lib.mkMerge (map (r: r.sops.secrets) resources);
-        systemd.services = lib.mkMerge (map (r: r.systemd.services) resources);
-        systemd.tmpfiles.rules = lib.concatMap (r: r.systemd.tmpfiles.rules) resources;
-      }
-      // lib.optionalAttrs (options.environment ? persistence) {
-        environment.persistence."${
-          if config.mountainous ? permafrost then "/permafrost" else "/tundra/permafrost"
-        }".directories =
-          lib.mapAttrsToList (name: _: {
-            directory = state name;
-            user = name;
-            group = name;
-            mode = "0700";
-          }) apps;
-      };
+      config = lib.mkMerge [
+        {
+          mountainous.appProfiles = lib.genAttrs names (_: {
+            enable = false;
+          });
+          mountainous.appUpdates = lib.mkIf (config.networking.hostName == "unzen") (
+            lib.genAttrs names (name: {
+              inherit (appFor name) input schedule;
+              gateFile = "/var/lib/app-updater/enabled-${name}";
+              hosts = lib.filter (host: appsFor host ? ${name}) (lib.attrNames hosts);
+            })
+          );
+          assertions =
+            lib.concatMap (r: r.assertions) resources
+            ++ map (name: {
+              assertion = lib.all (
+                host:
+                let
+                  app = (appsFor host).${name};
+                  canonical = appFor name;
+                in
+                app.input == canonical.input && app.schedule == canonical.schedule
+              ) (lib.filter (host: appsFor host ? ${name}) (lib.attrNames hosts));
+              message = "serviceApps.${name} input and schedule must agree between hosts.";
+            }) names;
+          users.users = lib.mkMerge (map (r: r.users.users) resources);
+          users.groups = lib.mkMerge (map (r: r.users.groups) resources);
+          environment.systemPackages = lib.concatMap (r: r.environment.systemPackages) resources;
+          security.sudo.extraRules = lib.concatMap (r: r.security.sudo.extraRules) resources;
+          sops.secrets = lib.mkMerge (map (r: r.sops.secrets) resources);
+          systemd.services = lib.mkMerge (map (r: r.systemd.services) resources);
+          systemd.tmpfiles.rules = lib.concatMap (r: r.systemd.tmpfiles.rules) resources;
+        }
+        (lib.optionalAttrs (options.environment ? persistence) {
+          environment.persistence."${
+            if config.mountainous ? permafrost then "/permafrost" else "/tundra/permafrost"
+          }".directories =
+            lib.mapAttrsToList (name: _: {
+              directory = state name;
+              user = name;
+              group = name;
+              mode = "0700";
+            }) apps;
+        })
+      ];
     };
 
   options.mountainous.serviceAppDeployProfiles = lib.mkOption {
@@ -380,7 +385,12 @@ in
             inherit (self) deploy;
             inherit lib;
           };
-          pkgs.runCommand "service-apps-contract" { } "touch $out";
+          pkgs.runCommand "service-apps-contract" { } ''
+            ${lib.optionalString (system == "x86_64-linux") ''
+              test -x ${self.nixosConfigurations.rakku.config.system.path}/bin/groceries-service-control
+            ''}
+            touch "$out"
+          '';
       }
       // lib.genAttrs (map (name: "app-${name}") names) (
         key:

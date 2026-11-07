@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import time
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("app", choices=["groceries", "pi"])
@@ -45,6 +46,17 @@ if args.x86_only:
     print("Check-only x86 hosts: " + ", ".join(config["apps"][args.app]["hosts"]), flush=True)
 if args.check_only:
     command.append("--check-only")
+started = int(time.time())
 result = subprocess.run(command, cwd=repo, env=env)
+if result.returncode:
+    # Current updater commands carry paths/revisions, never credential values.
+    # Make the deploy failure visible instead of hiding it behind a receipt path.
+    receipts = sorted(Path("/var/lib/app-updater/receipts").glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for receipt_path in receipts:
+        receipt = json.loads(receipt_path.read_text())
+        if receipt.get("app") == args.app and receipt.get("started_at", 0) >= started:
+            print("Failed updater receipt: " + str(receipt_path), flush=True)
+            print("\n".join(Path(receipt["command_log"]).read_text().splitlines()[-100:]), flush=True)
+            break
 assert output(["git", "-C", str(repo), "rev-parse", "HEAD"]) == args.expected_source_sha
 raise SystemExit(result.returncode)

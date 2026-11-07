@@ -29,7 +29,7 @@ case ${1:-} in
     install -m0600 "$archive" "$home/.migration/source-state.tar"
     tar --no-same-owner -xf "$archive" -C "$home/.migration/source"
     source=$home/.migration/source
-    install -d -m0700 "$home/data" "$home/state/tsnet" "$home/.config/groceries"
+    install -d -m0700 "$home/data" "$home/state" "$home/state/tsnet" "$home/.config" "$home/.config/groceries"
     cp -a "$source/.local/share/groceries/." "$home/data/"
     cp -a "$source/.config/groceries-tsnet/." "$home/state/tsnet/"
     cp -a "$source/.config/groceries/." "$home/.config/groceries/"
@@ -40,7 +40,7 @@ case ${1:-} in
     ;;
   own)
     [[ /var/lib/groceries -ef $home ]]
-    chmod 0700 "$home"
+    chmod 0700 "$home" "$home/data" "$home/state" "$home/state/tsnet" "$home/.config" "$home/.config/groceries"
     chown groceries:groceries "$home"
     chown -R groceries:groceries "$home/data" "$home/state" "$home/.config"
     cd "$home"
