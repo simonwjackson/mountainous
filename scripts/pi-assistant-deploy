@@ -8,6 +8,7 @@ is one closure under /nix/var/nix/profiles/per-user/pi-assistant/application:
   bin/assistant         the core (assistant/core, its flake package)
   bin/assistant-tsgo    the tailnet node (assistant/tsgo, its flake package)
   bin/<app>             each personal app (assistant/apps, its flake's default)
+  bin/atlas             the shared planning module (sandbox/atlas, its flake's default)
   share/assistant-web   the web app's build (assistant/web)
 
   scripts/pi-assistant-deploy build      build it here, print its store path
@@ -28,6 +29,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSISTANT = Path.home() / "code/sandbox/assistant"
+ATLAS = Path.home() / "code/sandbox/atlas"
 PROFILE = "/nix/var/nix/profiles/per-user/pi-assistant/application"
 UNITS = [
     "assistant-app-*",  # a glob for systemctl; rakku-transport quotes it for the remote shell
@@ -35,6 +37,7 @@ UNITS = [
     "pi-assistant-laure",
     "pi-assistant-household",
     "assistant-tsgo",
+    "atlas",
 ]
 
 
@@ -78,7 +81,7 @@ def build_web(core, branch):
     return path, rev
 
 
-def assemble(core, tsgo, web, apps):
+def assemble(core, tsgo, web, apps, atlas):
     nixpkgs = output(
         ["nix", "eval", "--raw", f"{ROOT}#nixosConfigurations.rakku.pkgs.path"],
     )
@@ -90,6 +93,7 @@ def assemble(core, tsgo, web, apps):
         ln -s ${{builtins.storePath "{tsgo}"}}/bin/assistant-tsgo $out/bin/assistant-tsgo
         ln -s ${{builtins.storePath "{web}"}} $out/share/assistant-web
         for app in ${{builtins.storePath "{apps}"}}/bin/*; do ln -s "$app" $out/bin/; done
+        ln -s ${{builtins.storePath "{atlas}"}}/bin/atlas $out/bin/atlas
       ''
     """
     return output(["nix", "build", "--impure", "--no-link", "--print-out-paths", "--expr", expression])
@@ -100,8 +104,9 @@ def build(branches):
     tsgo, tsgo_rev = build_package(ASSISTANT / "tsgo", branches["tsgo"])
     web, web_rev = build_web(core, branches["web"])
     apps, apps_rev = build_package(ASSISTANT / "apps", branches["apps"])
-    application = assemble(core, tsgo, web, apps)
-    print(json.dumps({"application": application, "core": core_rev, "web": web_rev, "tsgo": tsgo_rev, "apps": apps_rev}, indent=2))
+    atlas, atlas_rev = build_package(ATLAS, branches["atlas"])
+    application = assemble(core, tsgo, web, apps, atlas)
+    print(json.dumps({"application": application, "core": core_rev, "web": web_rev, "tsgo": tsgo_rev, "apps": apps_rev, "atlas": atlas_rev}, indent=2))
     return application
 
 
@@ -112,9 +117,10 @@ def main():
     parser.add_argument("--web", default="main", help="web branch")
     parser.add_argument("--tsgo", default="main", help="tsgo branch")
     parser.add_argument("--apps", default="main", help="apps branch")
+    parser.add_argument("--atlas", default="main", help="atlas branch")
     parser.add_argument("--restart", action="store_true", help="restart the units after install")
     args = parser.parse_args()
-    application = build({"core": args.core, "web": args.web, "tsgo": args.tsgo, "apps": args.apps})
+    application = build({"core": args.core, "web": args.web, "tsgo": args.tsgo, "apps": args.apps, "atlas": args.atlas})
     if args.action == "build":
         return
     transport = ROOT / "scripts/rakku-transport"

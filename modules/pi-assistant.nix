@@ -21,6 +21,9 @@ let
   stateOf = name: "/var/lib/pi-assistant-${name}";
   notebookDir = "/var/lib/pi-household-notebook";
   tsgoState = "/var/lib/assistant-tsgo";
+  # Atlas, the planning module (assistant core ADR 0017/0018): one shared
+  # service for every person, so a shared project is one record for both.
+  atlasState = "/var/lib/atlas";
 in
 {
   # Each instance must stay its own user, private, persisted, and on loopback.
@@ -251,6 +254,14 @@ in
           inherit (spec) title readOnlyTools;
           url = "http://127.0.0.1:${toString spec.port}/mcp";
         }) (instances.${name}.apps or { })
+        # Atlas is a module: its manifest supplies tools, risks, capabilities
+        # and the default view, so the entry names only where it is. The
+        # Household instance has no person, and modules need one.
+        ++ lib.optional (cfg.atlas != null && instances.${name}.person != null) {
+          id = "atlas";
+          title = "Atlas";
+          url = "http://127.0.0.1:${toString cfg.atlas.port}/mcp";
+        }
         ++ lib.mapAttrsToList (id: defaultView: { inherit id defaultView; }) (
           instances.${name}.defaultViews or { }
         );
@@ -578,6 +589,19 @@ in
           default = null;
           description = "An OpenAI-compatible speech service for the voice link.";
         };
+        atlas = lib.mkOption {
+          type = lib.types.nullOr (
+            lib.types.submodule {
+              options.port = lib.mkOption {
+                type = lib.types.port;
+                default = 3180;
+                description = "Atlas's loopback port.";
+              };
+            }
+          );
+          default = null;
+          description = "Atlas, the shared planning module. One service serves every person; each personal instance lists it in mcp-apps.json.";
+        };
         groceries = lib.mkOption {
           type = lib.types.nullOr (
             lib.types.submodule {
@@ -697,12 +721,21 @@ in
           household = { };
           assistant-tsgo = { };
         }
+        // lib.optionalAttrs (cfg.atlas != null) { pi-atlas = { }; }
         // lib.mapAttrs' (name: _: lib.nameValuePair "pi-${name}" { }) instances;
         users.users = {
           assistant-tsgo = {
             isSystemUser = true;
             group = "assistant-tsgo";
             home = tsgoState;
+          };
+        }
+        // lib.optionalAttrs (cfg.atlas != null) {
+          pi-atlas = {
+            isSystemUser = true;
+            group = "pi-atlas";
+            home = atlasState;
+            description = "Atlas, the shared planning module";
           };
         }
         // lib.mapAttrs' (
@@ -738,7 +771,13 @@ in
               group = "assistant-tsgo";
               mode = "0700";
             }
-          ];
+          ]
+          ++ lib.optional (cfg.atlas != null) {
+            directory = atlasState;
+            user = "pi-atlas";
+            group = "pi-atlas";
+            mode = "0700";
+          };
 
         systemd.services =
           lib.mapAttrs' (
@@ -888,6 +927,49 @@ in
               }
             ) (appsOf name)
           ) instances
+          // lib.optionalAttrs (cfg.atlas != null) {
+            # Its own user and state, loopback only. People are told apart by
+            # the x-assistant-person label, a courtesy, not a security boundary.
+            atlas = {
+              description = "Atlas, the shared planning module";
+              wantedBy = [ "multi-user.target" ];
+              wants = [ "network-online.target" ];
+              after = [ "network-online.target" ];
+              environment = {
+                PORT = toString cfg.atlas.port;
+                ATLAS_DB = "${atlasState}/atlas.sqlite";
+                ATLAS_PEOPLE = lib.concatStringsSep "," (lib.attrNames cfg.people);
+                ATLAS_TIMEZONE = builtins.elemAt (lib.splitString "|" cfg.homePlace) 3;
+              };
+              unitConfig = {
+                ConditionPathExists = "${profile}/bin/atlas";
+                RequiresMountsFor = [ atlasState ];
+              };
+              serviceConfig = {
+                User = "pi-atlas";
+                Group = "pi-atlas";
+                ExecStart = "${profile}/bin/atlas";
+                UMask = "0077";
+                Restart = "on-failure";
+                RestartSec = 3;
+                NoNewPrivileges = true;
+                ProtectSystem = "strict";
+                ProtectHome = true;
+                ReadWritePaths = [ atlasState ];
+                PrivateTmp = true;
+                PrivateDevices = true;
+                ProtectKernelTunables = true;
+                ProtectKernelModules = true;
+                ProtectControlGroups = true;
+                RestrictSUIDSGID = true;
+                LockPersonality = true;
+                RestrictAddressFamilies = [
+                  "AF_INET"
+                  "AF_INET6"
+                ];
+              };
+            };
+          }
           // {
             assistant-tsgo = {
               description = "Assistant tailnet node: https://${cfg.tailnetName}.${cfg.tailnet}";

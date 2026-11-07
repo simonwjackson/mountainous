@@ -208,14 +208,8 @@ in
                 };
               };
               # Simon's own apps (assistant/apps, assistant core ADR 0006).
-              apps.todo-board = {
-                title = "To-do board";
-                port = 3170;
-                readOnlyTools = [
-                  "list_todos"
-                  "board_state"
-                ];
-              };
+              # The to-do board retired when Atlas replaced it (ADR 0017); its
+              # data stays in apps/todo-board as a backup.
               apps.google = {
                 title = "Google";
                 port = 3171;
@@ -266,6 +260,8 @@ in
           braveApiKeyFile = config.sops.secrets.pi-assistant-brave-api-key.path;
           # The groceries app on Zao (sandbox/groceries); its copy of the token is
           # ~/.config/groceries/assistant-service-token there.
+          # Atlas, the shared planning module (sandbox/atlas), for every person.
+          atlas = { };
           groceries = {
             url = "https://groceries.hummingbird-lake.ts.net";
             tokenFile = config.sops.secrets.pi-assistant-groceries-token.path;
