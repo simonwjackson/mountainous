@@ -58,6 +58,10 @@ assert
   unzen.systemd.services.app-update-pi.unitConfig.ConditionPathExists
   == "/var/lib/app-updater/enabled";
 assert !(builtins.elem "hiyori" unzen.mountainous.appUpdates.pi.hosts);
+assert rakku.mountainous.serviceApps.storia.port == 4390;
+assert rakku.systemd.services.storia.environment.STORIA_CLIPROXY_URL == "https://ai.hummingbird-lake.ts.net";
+assert rakku.sops.secrets.storia-jev-key.owner == "storia";
+assert unzen.mountainous.appUpdates.storia.hosts == [ "rakku" ];
 assert rakku.mountainous.serviceApps.meetings.port == 8179;
 assert rakku.mountainous.serviceApps.meetings.serverArgs == [ ];
 assert rakku.systemd.services.meetings.environment.MEETINGS_DATA_DIR == "/var/lib/meetings/data";

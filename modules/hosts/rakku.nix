@@ -87,6 +87,11 @@ in
             test "$("$APP_PACKAGE/bin/meetings-server" --version)" = 'meetings-server 0.1.0'
           '';
         };
+        mountainous.serviceApps.storia = (import ../../lib/storia-service.nix { inherit pkgs; }) // {
+          input = "storia";
+          port = 4390;
+          schedule = "*-*-* 04:45:00 UTC";
+        };
         # Isolated rollback canary: no tailnet registration or production state.
         mountainous.serviceApps.service-app-canary = {
           package =
