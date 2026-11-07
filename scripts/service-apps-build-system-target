@@ -1,0 +1,13 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash nix git
+# Native x86 build on Unzen; never --store ssh-ng:// for a build.
+set -euo pipefail
+host=${1:?Expected rakku or unzen}
+expected=${2:?Expected mountainous SHA}
+[[ $(hostname) == unzen && $EUID == 0 ]]
+case $host in rakku|unzen) ;; *) exit 2;; esac
+repo=/var/lib/app-updater/repository
+test "$(git -C "$repo" rev-parse HEAD)" = "$expected"
+nix build "git+file://$repo?rev=$expected#nixosConfigurations.$host.config.system.build.toplevel" \
+  --no-link --print-out-paths --max-jobs 2 --cores 4 --option builders ''
+test "$(git -C "$repo" rev-parse HEAD)" = "$expected"

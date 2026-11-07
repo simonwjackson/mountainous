@@ -46,7 +46,12 @@ stopped=true
 tar -cpf "$archive" -C "$HOME" .local/share/groceries .config/groceries .config/groceries-tsnet
 scp -F /dev/null "$archive" root@rakku:/tmp/groceries-stopped-source.tar
 ssh -F /dev/null root@rakku bash /tmp/service-apps-groceries-state-target stage /tmp/groceries-stopped-source.tar > "$evidence/groceries-state-stage.txt"
-ssh -F /dev/null root@rakku bash /tmp/service-apps-host-target switch "$old" "$new" > "$evidence/rakku-switch.txt" 2>&1
+if [[ $old != "$new" ]]; then
+  ssh -F /dev/null root@rakku bash /tmp/service-apps-host-target switch "$old" "$new" > "$evidence/rakku-switch.txt" 2>&1
+else
+  # Retry after a pre-app failure: do not switch the same healthy system again.
+  ssh -F /dev/null root@rakku bash /tmp/service-apps-host-target health > "$evidence/rakku-retry-health.txt"
+fi
 ssh -F /dev/null root@rakku bash /tmp/service-apps-groceries-state-target own >> "$evidence/groceries-state-stage.txt"
 destination_started=true
 ssh -F /dev/null root@unzen "$python" /var/lib/app-updater/repository/scripts/service-apps-run-update-target groceries "$source_sha" > "$evidence/groceries-first-deploy.txt" 2>&1
