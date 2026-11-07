@@ -20,7 +20,8 @@ p.add_argument("--state", type=Path, required=True, help="Updater key directory;
 p.add_argument("--host", type=name, required=True)
 p.add_argument("--app", type=name, required=True)
 p.add_argument("--system", required=True)
-p.add_argument("--fixture", type=Path, required=True, help="Fixture directory relative to the pinned repository")
+p.add_argument("--fixture", type=Path, help="Fixture directory relative to the pinned repository")
+p.add_argument("--bootstrap-healthy", action="store_true", help="Install the first healthy profile of an isolated canary only")
 p.add_argument("--health-url", required=True)
 p.add_argument("--health-equals", type=json.loads, required=True, help="Public JSON dot-path equality contract")
 p.add_argument("--health-identity-key", help="Public health field that must not change")
@@ -28,6 +29,10 @@ p.add_argument("--health-via-target", action="store_true", help="Read a loopback
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--recovery-timeout", type=int, default=90)
 a = p.parse_args()
+if not a.bootstrap_healthy and a.fixture is None:
+    p.error("--fixture is required unless --bootstrap-healthy is selected")
+if a.bootstrap_healthy and a.fixture is not None:
+    p.error("--bootstrap-healthy cannot select a broken fixture")
 os.umask(0o077)
 local_host(a.runner_host)
 native(a.system)
@@ -36,26 +41,55 @@ repo = a.repo.resolve()
 canary = json.loads(run(["nix", "eval", "--json", f"{ref}#nixosConfigurations.{a.host}.config.mountainous.serviceApps.{a.app}.rollbackCanary"]))
 if canary is not True:
     raise RuntimeError("Refuse destructive rollback probe: app is not declared an isolated rollbackCanary")
-fixture_path = (repo / a.fixture).resolve().relative_to(repo)
+fixture_path = (repo / a.fixture).resolve().relative_to(repo) if a.fixture is not None else None
 health = Health(a.health_url, a.health_equals, a.health_identity_key)
 node = json.loads(run(["nix", "eval", "--json", f"{ref}#deploy.nodes.{a.host}", "--apply",
     f"n: {{ inherit (n) hostname sshUser sshOpts; profilePath = n.profiles.{a.app}.profilePath; }}"]))
 ssh = SSH(node["hostname"], node["sshUser"], tuple(node["sshOpts"]))
 profile = node["profilePath"]
-units = [a.app + ".service", a.app + "-tsnet.service"]
+units = json.loads(run(["nix", "eval", "--json",
+    f"{ref}#nixosConfigurations.{a.host}.config.mountainous.serviceApps.{a.app}.unitNames"]))
 current = lambda: ssh.read("readlink", "-e", profile)
 def read_health():
     if a.health_via_target:
         return health.validate(json.loads(ssh.read("curl", "--fail", "--silent", "--show-error", "--max-time", "10", a.health_url)))
     return health.read()
 
-before = current()
-before_health = read_health()
 # Each remote unit query must be one escaped command, not an SSH argument list.
 def active():
     return all(subprocess.run(ssh.command("systemctl", "is-active", "--quiet", unit),
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 for unit in units)
 
+if a.bootstrap_healthy:
+    # The rollbackCanary guard above runs before any key use or profile mutation.
+    subprocess.run(ssh.command("test", "!", "-e", profile, "-a", "!", "-L", profile), check=True)
+    for unit in units:
+        if ssh.read("systemctl", "show", unit, "-p", "ActiveState", "--value") not in ("inactive", "failed"):
+            raise RuntimeError("Refuse bootstrap: canary unit is not stopped")
+    os.environ["LOCAL_KEY"] = str(a.state / "signing-key")
+    os.environ["GIT_SSH_COMMAND"] = f"ssh -F /dev/null -i {a.state}/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={repo}/deploy/known_hosts"
+    activation = run(["nix", "build", "--no-link", "--print-out-paths", *build_flags(),
+                      f"{ref}#deploy.nodes.{a.host}.profiles.{a.app}.path"])
+    pinned(repo, a.expected_sha)
+    subprocess.run(["nix", "store", "sign", "--recursive", "--key-file", str(a.state / "signing-key"), activation], check=True)
+    a.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    log = a.output.with_suffix(".log")
+    with log.open("w") as output:
+        subprocess.run(["nix", "run", *build_flags(), f"{ref}#app-deployer", "--",
+            f"{ref}#{a.host}.{a.app}", "--skip-checks", "--checksigs", "--auto-rollback", "true",
+            "--magic-rollback", "true", "--", *build_flags()], check=True,
+            stdout=output, stderr=subprocess.STDOUT, text=True)
+    pinned(repo, a.expected_sha)
+    if not active() or current() != activation:
+        raise RuntimeError("Healthy canary bootstrap did not activate every declared unit")
+    receipt = {"source_commit": a.expected_sha, "host": a.host, "app": a.app,
+               "bootstrap": "verified", "profile": current(), "units": units, "health": read_health(), "log": str(log)}
+    a.output.write_text(json.dumps(receipt, indent=2) + "\n")
+    print(json.dumps(receipt, indent=2))
+    raise SystemExit(0)
+
+before = current()
+before_health = read_health()
 if not active():
     raise RuntimeError("Refuse probe: every original app unit must be active")
 app_input = json.loads(run(["nix", "eval", "--json", f"{ref}#nixosConfigurations.{a.host}.config.mountainous.serviceApps.{a.app}.input"]))

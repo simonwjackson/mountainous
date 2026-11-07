@@ -5,11 +5,13 @@ let
     mkdir -p "$out"
     cp -r ${inputs.pi-cliproxyapi-provider}/. "$out/"
   '';
-  settings = pkgs.writeText "knowledge-pi-settings.json" (builtins.toJSON {
-    defaultProvider = "cliproxyapi";
-    defaultModel = "claude-opus-5-5";
-    packages = [ (toString provider) ];
-  });
+  settings = pkgs.writeText "knowledge-pi-settings.json" (
+    builtins.toJSON {
+      defaultProvider = "cliproxyapi";
+      defaultModel = "claude-opus-5-5";
+      packages = [ (toString provider) ];
+    }
+  );
 in
 {
   serverArgs = [

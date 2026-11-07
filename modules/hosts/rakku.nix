@@ -71,11 +71,13 @@ in
           port = 4382;
           schedule = "*-*-* 04:15:00 UTC";
         };
-        mountainous.serviceApps.knowledge = (import ../../lib/knowledge-service.nix { inherit pkgs inputs; }) // {
-          input = "knowledge";
-          port = 4381;
-          schedule = "*-*-* 04:35:00 UTC";
-        };
+        mountainous.serviceApps.knowledge =
+          (import ../../lib/knowledge-service.nix { inherit pkgs inputs; })
+          // {
+            input = "knowledge";
+            port = 4381;
+            schedule = "*-*-* 04:35:00 UTC";
+          };
         mountainous.serviceApps.meetings = {
           input = "meetings";
           port = 8179;
@@ -109,6 +111,24 @@ in
           ];
           smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:4398/healthz >/dev/null";
           schedule = "*-*-* 04:30:00 UTC";
+        };
+        # Permanent one-process regression canary; no tailnet or credentials.
+        mountainous.serviceApps.service-app-single-canary = {
+          package =
+            system:
+            import ../../tests/fixtures/service-app-single-canary {
+              pkgs = inputs.nixpkgs.legacyPackages.${system};
+            };
+          rollbackCanary = true;
+          sidecar = null;
+          port = 4400;
+          serverArgs = [
+            "--host"
+            "127.0.0.1"
+            "--port"
+            "4400"
+          ];
+          smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:4400/healthz >/dev/null";
         };
         mountainous.features.ai-gateway-staging.enable = true;
         mountainous.features.ai-gateway.enable = true;

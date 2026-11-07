@@ -38,7 +38,17 @@ state in `state/tsnet`, binaries `<name>-server` and `<name>-tsnet`, profile
 `/nix/var/nix/profiles/apps/<name>`. Override CLI arguments, environment and
 binary names for other upstream contracts. The backend binds loopback only.
 Both units are gated on their profile binary. Only tsnet state is writable by
-the sidecar. Impermanence persistence is automatic; Rakku uses
+the sidecar. For an app that already serves its own tailnet node, set `sidecar = null`.
+That opt-in mode creates only `<name>.service`; `serverArgs` is its complete argv
+(no host/port flags are injected). Keep the app's tsnet state under its persistent
+home and bind any extra health listener to loopback. `unitNames` is a derived,
+read-only list: the controller, SOPS restarts, readiness and stability checks use
+every declared unit, including the single unit in this mode. The installed
+`/etc/service-apps/<name>.json` supplies that same list to cutover tools; missing
+or invalid metadata fails closed before stopping the source. The default paired
+mode and its activation derivations are unchanged.
+
+Impermanence persistence is automatic; Rakku uses
 `/tundra/permafrost`.
 
 `secrets` maps host SOPS keys to home-relative regular 0600 files copied from
@@ -73,7 +83,7 @@ and runs its activation. Data is not rolled back. Each actual activation briefly
 interrupts requests; incompatible data schemas require a separate backup plan.
 
 A first install has no previous accepted profile. On migration failure, stop and
-confirm both destination units, quarantine the unaccepted canonical profile link
+confirm every declared destination unit, quarantine the unaccepted canonical profile link
 without deleting generations, and only then resume the previously active source
 units. Never start two copies of a tsnet identity.
 
@@ -97,7 +107,7 @@ constants:
 | `service-apps-stage-source-target` | `--runner-host --repo --bundle --branch --expected-sha`; locks against active updater jobs and preserves the previous ref |
 | `service-apps-host-target` | `health/compare/switch --host`, repeated `--health-unit`; compare/switch also need `--old --new`; switch requires the exact `--reviewed-diff-sha256` printed by compare |
 | `service-apps-run-update-target` | `--runner-host --app --expected-sha --system`; check-only by default; deployment requires explicit `--deploy` |
-| `service-apps-rollback-probe` | `--runner-host --repo --expected-sha --state --host --app --system --fixture --health-url --health-equals --output`; optional stable public `--health-identity-key` and `--health-via-target` for loopback-only canaries |
+| `service-apps-rollback-probe` | `--bootstrap-healthy` installs an absent first profile only after the rollbackCanary guard; otherwise a broken fixture is required. `--runner-host --repo --expected-sha --state --host --app --system --fixture --health-url --health-equals --output`; optional stable public `--health-identity-key` and `--health-via-target` for loopback-only canaries |
 
 The host comparison covers closure changes and all `/etc` file contents,
 including unit files. Inspect it for feature losses before switching. Recheck
@@ -106,9 +116,14 @@ all seven household core units as repeated health arguments.
 
 **Never run rollback probes against a production app.** The probe refuses apps
 unless their host declaration explicitly sets `rollbackCanary = true`. Rakku's
-`service-app-canary` has its own account, units, private empty state, and two
+`service-app-single-canary` is the permanent one-process regression instance on
+loopback port 4400, with its own account and empty state. It has no sidecar,
+tailnet identity, credentials or updater gate. `service-app-canary` has its own account, units, private empty state, and two
 loopback HTTP ports (4398/4399). It never registers a tailnet name and holds no
-credentials or household data. Both failing fixtures target this canary only.
+credentials or household data. Both paired failing fixtures target that paired
+canary only. The single-process broken fixture targets `service-app-single-canary`.
+Bootstrap and rollback probes hold Unzen's migration lock while signing. Bootstrap
+refuses an existing profile or a running unit, and cannot select a broken fixture.
 
 For package-backed canaries, broken fixtures are plain Nix functions accepting
 `{ pkgs, healthy }`. The probe imports them from the pinned repository through
@@ -157,7 +172,7 @@ Prepare a private JSON plan (all paths/argv are metadata, never secret values):
 ```
 
 Run `STORE/bin/service-apps-cutover source --plan PLAN` on the source host.
-It refuses before any outage unless **every source unit is active**, both
+It refuses before any outage unless **every source unit is active**, all declared
 destination units are stopped, the destination profile is absent, and the
 persistence bind and old public health contract pass. Source/state path mappings
 must be non-overlapping regular directories without symlinks. Platform-provisioned

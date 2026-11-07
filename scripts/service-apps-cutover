@@ -20,7 +20,7 @@ import tarfile
 import tempfile
 import time
 import uuid
-from service_apps import Health, SSH, name, recovery_units, require_cutover_ready, run
+from service_apps import Health, SSH, declared_units, name, recovery_units, require_cutover_ready, run
 
 
 def relative(value):
@@ -42,7 +42,7 @@ def destination(plan):
     app = name(plan["app"])
     home = Path("/var/lib") / app
     profile = Path("/nix/var/nix/profiles/apps") / app
-    units = [app + ".service", app + "-tsnet.service"]
+    units = declared_units(app)
     return home, profile, units
 
 

@@ -1,0 +1,23 @@
+{
+  "rakku/groceries/unit/groceries.service": "/nix/store/ckr3pvp752bpyv4brajx6mwksl824l2j-unit-groceries.service.drv",
+  "rakku/groceries/unit/groceries-tsnet.service": "/nix/store/7aayvj77gnjl83350kbih498z5kj2640-unit-groceries-tsnet.service.drv",
+  "rakku/groceries/activation": "/nix/store/k6jnrjmqqkydpvcamnaz7vh0sxmb3wxi-activatable-groceries-0.1.0.drv",
+  "rakku/knowledge/unit/knowledge.service": "/nix/store/68xjslgzgp6lgvi6zc0z97vkz0iv10rk-unit-knowledge.service.drv",
+  "rakku/knowledge/unit/knowledge-tsnet.service": "/nix/store/9lp5dv29ci42p0ibd1isw22ivxwpxr89-unit-knowledge-tsnet.service.drv",
+  "rakku/knowledge/activation": "/nix/store/pi47fx2hf0kd2i9b13xdnrbdm6rvz1ix-activatable-knowledge-0.1.0.drv",
+  "rakku/meetings/unit/meetings.service": "/nix/store/xhx943qjkfb7jb1ysjj65yr9r6l6nz9d-unit-meetings.service.drv",
+  "rakku/meetings/unit/meetings-tsnet.service": "/nix/store/fpfc5q3n04k7qf5c1bdxx364gyl7pks3-unit-meetings-tsnet.service.drv",
+  "rakku/meetings/activation": "/nix/store/r3wv59pgkf0pi6zjrr409yw4fp3k7j5z-activatable-meetings-0.1.0.drv",
+  "rakku/service-app-canary/unit/service-app-canary.service": "/nix/store/bfpjpd7zadww7mm2hafqlmanrn19rhi9-unit-service-app-canary.service.drv",
+  "rakku/service-app-canary/unit/service-app-canary-tsnet.service": "/nix/store/h8wp4yg1adm64snymk0rqycf2nj4ci1m-unit-service-app-canary-tsnet.service.drv",
+  "rakku/service-app-canary/activation": "/nix/store/ih6zgrciy5lj6qqbzs2qkypgphf6mnzq-activatable-service-app-canary-1.0.0.drv",
+  "rakku/storia/unit/storia.service": "/nix/store/ikdmdnxm1axw1h8ff1xyiplj0n00jrfc-unit-storia.service.drv",
+  "rakku/storia/unit/storia-tsnet.service": "/nix/store/xzvgdkwg1jb7i3yvxac6l01c0gh40pkp-unit-storia-tsnet.service.drv",
+  "rakku/storia/activation": "/nix/store/j4wcbhy3n11dzvwxy4xzfnkxgz940hqh-activatable-storia-0.1.0.drv",
+  "unzen/ossicle/unit/ossicle.service": "/nix/store/9zvvrixrq3rwiiimc7r4lzrrvlbw2k7r-unit-ossicle.service.drv",
+  "unzen/ossicle/unit/ossicle-tsnet.service": "/nix/store/a03rh7i9kfky0s17b6j13lh6v1lbjn5s-unit-ossicle-tsnet.service.drv",
+  "unzen/ossicle/activation": "/nix/store/39f2xj3yh1k5wrr70il5fsssxjhcga7v-activatable-ossicle-0.1.0.drv",
+  "unzen/youtube/unit/youtube.service": "/nix/store/zav2ldwbjfn7nw7i4xmfvk87lmzqmpv9-unit-youtube.service.drv",
+  "unzen/youtube/unit/youtube-tsnet.service": "/nix/store/c679vy1vx5j4xxrmja4vz94nvrd62dsi-unit-youtube-tsnet.service.drv",
+  "unzen/youtube/activation": "/nix/store/4g4ikrbny5q39xak10gfnaabk520g97v-activatable-youtube-0.1.0.drv"
+}

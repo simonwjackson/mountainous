@@ -1,6 +1,11 @@
 { pkgs }:
 {
-  serverArgs = [ "--data-dir" "/var/lib/storia/data" "--config-dir" "/var/lib/storia/config" ];
+  serverArgs = [
+    "--data-dir"
+    "/var/lib/storia/data"
+    "--config-dir"
+    "/var/lib/storia/config"
+  ];
   secrets = {
     storia-cliproxy-key = "config/cliproxy-key";
     storia-jev-key = "config/jev-key";

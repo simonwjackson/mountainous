@@ -58,6 +58,32 @@ assert
   unzen.systemd.services.app-update-pi.unitConfig.ConditionPathExists
   == "/var/lib/app-updater/enabled";
 assert !(builtins.elem "hiyori" unzen.mountainous.appUpdates.pi.hosts);
+assert rakku.mountainous.serviceApps.service-app-single-canary.sidecar == null;
+assert
+  rakku.mountainous.serviceApps.service-app-single-canary.unitNames
+  == [ "service-app-single-canary.service" ];
+assert !(rakku.systemd.services ? service-app-single-canary-tsnet);
+assert
+  rakku.systemd.services.service-app-single-canary.serviceConfig.ExecStart
+  == "/nix/var/nix/profiles/apps/service-app-single-canary/bin/service-app-single-canary-server --host 127.0.0.1 --port 4400";
+assert rakku.users.users.service-app-single-canary.isSystemUser;
+assert rakku.systemd.services.service-app-single-canary.serviceConfig.ProtectSystem == "strict";
+assert
+  rakku.environment.etc."service-apps/service-app-single-canary.json".text
+  == ''["service-app-single-canary.service"]'';
+assert !(unzen.mountainous.appUpdates ? service-app-single-canary);
+assert builtins.any (
+  rule:
+  builtins.elem "app-deploy" rule.users
+  && builtins.any (
+    command: lib.hasInfix "/service-app-single-canary-service-control start" command.command
+  ) rule.commands
+) rakku.security.sudo.extraRules;
+assert
+  rakku.mountainous.serviceApps.groceries.unitNames == [
+    "groceries.service"
+    "groceries-tsnet.service"
+  ];
 assert rakku.mountainous.serviceApps.storia.port == 4390;
 assert
   rakku.systemd.services.storia.environment.STORIA_CLIPROXY_URL

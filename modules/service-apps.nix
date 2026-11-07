@@ -37,10 +37,13 @@ let
       deadline=$((SECONDS + ${toString app.activationTimeout}))
       ready() {
         [[ "$(${pkgs.systemd}/bin/systemctl show ${name}.service -p ActiveState --value)" == active ]] &&
-          [[ "$(${pkgs.systemd}/bin/systemctl show ${name}-tsnet.service -p ActiveState --value)" == active ]] && ${smoke}
+          ${
+            lib.optionalString (app.sidecar != null)
+              ''[[ "$(${pkgs.systemd}/bin/systemctl show ${name}-tsnet.service -p ActiveState --value)" == active ]] && ''
+          }${smoke}
       }
       incarnations() {
-        ${pkgs.systemd}/bin/systemctl show ${name}.service ${name}-tsnet.service \
+        ${pkgs.systemd}/bin/systemctl show ${lib.concatStringsSep " " app.unitNames} \
           -p ActiveState -p MainPID -p InvocationID -p NRestarts
       }
       until ready; do
@@ -112,15 +115,22 @@ in
                 "--data-dir"
                 "/var/lib/${name}/data"
               ];
-              description = "Arguments after --host 127.0.0.1 --port PORT. Use absolute runtime paths.";
+              description = "Arguments after the enforced loopback host/port for paired apps; complete argv when sidecar is null. Use absolute runtime paths.";
             };
             tailnet = lib.mkOption {
               type = lib.types.str;
               default = "hummingbird-lake.ts.net";
             };
             sidecar = lib.mkOption {
-              type = lib.types.strMatching "[a-zA-Z0-9_-]+";
+              type = lib.types.nullOr (lib.types.strMatching "[a-zA-Z0-9_-]+");
               default = "${name}-tsnet";
+              description = "Dedicated sidecar binary, or null when the server owns its tailnet node.";
+            };
+            unitNames = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              readOnly = true;
+              default = [ "${name}.service" ] ++ lib.optional (config.sidecar != null) "${name}-tsnet.service";
+              description = "All units controlled and checked by this app's activation contract.";
             };
             sidecarArgs = lib.mkOption {
               type = lib.types.listOf lib.types.str;
@@ -177,10 +187,12 @@ in
           text = ''
             if [[ $# != 1 ]]; then exit 2; fi
             case "$1" in
-              stop) systemctl stop ${name}-tsnet.service ${name}.service ;;
+              stop) systemctl stop ${
+                lib.optionalString (apps.${name}.sidecar != null) "${name}-tsnet.service "
+              }${name}.service ;;
               start)
-                systemctl reset-failed ${name}.service ${name}-tsnet.service
-                systemctl start ${name}.service ${name}-tsnet.service
+                systemctl reset-failed ${lib.concatStringsSep " " apps.${name}.unitNames}
+                systemctl start ${lib.concatStringsSep " " apps.${name}.unitNames}
                 ;;
               *) echo 'Expected start or stop' >&2; exit 2 ;;
             esac
@@ -246,7 +258,8 @@ in
             }
             {
               assertion =
-                !(lib.any (
+                app.sidecar == null
+                || !(lib.any (
                   arg:
                   arg == "--host" || lib.hasPrefix "--host=" arg || arg == "--port" || lib.hasPrefix "--port=" arg
                 ) app.serverArgs);
@@ -268,6 +281,7 @@ in
             homeMode = "0700";
           };
           environment.systemPackages = [ (controller name) ];
+          environment.etc."service-apps/${name}.json".text = builtins.toJSON app.unitNames;
           security.sudo.extraRules = [
             {
               users = [ "app-deploy" ];
@@ -308,10 +322,7 @@ in
             owner = name;
             group = name;
             mode = "0400";
-            restartUnits = [
-              "${name}.service"
-              "${name}-tsnet.service"
-            ];
+            restartUnits = app.unitNames;
           }) app.secrets;
           systemd.services.${name} = unit app.server // {
             description = "${name} loopback service app";
@@ -324,6 +335,8 @@ in
               ExecStart = lib.escapeShellArgs (
                 [
                   "${profile name}/bin/${app.server}"
+                ]
+                ++ lib.optionals (app.sidecar != null) [
                   "--host"
                   "127.0.0.1"
                   "--port"
@@ -359,23 +372,26 @@ in
               TimeoutStartSec = "15min";
             };
           };
-          systemd.services."${name}-tsnet" = unit app.sidecar // {
-            description = "${name} dedicated tailnet node";
-            wants = [
-              "network-online.target"
-              "${name}.service"
-            ];
-            after = [
-              "network-online.target"
-              "${name}.service"
-            ];
-            serviceConfig = common // {
-              ExecStart = lib.escapeShellArgs ([ "${profile name}/bin/${app.sidecar}" ] ++ app.sidecarArgs);
-              StateDirectory = "${name}/state/tsnet";
-              ReadOnlyPaths = [ home ];
-              ReadWritePaths = [ "${home}/state/tsnet" ];
-            };
-          };
+          systemd.services."${name}-tsnet" = lib.mkIf (app.sidecar != null) (
+            unit app.sidecar
+            // {
+              description = "${name} dedicated tailnet node";
+              wants = [
+                "network-online.target"
+                "${name}.service"
+              ];
+              after = [
+                "network-online.target"
+                "${name}.service"
+              ];
+              serviceConfig = common // {
+                ExecStart = lib.escapeShellArgs ([ "${profile name}/bin/${app.sidecar}" ] ++ app.sidecarArgs);
+                StateDirectory = "${name}/state/tsnet";
+                ReadOnlyPaths = [ home ];
+                ReadWritePaths = [ "${home}/state/tsnet" ];
+              };
+            }
+          );
         }
       ) apps;
     in
@@ -418,6 +434,7 @@ in
           users.users = lib.mkMerge (map (r: r.users.users) resources);
           users.groups = lib.mkMerge (map (r: r.users.groups) resources);
           environment.systemPackages = lib.concatMap (r: r.environment.systemPackages) resources;
+          environment.etc = lib.mkMerge (map (r: r.environment.etc) resources);
           security.sudo.extraRules = lib.concatMap (r: r.security.sudo.extraRules) resources;
           sops.secrets = lib.mkMerge (map (r: r.sops.secrets) resources);
           systemd.services = lib.mkMerge (map (r: r.systemd.services) resources);
@@ -530,6 +547,15 @@ in
           pkgs.runCommand "service-apps-contract" { } ''
             ${lib.optionalString (system == "x86_64-linux") ''
               test -x ${self.nixosConfigurations.rakku.config.system.path}/bin/groceries-service-control
+              controller=${self.nixosConfigurations.rakku.config.system.path}/bin/service-app-single-canary-service-control
+              test -x "$controller"
+              grep -F 'systemctl stop service-app-single-canary.service ;;' "$controller"
+              grep -F 'systemctl start service-app-single-canary.service' "$controller"
+              ! grep -F 'service-app-single-canary-tsnet' "$controller"
+              activation=${self.deploy.nodes.rakku.profiles.service-app-single-canary.path}/deploy-rs-activate
+              grep -F 'systemctl show service-app-single-canary.service -p ActiveState' "$activation"
+              ! grep -F 'service-app-single-canary-tsnet' "$activation"
+              grep -F 'activation stability check failed' "$activation"
             ''}
             touch "$out"
           '';
@@ -550,7 +576,7 @@ in
           }
           ''
             test -x "$APP_PACKAGE/bin/${app.server}"
-            test -x "$APP_PACKAGE/bin/${app.sidecar}"
+            ${lib.optionalString (app.sidecar != null) ''test -x "$APP_PACKAGE/bin/${app.sidecar}"''}
             ${app.checkCommand}
             touch "$out"
           ''

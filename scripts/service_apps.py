@@ -63,9 +63,19 @@ def package_canary_expression(ref: str, host: str, app: str, system: str, fixtur
     )
 
 
+def declared_units(app: str, directory: Path = Path("/etc/service-apps")) -> list[str]:
+    """Read the platform's authoritative app unit list; missing metadata fails closed."""
+    name(app)
+    units = json.loads((directory / (app + ".json")).read_text())
+    allowed = ([app + ".service"], [app + ".service", app + "-tsnet.service"])
+    if units not in allowed:
+        raise ValueError("Invalid installed service-app unit manifest")
+    return units
+
+
 def all_units_active(command: list[str], units: list[str]) -> bool:
     # systemctl with multiple units returns success if ANY unit is active.
-    return all(subprocess.run(command + ["is-active", "--quiet", unit],
+    return bool(units) and all(subprocess.run(command + ["is-active", "--quiet", unit],
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
                for unit in units)
 

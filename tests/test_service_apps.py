@@ -13,7 +13,7 @@ from urllib.error import HTTPError
 
 SCRIPTS = Path(os.environ.get("SERVICE_APP_SCRIPTS", Path(__file__).parents[1] / "scripts"))
 sys.path.insert(0, str(SCRIPTS))
-from service_apps import Health, all_units_active, package_canary_expression, recovery_units, require_cutover_ready
+from service_apps import Health, all_units_active, declared_units, package_canary_expression, recovery_units, require_cutover_ready
 
 
 class ServiceAppSafetyTests(unittest.TestCase):
@@ -63,9 +63,26 @@ class ServiceAppSafetyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             package_canary_expression(ref, "host", "canary", "x86_64-linux", "/outside.nix")
 
+    def test_declared_units_follow_installed_single_and_paired_manifests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "app.json"
+            for units in (["app.service"], ["app.service", "app-tsnet.service"]):
+                manifest.write_text(json.dumps(units))
+                self.assertEqual(declared_units("app", root), units)
+            for units in ([], ["other.service"], ["app-tsnet.service"], "app.service"):
+                manifest.write_text(json.dumps(units))
+                with self.assertRaises(ValueError):
+                    declared_units("app", root)
+            with self.assertRaises(FileNotFoundError):
+                declared_units("missing", root)
+
     def test_requires_every_unit_not_any_unit(self):
         # Real process with configured status; rejects multi-unit invocations.
         status = ["sh", "-c", 'test "$#" = 3 && test "$3" = active', "unit-status"]
+        self.assertFalse(all_units_active(status, []))
+        self.assertTrue(all_units_active(status, ["active"]))
+        self.assertFalse(all_units_active(status, ["failed"]))
         self.assertTrue(all_units_active(status, ["active", "active"]))
         self.assertFalse(all_units_active(status, ["active", "failed"]))
         self.assertFalse(all_units_active(status, ["failed", "active"]))
@@ -96,6 +113,20 @@ class ServiceAppSafetyTests(unittest.TestCase):
                                     env={**os.environ, "HOME": directory}, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("Wrong source host", result.stderr)
+
+    def test_canary_bootstrap_refuses_selecting_a_broken_fixture(self):
+        command = [sys.executable, str(SCRIPTS / "service-apps-rollback-probe"),
+                   "--runner-host", socket.gethostname(), "--repo", "/unused",
+                   "--expected-sha", "a" * 40, "--state", "/unused", "--host", "host",
+                   "--app", "canary", "--system", "x86_64-linux", "--health-url",
+                   "http://127.0.0.1:4400/healthz", "--health-equals", "{}", "--output", "/unused"]
+        result = subprocess.run(command, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--fixture is required", result.stderr)
+        result = subprocess.run(command + ["--bootstrap-healthy", "--fixture", "broken"],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("cannot select a broken fixture", result.stderr)
 
     def test_stage_accepts_a_different_branch_and_repo(self):
         with tempfile.TemporaryDirectory() as directory:
