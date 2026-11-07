@@ -312,7 +312,9 @@ ShellRoot {
     OmniBar { id: omniBarService }
 
     Heartbeat {}
-    OptionalWebTheme {}
+    // TEMPORARY: web theme injection off so pages show their own design.
+    // Restore this line to turn it back on.
+    // OptionalWebTheme {}
 
     // One owner for capture, queueing, backend work, insertion, and the
     // bottom-centre state overlay. The top bar only reads its public state.

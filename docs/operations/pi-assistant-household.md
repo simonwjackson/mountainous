@@ -84,3 +84,21 @@ Zao ran one assistant as `simonwjackson` (`~/.local/share/pi-assistant`,
 Roll back by stopping the four units on Rakku and starting the two user units
 on Zao. Zao's home was not changed, so it resumes where it stopped; anything
 said on Rakku in between stays on Rakku.
+
+## Logbook in the Apps launcher
+
+Only Simon's `mcp-apps.json` declares a Logbook `defaultView`: `days_summary`
+with `{ start: "$today-6d", end: "$today+1d" }`. The MCP tool's range is
+`[start,end)`, so this opens seven days including today. Core resolves these
+placeholders at open time, using the existing 03:00 day boundary in
+`ASSISTANT_HOME_PLACE` (`America/Denver` on Rakku). Existing cards keep their
+recorded dates when refreshed.
+
+Deploy the core launcher-config fix before switching Rakku to this configuration.
+Older core versions reject the built-in server override. Until this configuration
+is deployed, new core leaves Logbook out of the launcher; its other tools keep
+working. The override changes neither Logbook's URL nor its read-only trust.
+Laure and Household do not receive this override or Logbook access.
+
+To roll back just this change, remove Simon's `defaultViews.logbook` and switch
+Rakku again. New core will hide Logbook from the launcher again.

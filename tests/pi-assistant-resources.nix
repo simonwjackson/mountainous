@@ -126,4 +126,48 @@ assert builtins.all
     "household"
   ];
 assert (unit "simon").environment.ASSISTANT_LOGBOOK_URL == "http://127.0.0.1:3160";
+# A declared built-in view is written without a URL or a read-only trust override.
+assert builtins.elem {
+  id = "logbook";
+  defaultView = {
+    tool = "days_summary";
+    input = {
+      start = "$today-6d";
+      end = "$today+1d";
+    };
+  };
+} cfg.mcpServers.simon;
+assert cfg.people.simon.defaultViews.logbook.tool == "days_summary";
+assert cfg.people.laure.defaultViews == { };
+# Atlas is one shared module: every person lists it by URL alone (its manifest
+# supplies the rest); the Household instance has no person, so it gets none.
+assert
+  cfg.mcpServers.laure == [
+    {
+      id = "atlas";
+      title = "Atlas";
+      url = "http://127.0.0.1:3180/mcp";
+    }
+  ];
+assert builtins.elem (builtins.head cfg.mcpServers.laure) cfg.mcpServers.simon;
+assert cfg.mcpServers.household == [ ];
+assert config.systemd.services.atlas.serviceConfig.User == "pi-atlas";
+assert config.systemd.services.atlas.environment.ATLAS_DB == "/var/lib/atlas/atlas.sqlite";
+assert builtins.any (
+  d: d.directory or "" == "/var/lib/atlas" && d.mode == "0700" && d.user == "pi-atlas"
+) config.environment.persistence."/tundra/permafrost".directories;
+# The to-do board retired when Atlas replaced it.
+assert !(cfg.people.simon.apps ? todo-board);
+# Still writes a config for an instance that has no external app, only a built-in view.
+assert builtins.elem
+  {
+    id = "logbook";
+    defaultView = cfg.people.simon.defaultViews.logbook;
+  }
+  (system.extendModules {
+    modules = [
+      { mountainous.features.pi-assistant.people.simon.apps = flake.inputs.nixpkgs.lib.mkForce { }; }
+    ];
+  }).config.mountainous.features.pi-assistant.mcpServers.simon;
+
 true

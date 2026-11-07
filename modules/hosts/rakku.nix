@@ -217,15 +217,17 @@ in
               github = true;
               # Training in the Assistant: Logbook on loopback and the Coach skill.
               logbook = true;
-              # Simon's own apps (assistant/apps, assistant core ADR 0006).
-              apps.todo-board = {
-                title = "To-do board";
-                port = 3170;
-                readOnlyTools = [
-                  "list_todos"
-                  "board_state"
-                ];
+              # Logbook's dates are [start,end): today and the six preceding days.
+              defaultViews.logbook = {
+                tool = "days_summary";
+                input = {
+                  start = "$today-6d";
+                  end = "$today+1d";
+                };
               };
+              # Simon's own apps (assistant/apps, assistant core ADR 0006).
+              # The to-do board retired when Atlas replaced it (ADR 0017); its
+              # data stays in apps/todo-board as a backup.
               apps.google = {
                 title = "Google";
                 port = 3171;
@@ -274,6 +276,8 @@ in
           cliproxyapiPort = 8430;
           cliproxyapiKeyFile = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
           braveApiKeyFile = config.sops.secrets.pi-assistant-brave-api-key.path;
+          # Atlas, the shared planning module (sandbox/atlas), for every person.
+          atlas = { };
           # The groceries service app on Rakku keeps its existing tailnet node.
           groceries = {
             url = "https://groceries.hummingbird-lake.ts.net";
