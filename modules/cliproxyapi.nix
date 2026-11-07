@@ -143,6 +143,11 @@
           default = null;
           description = "Runtime file with a Gemini API key, pushed to the core for image models.";
         };
+        elevenlabsApiKeyFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "Runtime file with the ElevenLabs API key. The quota router reads only the plan's credit balance with it.";
+        };
       };
       config = lib.mkIf cfg.enable {
         assertions = [
@@ -220,6 +225,11 @@
             TimeoutStartSec = 90;
             EnvironmentFile = "${state}/.config/cliproxyapi/quota-router.env";
             ExecStart = "${profile}/bin/cliproxy-quota-router";
+            # systemd reads the root-only secret and hands the router a copy
+            # at $CREDENTIALS_DIRECTORY/elevenlabs for this run only.
+            LoadCredential = lib.optional (
+              cfg.elevenlabsApiKeyFile != null
+            ) "elevenlabs:${cfg.elevenlabsApiKeyFile}";
           };
         };
         # Runs once per core start. After a key rotation, restart this unit.
