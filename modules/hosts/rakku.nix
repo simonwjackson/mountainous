@@ -199,6 +199,14 @@ in
               github = true;
               # Training in the Assistant: Logbook on loopback and the Coach skill.
               logbook = true;
+              # Logbook's dates are [start,end): today and the six preceding days.
+              defaultViews.logbook = {
+                tool = "days_summary";
+                input = {
+                  start = "$today-6d";
+                  end = "$today+1d";
+                };
+              };
               # Simon's own apps (assistant/apps, assistant core ADR 0006).
               apps.todo-board = {
                 title = "To-do board";
