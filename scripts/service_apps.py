@@ -89,16 +89,23 @@ class Health:
     url: str
     equals: dict
     identity_key: str | None = None
+    status_only: bool = False
 
     def __post_init__(self):
         if not self.url.startswith(("https://", "http://127.0.0.1:", "http://localhost:")):
             raise ValueError("Health URL must use HTTPS or HTTP loopback")
         if not isinstance(self.equals, dict):
             raise ValueError("Health equality contract must be a JSON object")
+        if not isinstance(self.status_only, bool) or (self.status_only and self.equals):
+            raise ValueError("Status-only health cannot specify JSON equality fields")
 
     def read(self) -> dict:
         context = ssl.create_default_context(cafile="/etc/ssl/certs/ca-certificates.crt") if self.url.startswith("https://") else None
         with urllib.request.urlopen(self.url, context=context, timeout=10) as response:
+            if self.status_only:
+                if response.status != 200:
+                    raise RuntimeError("Public health status is not 200")
+                return {}
             value = json.load(response)
         return self.validate(value)
 

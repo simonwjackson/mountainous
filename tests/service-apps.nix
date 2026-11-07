@@ -76,6 +76,10 @@ assert builtins.any (
 ) rakku.environment.persistence."/tundra/permafrost".directories;
 assert unzen.mountainous.appUpdates.knowledge.hosts == [ "rakku" ];
 assert deploy.nodes.rakku.profiles.knowledge.profilePath == "/nix/var/nix/profiles/apps/knowledge";
+assert builtins.elem "d /var/lib/youtube/.config 0700 youtube youtube -"
+  unzen.systemd.tmpfiles.rules;
+assert builtins.elem "d /var/lib/youtube/.config/youtube 0700 youtube youtube -"
+  unzen.systemd.tmpfiles.rules;
 assert !(rakku.systemd.services ? groceries-ytdlp-update);
 assert lib.all
   (

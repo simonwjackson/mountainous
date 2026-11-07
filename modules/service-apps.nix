@@ -291,7 +291,17 @@ in
             "d ${home}/state/tsnet 0700 ${name} ${name} -"
           ]
           ++ map (directory: "d ${home}/${directory} 0700 ${name} ${name} -") (
-            lib.unique (map builtins.dirOf (lib.attrValues app.secrets))
+            lib.unique (
+              lib.concatMap (
+                path:
+                let
+                  parts = lib.splitString "/" (builtins.dirOf path);
+                in
+                lib.filter (directory: directory != ".") (
+                  lib.genList (index: lib.concatStringsSep "/" (lib.take (index + 1) parts)) (lib.length parts)
+                )
+              ) (lib.attrValues app.secrets)
+            )
           );
           sops.secrets = lib.mapAttrs (_: path: {
             sopsFile = ../secrets/hosts/${config.networking.hostName}.yaml;

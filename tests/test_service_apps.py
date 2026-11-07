@@ -1,12 +1,15 @@
 """Safety contracts use real processes and real temporary Git repositories."""
 import json
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import os
 from pathlib import Path
 import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
+from urllib.error import HTTPError
 
 SCRIPTS = Path(os.environ.get("SERVICE_APP_SCRIPTS", Path(__file__).parents[1] / "scripts"))
 sys.path.insert(0, str(SCRIPTS))
@@ -23,6 +26,30 @@ class ServiceAppSafetyTests(unittest.TestCase):
             Health("file:///run/secrets/token", {})
         with self.assertRaises(ValueError):
             Health("http://127.0.0.1:4398/healthz", [])
+
+    def test_explicit_status_only_contract_accepts_empty_200_not_errors(self):
+        class EmptyHealth(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200 if self.path == '/healthz' else 503)
+                self.end_headers()
+            def log_message(self, *args):
+                pass
+        server = ThreadingHTTPServer(('127.0.0.1', 0), EmptyHealth)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            url = 'http://127.0.0.1:' + str(server.server_port)
+            self.assertEqual(Health(url + '/healthz', {}, status_only=True).read(), {})
+            with self.assertRaises(HTTPError):
+                Health(url + '/unready', {}, status_only=True).read()
+            with self.assertRaises(json.JSONDecodeError):
+                Health(url + '/healthz', {}).read()
+            with self.assertRaises(ValueError):
+                Health(url, {'status': 'ok'}, status_only=True)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
 
     def test_package_canary_deployment_is_pinned_without_input_override(self):
         ref = "git+file:///checked/repository?rev=" + "a" * 40
