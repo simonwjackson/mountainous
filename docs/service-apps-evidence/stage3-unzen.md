@@ -160,8 +160,10 @@ behavior is unchanged. Their app-profile update gates are separate.
 
 - `bash scripts/check-flake-inputs.sh`: pass, including the pre-push hook.
 - Unzen toplevel single-attribute evaluation: pass.
-- `python3 -m unittest tests/test_service_apps.py`: 9 passing tests.
-- Combined focused `tests/test_app_update.py` and service-app tests: 18 passing.
+- `python3 -m unittest tests/test_service_apps.py`: 9 passing tests at the
+  migration revision; 11 passing after rebasing onto the parent's `e712d639`.
+- Combined focused `tests/test_app_update.py` and service-app tests: 18 passing
+  at the migration revision; 20 passing after that rebase.
 - Nix `service-apps` contract, `service-app-tools` package, per-app checks and
   deploy schema: individually built with two jobs and empty builders; pass.
 - Deploy schema isolation regression: failed with the original implementation
@@ -197,6 +199,11 @@ repair that separate path. These observations do not prove which prior Aka
 switch introduced zero build capacity. No CLIProxyAPI path or service was changed
 here. The failure flag was gone after the other worker's switch; this is not
 proof that its next nightly will succeed. That remains a high-priority follow-up.
+
+The final documentation rebase includes the parent's later `e712d639`
+single-process-app/canary work. Its Unzen evaluation differs from the deployed
+`jccq5jzx…` migration system. That later platform work was not deployed by this
+worker; the parent owns its combined validation and switch.
 
 Remaining limits: reader/comics has not moved; its mirror timer remains required
 on Zao. Sonos physical playback and fresh external-provider extraction were not
