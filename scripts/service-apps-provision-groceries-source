@@ -1,0 +1,16 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3 openssh
+"""Allow Unzen's existing key to read only Groceries' canonical Git source."""
+from pathlib import Path
+import subprocess
+
+key = subprocess.run(["ssh", "-F", "/dev/null", "root@unzen", "cat", "/var/lib/app-updater/ssh/id_ed25519.pub"], check=True, capture_output=True, text=True).stdout.strip()
+assert key.startswith("ssh-ed25519 ") and "\n" not in key
+entry = 'restrict,command="/run/current-system/sw/bin/git-upload-pack /home/simonwjackson/code/sandbox/groceries" ' + key
+path = Path.home() / ".ssh/authorized_keys"
+contents = path.read_text()
+if entry not in contents.splitlines():
+    # Retain every existing authorization.
+    with path.open("a") as output:
+        output.write("\n" + entry + "\n")
+print("Installed restricted read-only groceries source authorization; existing keys retained")

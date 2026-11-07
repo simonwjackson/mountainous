@@ -1,4 +1,6 @@
 fuji ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMKdNZb6qncSHcALFxtzADCDSEt+03VLhRQmNSn+rHa2
+# Groceries' source host, verified from /etc/ssh/ssh_host_ed25519_key.pub on Zao.
+zao,zao.hummingbird-lake.ts.net ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICuVfNwnDbfncfJn0rmxnpbuI4AuwwTINc864esSjmqv
 # TODO: verify and pin hiyori ed25519 host key when reachable.
 ibuki ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIENuRN04hToNIWwNRXTLC6JPbbPnigd7czoX2hcJrZKI
 rakku ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA3jARrheLM/MCNjPqnz9Xzj8ukaKmYRLMvwSTWryyLR

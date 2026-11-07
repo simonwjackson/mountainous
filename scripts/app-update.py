@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Build one overridden flake input and deploy independent application profiles."""
 
-import base64
 import argparse
 import fcntl
 import json
@@ -52,6 +51,14 @@ def deploy_hosts(hosts, deploy):
     return results
 
 
+def build_command(system, attribute, flags, builder):
+    command = ["nix", "build", "--no-link", "--print-out-paths", "--max-jobs", "2",
+               "--cores", "4", "--option", "builders", ""]
+    if system == "aarch64-linux":
+        command += ["--eval-store", "auto", "--store", "ssh-ng://simon@" + builder["hostName"]]
+    return command + [attribute, *flags]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
@@ -62,16 +69,13 @@ def main():
     config = read_json(args.config)
     app = config["apps"][args.app]
     builder = config["builder"]
-    # The ninth builder field pins the SSH host key inside the build request.
-    # Unlike NIX_SSHOPTS, it survives forwarding to the local nix-daemon.
-    public_key = next(" ".join(line.split()[1:3]) for line in
-                      Path(builder["knownHosts"]).read_text().splitlines()
-                      if line.startswith(builder["alias"] + " ssh-ed25519 "))
-    encoded_key = base64.b64encode(public_key.encode()).decode()
-    os.environ["NIX_CONFIG"] = os.environ.get("NIX_CONFIG", "") + (
-        f"\nbuilders = ssh-ng://simon@{builder['hostName']} aarch64-linux "
-        f"{builder['privateKey']} 4 1 big-parallel - {encoded_key}\n"
-    )
+    # Build ARM on Fuji's daemon, never through another remote builder. The
+    # existing key permits only nix-daemon --stdio, not a shell or root login.
+    builder_env = os.environ | {"NIX_SSHOPTS": (
+        f"-F /dev/null -i {builder['privateKey']} -o IdentitiesOnly=yes "
+        f"-o BatchMode=yes -o StrictHostKeyChecking=yes -o HostKeyAlias={builder['alias']} "
+        f"-o UserKnownHostsFile={builder['knownHosts']} -o GlobalKnownHostsFile=/dev/null"
+    )}
     root = Path(config["stateDirectory"])
     repo = root / "repository"
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -80,9 +84,9 @@ def main():
 
     command_log = receipts / (str(time.time_ns()) + ".log")
 
-    def run(command, timeout=3600):
+    def run(command, timeout=3600, env=None):
         result = subprocess.run(command, cwd=repo, text=True, capture_output=True,
-                                timeout=timeout)
+                                timeout=timeout, env=env)
         with command_log.open("a") as log:
             log.write(json.dumps(command) + "\n" + result.stdout + result.stderr + "\n")
         result.check_returncode()
@@ -121,22 +125,30 @@ def main():
             receipt["candidate"] = candidate
             # Build each architecture independently. A builder outage must not
             # prevent x86 hosts from receiving the checked x86 closure.
-            systems = sorted(set(config["hosts"][host] for host in app["hosts"]))
+            systems = sorted(set(config["hosts"][host] for host in app["hosts"]), key=lambda s: s != "x86_64-linux")
             builds = {}
+            activations = {}
             for system in systems:
                 try:
-                    run(["nix", "build", "--no-link", f".#checks.{system}.app-{args.app}", *flags], timeout=7200)
-                    run(["nix", "build", "--no-link", f".#checks.{system}.deploy-schema", *flags])
-                    # Check the activator too, but only for this app and system.
+                    env = builder_env if system == "aarch64-linux" else None
+                    run(build_command(system, f".#checks.{system}.app-{args.app}", flags, builder), timeout=7200, env=env)
+                    run(build_command(system, f".#checks.{system}.deploy-schema", flags, builder), env=env)
                     representative = next(h for h in app["hosts"] if config["hosts"][h] == system)
-                    run(["nix", "build", "--no-link", f".#deploy.nodes.{representative}.profiles.{args.app}.path", *flags], timeout=7200)
+                    activation = run(build_command(system, f".#deploy.nodes.{representative}.profiles.{args.app}.path", flags, builder), timeout=7200, env=env).splitlines()[-1]
+                    if system == "aarch64-linux":
+                        run(["nix", "copy", "--from", "ssh-ng://simon@" + builder["hostName"], activation], env=env)
+                    activations[system] = activation
                     builds[system] = "checked"
                 except (subprocess.SubprocessError, OSError) as error:
                     builds[system] = type(error).__name__
             receipt["builds"] = builds
+            receipt["activations"] = activations
             if args.check_only:
                 receipt["status"] = "checks-passed" if all(v == "checked" for v in builds.values()) else "checks-failed"
                 return 0 if receipt["status"] == "checks-passed" else 1
+
+            for activation in activations.values():
+                run(["nix", "store", "sign", "--recursive", "--key-file", str(root / "signing-key"), activation])
 
             def deploy(host):
                 if builds[config["hosts"][host]] != "checked":

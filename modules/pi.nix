@@ -63,7 +63,8 @@ in
       mountainous.appUpdates.pi = lib.mkIf (config.networking.hostName == "unzen") {
         input = "pi";
         schedule = "*-*-* 00,06,12,18:00:00 UTC";
-        hosts = lib.attrNames flake.nixos.hosts;
+        # Hiyori is offline and has no verified OpenSSH host pin.
+        hosts = lib.remove "hiyori" (lib.attrNames flake.nixos.hosts);
         substituters = [
           "https://pi.cachix.org"
           "https://nix-community.cachix.org"

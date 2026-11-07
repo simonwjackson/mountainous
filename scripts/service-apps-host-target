@@ -1,0 +1,41 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash coreutils findutils diffutils gnugrep systemd nix
+# Run as root on the target. Compare first, inspect locally, then switch with
+# the exact old/new paths. Never overwrites a concurrently changed system.
+set -euo pipefail
+core=(home-assistant zwave-js pi-assistant-simon pi-assistant-laure pi-assistant-household beszel-hub cliproxyapi)
+health() {
+  systemctl is-system-running --wait
+  systemctl --failed --no-legend --no-pager
+  test "$(systemctl --failed --no-legend --no-pager | wc -l)" = 0
+  if [[ $(hostname) == rakku ]]; then
+    for unit in "${core[@]}"; do systemctl is-active "$unit"; done
+  fi
+}
+action=${1:?Expected compare, switch, or health}
+if [[ $action == health ]]; then health; exit; fi
+old=${2:?Expected old system path}
+new=${3:?Expected new system path}
+[[ $old == /nix/store/*-nixos-system-* && $new == /nix/store/*-nixos-system-* ]]
+[[ $(readlink -f /run/current-system) == "$old" ]] || { echo 'Running system changed. Stop and compare again.' >&2; exit 2; }
+[[ -x $new/bin/switch-to-configuration ]]
+printf 'Running: %s\nCandidate: %s\n' "$old" "$new"
+nix store diff-closures "$old" "$new"
+removed=0
+while IFS= read -r -d '' file; do
+  if [[ ! -e $new/etc/$file ]]; then
+    printf 'LOSS: %s\n' "$file"
+    removed=1
+  fi
+  if ! cmp -s "$old/etc/$file" "$new/etc/$file"; then
+    printf '\n### %s\n' "$file"
+    diff -u --label "old/$file" --label "new/$file" "$old/etc/$file" "$new/etc/$file" || true
+  fi
+done < <({ find -L "$old/etc" -type f -printf '%P\0'; find -L "$new/etc" -type f -printf '%P\0'; } | sort -zu)
+(( removed == 0 )) || { echo 'Stop: candidate loses files. Find their source branch.' >&2; exit 3; }
+if [[ $action == compare ]]; then exit; fi
+[[ $action == switch ]] || exit 2
+[[ $(readlink -f /run/current-system) == "$old" ]]
+nix-env -p /nix/var/nix/profiles/system --set "$new"
+"$new/bin/switch-to-configuration" switch
+health

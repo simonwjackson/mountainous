@@ -66,6 +66,11 @@ in
         # NeededForUsers decrypts before /etc's persisted file links are set up.
         # This filesystem is mounted in stage 1, so the key exists on cold boot.
         sops.age.sshKeyPaths = lib.mkForce [ "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key" ];
+        mountainous.serviceApps.groceries = (import ../../lib/groceries-service.nix { inherit pkgs; }) // {
+          input = "groceries";
+          port = 4382;
+          schedule = "*-*-* 04:15:00 UTC";
+        };
         mountainous.features.ai-gateway-staging.enable = true;
         mountainous.features.ai-gateway.enable = true;
         mountainous.features.notify-server.enable = true;
@@ -256,8 +261,7 @@ in
           cliproxyapiPort = 8430;
           cliproxyapiKeyFile = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
           braveApiKeyFile = config.sops.secrets.pi-assistant-brave-api-key.path;
-          # The groceries app on Zao (sandbox/groceries); its copy of the token is
-          # ~/.config/groceries/assistant-service-token there.
+          # The groceries service app on Rakku keeps its existing tailnet node.
           groceries = {
             url = "https://groceries.hummingbird-lake.ts.net";
             tokenFile = config.sops.secrets.pi-assistant-groceries-token.path;

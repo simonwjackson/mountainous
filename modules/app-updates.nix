@@ -89,6 +89,7 @@ in
                 NIX_REMOTE = "daemon";
                 LOCAL_KEY = "${state}/signing-key";
                 NIX_SSHOPTS = "-F /dev/null -o BatchMode=yes";
+                GIT_SSH_COMMAND = "ssh -F /dev/null -i ${state}/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${../deploy/known_hosts}";
                 NIX_CONFIG = ''
                   builders-use-substitutes = true
                   extra-substituters = ${lib.concatStringsSep " " app.substituters}

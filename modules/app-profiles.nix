@@ -46,7 +46,7 @@ in
         imports = lib.mapAttrsToList (_: app: app.hostModule) registry;
         options.mountainous = {
           appProfiles = lib.mkOption {
-            default = lib.mapAttrs (_: _: { }) registry;
+            default = { };
             type = lib.types.attrsOf (
               lib.types.submodule (
                 { name, ... }:
@@ -84,6 +84,9 @@ in
         };
         config = lib.mkMerge [
           {
+            # Explicit entries compose with host service-app profiles. A whole-map
+            # option default disappears as soon as another app is declared.
+            mountainous.appProfiles = lib.mapAttrs (_: _: { }) registry;
             # Dedicated public halves supplied after Unzen key generation.
             # Private halves remain in /var/lib/app-updater on Unzen.
             mountainous.appDeployment = {
@@ -170,13 +173,15 @@ in
         "-o"
         "ServerAliveCountMax=4"
       ];
-      profiles = lib.mapAttrs (app: _: {
-        profilePath = "/nix/var/nix/profiles/apps/${app}";
-        # deploy-rs owns the atomic profile link and rollback; no secondary profile.
-        path = inputs.deploy-rs.lib.${host.system}.activate.custom (registry.${app}.package
-          host.system
-        ) ":";
-      }) registry;
+      profiles =
+        lib.mapAttrs (app: _: {
+          profilePath = "/nix/var/nix/profiles/apps/${app}";
+          # deploy-rs owns the atomic profile link and rollback; no secondary profile.
+          path = inputs.deploy-rs.lib.${host.system}.activate.custom (registry.${app}.package
+            host.system
+          ) ":";
+        }) registry
+        // config.mountainous.serviceAppDeployProfiles.${name};
     }) hosts;
 
     perSystem =
