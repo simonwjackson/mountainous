@@ -486,7 +486,7 @@
     },
     "flake-utils_5": {
       "inputs": {
-        "systems": "systems_12"
+        "systems": "systems_13"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -1018,6 +1018,22 @@
     },
     "nixpkgs_15": {
       "locked": {
+        "lastModified": 1786862985,
+        "narHash": "sha256-FBJRXmbGXiSUDvYEbfLYRkckayyZ6SK1UEqhCrIZ2Cs=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e5bdc4a41d4c072fe1e3787eaa0320a384741d44",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_16": {
+      "locked": {
         "lastModified": 1787736819,
         "narHash": "sha256-cV5xEJJK3BvhU8rEd4mC9UsmDi5qscv/kzGPhBRC5WA=",
         "owner": "NixOS",
@@ -1524,6 +1540,7 @@
         "retrosmart-cursors-src": "retrosmart-cursors-src",
         "sops-nix": "sops-nix",
         "storia": "storia",
+        "synth": "synth",
         "vela": "vela",
         "w95fa-src": "w95fa-src_2",
         "youtube": "youtube"
@@ -1748,6 +1765,26 @@
         "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/no-evil"
       }
     },
+    "synth": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_15",
+        "systems": "systems_12"
+      },
+      "locked": {
+        "lastModified": 1794080493,
+        "narHash": "sha256-zci6nu4Qsdl48DoOAtaYOb8per6+6leIpJDjkDtN4NM=",
+        "ref": "service-app-rakku",
+        "rev": "d84e30a4c0b95fa7f60b05d606f5ec0d011ace25",
+        "revCount": 39,
+        "type": "git",
+        "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/synth"
+      },
+      "original": {
+        "ref": "service-app-rakku",
+        "type": "git",
+        "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/synth"
+      }
+    },
     "systems": {
       "locked": {
         "lastModified": 1681028828,
@@ -1794,6 +1831,21 @@
       }
     },
     "systems_12": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_13": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
@@ -2133,7 +2185,7 @@
     "youtube": {
       "inputs": {
         "flake-utils": "flake-utils_5",
-        "nixpkgs": "nixpkgs_15",
+        "nixpkgs": "nixpkgs_16",
         "yattee-server": "yattee-server"
       },
       "locked": {
