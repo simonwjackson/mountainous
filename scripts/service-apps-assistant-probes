@@ -1,0 +1,16 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash openssh coreutils
+# Exercise the installed credentials as each assistant unit's actual User=.
+set -euxo pipefail
+python=${1:?Python executable already copied to Rakku}
+probe=${2:?Probe script on Rakku}
+output=${3:?Local evidence directory}
+umask 077
+mkdir -p "$output"
+for person in simon laure household; do
+  caller=$person
+  [[ $person != household ]] || caller=simon
+  unit_user=$(ssh -F /dev/null root@rakku systemctl show "pi-assistant-$person.service" -p User --value)
+  [[ -n $unit_user ]] || { echo "Missing User= for pi-assistant-$person.service" >&2; exit 2; }
+  ssh -F /dev/null root@rakku runuser -u "$unit_user" -- "$python" "$probe" "/var/lib/pi-assistant-$person/.config/assistant/groceries-service-token" "$caller" > "$output/groceries-assistant-$person.json"
+done

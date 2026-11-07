@@ -85,11 +85,7 @@ step_log=$evidence/groceries-first-deploy.txt
 ssh -F /dev/null root@unzen "$python" /var/lib/app-updater/repository/scripts/service-apps-run-update-target groceries "$source_sha" > "$evidence/groceries-first-deploy.txt" 2>&1
 step='assistant-probes'
 step_log=
-for person in simon laure household; do
-  caller=$person
-  [[ $person != household ]] || caller=simon
-  ssh -F /dev/null root@rakku runuser -u "pi-assistant-$person" -- "$python" /tmp/service-apps-groceries-probe "/var/lib/pi-assistant-$person/.config/assistant/groceries-service-token" "$caller" > "$evidence/groceries-assistant-$person.json"
-done
+bash "$repo/scripts/service-apps-assistant-probes" "$python" /tmp/service-apps-groceries-probe "$evidence"
 "$python" "$repo/scripts/service-apps-groceries-probe" "$HOME/.config/groceries/assistant-service-token" simon > "$evidence/groceries-zao-after.json"
 # Compare only household meanings, never print those meanings or the token.
 "$python" -c 'import json,sys; a,b=map(lambda p:json.load(open(p)),sys.argv[1:]); assert a["lines_sha256"]==b["lines_sha256"] and a["buildId"]==b["buildId"]' "$evidence/groceries-zao-before.json" "$evidence/groceries-zao-after.json"
