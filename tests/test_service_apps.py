@@ -10,7 +10,7 @@ import unittest
 
 SCRIPTS = Path(os.environ.get("SERVICE_APP_SCRIPTS", Path(__file__).parents[1] / "scripts"))
 sys.path.insert(0, str(SCRIPTS))
-from service_apps import Health, all_units_active, recovery_units, require_cutover_ready
+from service_apps import Health, all_units_active, package_canary_expression, recovery_units, require_cutover_ready
 
 
 class ServiceAppSafetyTests(unittest.TestCase):
@@ -23,6 +23,18 @@ class ServiceAppSafetyTests(unittest.TestCase):
             Health("file:///run/secrets/token", {})
         with self.assertRaises(ValueError):
             Health("http://127.0.0.1:4398/healthz", [])
+
+    def test_package_canary_deployment_is_pinned_without_input_override(self):
+        ref = "git+file:///checked/repository?rev=" + "a" * 40
+        expression = package_canary_expression(ref, "host", "canary", "x86_64-linux", "tests/fixtures/broken/default.nix")
+        self.assertIn('builtins.getFlake "' + ref + '"', expression)
+        self.assertIn('fixture = f.outPath + "/tests/fixtures/broken/default.nix"', expression)
+        self.assertIn("serviceAppCanaryDeployment", expression)
+        self.assertNotIn("override-input", expression)
+        with self.assertRaises(ValueError):
+            package_canary_expression(ref, "host", "canary", "x86_64-linux", "../outside.nix")
+        with self.assertRaises(ValueError):
+            package_canary_expression(ref, "host", "canary", "x86_64-linux", "/outside.nix")
 
     def test_requires_every_unit_not_any_unit(self):
         # Real process with configured status; rejects multi-unit invocations.

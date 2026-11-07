@@ -16,6 +16,11 @@ let
 in
 assert app.port == 4382;
 assert !app.rollbackCanary;
+assert app.package == null;
+assert rakku.mountainous.serviceApps.service-app-canary.input == null;
+assert rakku.mountainous.serviceApps.service-app-canary.package != null;
+assert !(unzen.mountainous.appUpdates ? service-app-canary);
+assert !(unzen.systemd.services ? app-update-service-app-canary);
 assert rakku.mountainous.serviceApps.service-app-canary.rollbackCanary;
 assert !(builtins.elem "--name" rakku.mountainous.serviceApps.service-app-canary.sidecarArgs);
 assert rakku.users.users.groceries.isSystemUser;

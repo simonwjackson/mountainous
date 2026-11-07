@@ -46,6 +46,23 @@ def build_flags() -> list[str]:
     return ["--max-jobs", "2", "--cores", "4", "--option", "builders", ""]
 
 
+def package_canary_expression(ref: str, host: str, app: str, system: str, fixture: str) -> str:
+    """Pinned plain-Nix deployment; no path flake input or mutable source lookup."""
+    from pathlib import PurePosixPath
+    path = PurePosixPath(fixture)
+    if path.is_absolute() or ".." in path.parts or not path.parts:
+        raise ValueError("Fixture must be inside the pinned repository")
+    name(host)
+    name(app)
+    return (
+        f"let f = builtins.getFlake {json.dumps(ref)}; in {{ deploy = "
+        "f.lib.serviceAppCanaryDeployment { "
+        f"host = {json.dumps(host)}; name = {json.dumps(app)}; system = {json.dumps(system)}; "
+        f"fixture = f.outPath + {json.dumps('/' + str(path))}; "
+        "}; }\n"
+    )
+
+
 def all_units_active(command: list[str], units: list[str]) -> bool:
     # systemctl with multiple units returns success if ANY unit is active.
     return all(subprocess.run(command + ["is-active", "--quiet", unit],

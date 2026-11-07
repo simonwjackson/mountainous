@@ -20,6 +20,13 @@ mountainous.serviceApps.example = {
 };
 ```
 
+For a repository-owned test app, use `package = system: import ./fixture {
+  pkgs = inputs.nixpkgs.legacyPackages.${system};
+};` instead of `input`. `package` and `input` are mutually exclusive. A package-backed
+app gets the same units and signed deploy profile, but **no `appUpdates` entry**.
+Its package and tests travel with the pinned mountainous commit; no local flake
+input is needed. The canary imports `tests/fixtures/service-app-canary/default.nix`.
+
 Defaults: account/group `<name>`, 0700 `/var/lib/<name>`, data in `data`, tsnet
 state in `state/tsnet`, binaries `<name>-server` and `<name>-tsnet`, profile
 `/nix/var/nix/profiles/apps/<name>`. Override CLI arguments, environment and
@@ -96,9 +103,13 @@ unless their host declaration explicitly sets `rollbackCanary = true`. Rakku's
 loopback HTTP ports (4398/4399). It never registers a tailnet name and holds no
 credentials or household data. Both failing fixtures target this canary only.
 
-Rollback fixtures expose the healthy app as their `application` input. The probe
-pins that nested input to the real app's locked revision, signs the broken
-activation, uses deployment graph SSH options/port, and requires runtime rejection,
+For package-backed canaries, broken fixtures are plain Nix functions accepting
+`{ pkgs, healthy }`. The probe imports them from the pinned repository through
+`lib.serviceAppCanaryDeployment` and deploy-rs' `--file` mode. It uses the exact
+same activation contract and creates no path input or input override. For an
+input-backed test app, a flake fixture can still expose its healthy package as
+`application`, pinned to the input's locked revision. Both modes sign the broken
+activation, use deployment graph SSH options/port, and require runtime rejection,
 deploy-rs rollback, the original profile, **all units**, and the supplied public
 health contract. It never repairs the destination manually. Backend and sidecar
 failures each need their own isolated canary proof. Do not change the groceries

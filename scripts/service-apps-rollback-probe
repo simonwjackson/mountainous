@@ -7,9 +7,10 @@ import os
 import re
 from pathlib import Path
 import subprocess
+import tempfile
 import time
 import urllib.error
-from service_apps import Health, SSH, build_flags, local_host, name, native, pinned, run
+from service_apps import Health, SSH, build_flags, local_host, name, native, package_canary_expression, pinned, run
 
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--runner-host", required=True)
@@ -57,33 +58,43 @@ def active():
 
 if not active():
     raise RuntimeError("Refuse probe: every original app unit must be active")
-app_input = run(["nix", "eval", "--raw", f"{ref}#nixosConfigurations.{a.host}.config.mountainous.serviceApps.{a.app}.input"])
-lock = json.loads((repo / "flake.lock").read_text())
-locked = lock["nodes"][lock["nodes"][lock["root"]]["inputs"][app_input]]["locked"]
-if locked["type"] == "git":
-    application = "git+" + locked["url"] + "?rev=" + locked["rev"]
-elif locked["type"] == "github":
-    application = f'github:{locked["owner"]}/{locked["repo"]}/{locked["rev"]}'
-elif locked["type"] == "path" and not Path(locked["path"]).is_absolute():
-    # Repository-owned canaries stay pinned to the tested root SHA, not mutable
-    # working-directory contents. Never follow an arbitrary absolute path input.
-    relative_input = (repo / locked["path"]).resolve().relative_to(repo)
-    application = f"{ref}&dir={relative_input}"
-else:
-    raise ValueError("Fixture application input must be pinned git/GitHub or repo-relative canary source")
-flags = ["--override-input", app_input, f"{ref}&dir={fixture_path}",
-         "--override-input", app_input + "/application", application, "--no-write-lock-file", *build_flags()]
-os.environ["LOCAL_KEY"] = str(a.state / "signing-key")
-os.environ["GIT_SSH_COMMAND"] = f"ssh -F /dev/null -i {a.state}/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={repo}/deploy/known_hosts"
-activation = run(["nix", "build", "--no-link", "--print-out-paths", f"{ref}#deploy.nodes.{a.host}.profiles.{a.app}.path", *flags])
-subprocess.run(["nix", "store", "sign", "--recursive", "--key-file", str(a.state / "signing-key"), activation], check=True)
-pinned(repo, a.expected_sha)
-a.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-log = a.output.with_suffix(".log")
-with log.open("w") as output:
-    deployed = subprocess.run(["nix", "run", *build_flags(), f"{ref}#app-deployer", "--",
-        f"{ref}#{a.host}.{a.app}", "--skip-checks", "--checksigs", "--auto-rollback", "true",
-        "--magic-rollback", "true", "--", *flags], stdout=output, stderr=subprocess.STDOUT, text=True)
+app_input = json.loads(run(["nix", "eval", "--json", f"{ref}#nixosConfigurations.{a.host}.config.mountainous.serviceApps.{a.app}.input"]))
+app_revision = a.expected_sha
+# Keep this private temporary deployment file alive through deploy-rs evaluation.
+with tempfile.TemporaryDirectory(prefix="service-app-probe-", dir=a.state) as directory:
+    contract = Path(directory) / "default.nix"
+    if app_input is None:
+        fixture_file = fixture_path / "default.nix" if (repo / fixture_path).is_dir() else fixture_path
+        contract.write_text(package_canary_expression(ref, a.host, a.app, a.system, str(fixture_file)))
+        flags = build_flags()
+        build = ["nix", "build", "--no-link", "--print-out-paths", "--file", str(contract),
+                 f"deploy.nodes.{a.host}.profiles.{a.app}.path", *flags]
+        target = ["--file", str(contract.parent), f"{a.host}.{a.app}"]
+    else:
+        lock = json.loads((repo / "flake.lock").read_text())
+        locked = lock["nodes"][lock["nodes"][lock["root"]]["inputs"][app_input]]["locked"]
+        app_revision = locked["rev"]
+        if locked["type"] == "git":
+            application = "git+" + locked["url"] + "?rev=" + locked["rev"]
+        elif locked["type"] == "github":
+            application = f'github:{locked["owner"]}/{locked["repo"]}/{locked["rev"]}'
+        else:
+            raise ValueError("Input-backed canary requires pinned git/GitHub source")
+        flags = ["--override-input", app_input, f"{ref}&dir={fixture_path}",
+                 "--override-input", app_input + "/application", application, "--no-write-lock-file", *build_flags()]
+        build = ["nix", "build", "--no-link", "--print-out-paths", f"{ref}#deploy.nodes.{a.host}.profiles.{a.app}.path", *flags]
+        target = [f"{ref}#{a.host}.{a.app}"]
+    os.environ["LOCAL_KEY"] = str(a.state / "signing-key")
+    os.environ["GIT_SSH_COMMAND"] = f"ssh -F /dev/null -i {a.state}/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={repo}/deploy/known_hosts"
+    activation = run(build)
+    subprocess.run(["nix", "store", "sign", "--recursive", "--key-file", str(a.state / "signing-key"), activation], check=True)
+    pinned(repo, a.expected_sha)
+    a.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    log = a.output.with_suffix(".log")
+    with log.open("w") as output:
+        deployed = subprocess.run(["nix", "run", *build_flags(), f"{ref}#app-deployer", "--", *target,
+            "--skip-checks", "--checksigs", "--auto-rollback", "true", "--magic-rollback", "true", "--", *flags],
+            stdout=output, stderr=subprocess.STDOUT, text=True)
 if deployed.returncode == 0:
     raise RuntimeError("Broken service was incorrectly accepted")
 text = log.read_text()
@@ -109,7 +120,7 @@ else:
 if a.health_identity_key and after_health[a.health_identity_key] != before_health[a.health_identity_key]:
     raise RuntimeError("Health identity changed during rollback")
 receipt = {"source_commit": a.expected_sha, "host": a.host, "app": a.app, "fixture": str(fixture_path),
-    "app_revision": locked.get("rev", a.expected_sha), "broken_activation": activated[0], "prebuilt_activation": activation,
+    "app_revision": app_revision, "broken_activation": activated[0], "prebuilt_activation": activation,
     "runtime_rejection": rejection, "deploy_exit": deployed.returncode,
     "profile_before": before, "profile_after": current(), "all_units_active": active(),
     "health_before": before_health, "health_after": after_health,

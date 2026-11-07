@@ -73,6 +73,11 @@ in
         };
         # Isolated rollback canary: no tailnet registration or production state.
         mountainous.serviceApps.service-app-canary = {
+          package =
+            system:
+            import ../../tests/fixtures/service-app-canary {
+              pkgs = inputs.nixpkgs.legacyPackages.${system};
+            };
           rollbackCanary = true;
           port = 4398;
           sidecarArgs = [

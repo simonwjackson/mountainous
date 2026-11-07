@@ -12,15 +12,21 @@ let
   names = lib.unique (lib.concatMap (host: lib.attrNames (appsFor host)) (lib.attrNames hosts));
   appFor =
     name: (appsFor (lib.findFirst (host: appsFor host ? ${name}) null (lib.attrNames hosts))).${name};
-  packageFor = name: system: inputs.${(appFor name).input}.packages.${system}.default;
+  packageFor =
+    name: system:
+    let
+      app = appFor name;
+    in
+    if app.package != null then app.package system else inputs.${app.input}.packages.${system}.default;
+  updatingNames = lib.filter (name: (appFor name).package == null) names;
   activationFor =
-    name: host: system:
+    name: host: system: package:
     let
       pkgs = inputs.nixpkgs.legacyPackages.${system};
       app = (appsFor host).${name};
       smoke = pkgs.writeShellScript "${name}-smoke" app.smokeCommand;
     in
-    inputs.deploy-rs.lib.${system}.activate.custom (packageFor name system) ''
+    inputs.deploy-rs.lib.${system}.activate.custom package ''
       set -euo pipefail
       control=$(${pkgs.coreutils}/bin/readlink -e /run/current-system/sw/bin/${name}-service-control) || {
         echo '${name}: controller is missing from the running system' >&2
@@ -77,8 +83,14 @@ in
               description = "Allow destructive rollback probes only for isolated, data-free test instances.";
             };
             input = lib.mkOption {
-              type = lib.types.str;
-              default = name;
+              type = lib.types.nullOr lib.types.str;
+              default = if config.package == null then name else null;
+              description = "Tracked flake input for an automatically updated service; mutually exclusive with package.";
+            };
+            package = lib.mkOption {
+              type = lib.types.nullOr (lib.types.functionTo lib.types.package);
+              default = null;
+              description = "system -> derivation for in-repository apps. No appUpdates entry is created.";
             };
             schedule = lib.mkOption {
               type = lib.types.str;
@@ -220,8 +232,12 @@ in
               message = "serviceApps names must be safe system account and unit names.";
             }
             {
-              assertion = inputs ? ${app.input};
-              message = "serviceApps.${name}: input ${app.input} does not exist.";
+              assertion = (app.input != null) != (app.package != null);
+              message = "serviceApps.${name}: select exactly one of input or package.";
+            }
+            {
+              assertion = app.input == null || inputs ? ${app.input};
+              message = "serviceApps.${name}: selected input does not exist.";
             }
             {
               assertion =
@@ -333,7 +349,7 @@ in
             enable = false;
           });
           mountainous.appUpdates = lib.mkIf (config.networking.hostName == "unzen") (
-            lib.genAttrs names (name: {
+            lib.genAttrs updatingNames (name: {
               inherit (appFor name) input schedule;
               gateFile = "/var/lib/app-updater/enabled-${name}";
               hosts = lib.filter (host: appsFor host ? ${name}) (lib.attrNames hosts);
@@ -348,9 +364,15 @@ in
                   app = (appsFor host).${name};
                   canonical = appFor name;
                 in
-                app.input == canonical.input && app.schedule == canonical.schedule
+                app.input == canonical.input
+                && (app.package == null) == (canonical.package == null)
+                && (
+                  app.package == null
+                  || toString (app.package hosts.${host}.system) == toString (canonical.package hosts.${host}.system)
+                )
+                && app.schedule == canonical.schedule
               ) (lib.filter (host: appsFor host ? ${name}) (lib.attrNames hosts));
-              message = "serviceApps.${name} input and schedule must agree between hosts.";
+              message = "serviceApps.${name} package source and schedule must agree between hosts.";
             }) names;
           users.users = lib.mkMerge (map (r: r.users.users) resources);
           users.groups = lib.mkMerge (map (r: r.users.groups) resources);
@@ -374,6 +396,13 @@ in
       ];
     };
 
+  # Multiple modules export helpers (including memoryGuardModule); make the
+  # namespace composable rather than flake-parts' default unique raw output.
+  options.flake.lib = lib.mkOption {
+    type = lib.types.lazyAttrsOf lib.types.raw;
+    default = { };
+  };
+
   options.mountainous.serviceAppDeployProfiles = lib.mkOption {
     type = lib.types.lazyAttrsOf lib.types.raw;
     readOnly = true;
@@ -383,10 +412,42 @@ in
     host: definition:
     lib.mapAttrs (name: app: {
       profilePath = "/nix/var/nix/profiles/apps/${name}";
-      path = activationFor name host definition.system;
+      path = activationFor name host definition.system (packageFor name definition.system);
       activationTimeout = app.activationTimeout + 30;
     }) (appsFor host)
   ) hosts;
+
+  # Data-free canary deployment overlay. It reuses the real activation contract
+  # without adding a flake input or making test packages eligible for updates.
+  config.flake.lib.serviceAppCanaryDeployment =
+    {
+      host,
+      name,
+      system,
+      fixture,
+    }:
+    let
+      app = (appsFor host).${name};
+      pkgs = inputs.nixpkgs.legacyPackages.${system};
+      candidate = import fixture {
+        inherit pkgs;
+        healthy = app.package system;
+      };
+      node = self.deploy.nodes.${host};
+    in
+    assert app.rollbackCanary && app.package != null;
+    self.deploy
+    // {
+      nodes = {
+        ${host} = node // {
+          profiles = {
+            ${name} = node.profiles.${name} // {
+              path = activationFor name host system candidate;
+            };
+          };
+        };
+      };
+    };
 
   config.perSystem =
     { pkgs, system, ... }:
@@ -416,6 +477,8 @@ in
               touch "$out"
             '';
         service-apps =
+          assert builtins.isFunction self.lib.serviceAppCanaryDeployment;
+          assert builtins.isFunction self.lib.memoryGuardModule;
           assert import ../tests/service-apps.nix {
             rakku = self.nixosConfigurations.rakku.config;
             unzen = self.nixosConfigurations.unzen.config;
