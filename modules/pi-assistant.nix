@@ -243,17 +243,21 @@ in
           }
         );
 
-      # External apps (core ADR 0006): the file core reads. No apps, no file.
+      # External apps and built-in launcher overrides: the one file core reads.
+      mcpServersOf =
+        name:
+        lib.mapAttrsToList (app: spec: {
+          id = lib.replaceStrings [ "-" ] [ "_" ] app;
+          inherit (spec) title readOnlyTools;
+          url = "http://127.0.0.1:${toString spec.port}/mcp";
+        }) (instances.${name}.apps or { })
+        ++ lib.mapAttrsToList (id: defaultView: { inherit id defaultView; }) (
+          instances.${name}.defaultViews or { }
+        );
       mcpAppsOf =
         name:
         pkgs.writeText "pi-assistant-mcp-apps-${name}.json" (
-          builtins.toJSON {
-            servers = lib.mapAttrsToList (app: spec: {
-              id = lib.replaceStrings [ "-" ] [ "_" ] app;
-              inherit (spec) title readOnlyTools;
-              url = "http://127.0.0.1:${toString spec.port}/mcp";
-            }) (instances.${name}.apps or { });
-          }
+          builtins.toJSON { servers = mcpServersOf name; }
         );
       appsOf = name: instances.${name}.apps or { };
 
@@ -290,7 +294,7 @@ in
             fi
             cp --no-preserve=mode ${webSearch name} "$state/agent/web-search.json"
             ${
-              if appsOf name == { } then
+              if mcpServersOf name == [ ] then
                 ''rm -f "$state/mcp-apps.json"''
               else
                 ''cp --no-preserve=mode ${mcpAppsOf name} "$state/mcp-apps.json"''
@@ -473,6 +477,18 @@ in
                     default = false;
                     description = "Give this person's assistant the training tools, which read and write this host's Logbook on loopback.";
                   };
+                  defaultViews = lib.mkOption {
+                    type = lib.types.attrsOf (
+                      lib.types.submodule {
+                        options = {
+                          tool = lib.mkOption { type = lib.types.str; };
+                          input = lib.mkOption { type = lib.types.attrsOf (pkgs.formats.json { }).type; };
+                        };
+                      }
+                    );
+                    default = { };
+                    description = "Temporary default launcher views for built-in MCP servers, by server id. Core validates the tool is read-only and accepts the input. Only input strings exactly matching $today or $today+/-Nd (N 0–366) expand to dates at open time, using the person's 03:00 day boundary.";
+                  };
                   apps = lib.mkOption {
                     type = lib.types.attrsOf (
                       lib.types.submodule {
@@ -601,6 +617,12 @@ in
           type = lib.types.attrsOf (lib.types.listOf lib.types.str);
           description = "Fallback models per lane. The core refuses a lanes file that leaves a lane out.";
         };
+        mcpServers = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.listOf (pkgs.formats.json { }).type);
+          readOnly = true;
+          internal = true;
+          description = "The MCP server entries written to each instance's mcp-apps.json.";
+        };
         installedSkills = lib.mkOption {
           type = lib.types.attrsOf (lib.types.attrsOf lib.types.str);
           readOnly = true;
@@ -610,6 +632,7 @@ in
       };
 
       config = lib.mkIf (cfg.people != { }) {
+        mountainous.features.pi-assistant.mcpServers = lib.mapAttrs (name: _: mcpServersOf name) instances;
         mountainous.features.pi-assistant.installedSkills = lib.mapAttrs (
           _: instance: instance.skills
         ) instances;

@@ -126,4 +126,30 @@ assert builtins.all
     "household"
   ];
 assert (unit "simon").environment.ASSISTANT_LOGBOOK_URL == "http://127.0.0.1:3160";
+# A declared built-in view is written without a URL or a read-only trust override.
+assert builtins.elem {
+  id = "logbook";
+  defaultView = {
+    tool = "days_summary";
+    input = {
+      start = "$today-6d";
+      end = "$today+1d";
+    };
+  };
+} cfg.mcpServers.simon;
+assert cfg.people.simon.defaultViews.logbook.tool == "days_summary";
+assert cfg.people.laure.defaultViews == { };
+assert cfg.mcpServers.laure == [ ] && cfg.mcpServers.household == [ ];
+# Still writes a config for an instance that has no external app, only a built-in view.
+assert builtins.elem
+  {
+    id = "logbook";
+    defaultView = cfg.people.simon.defaultViews.logbook;
+  }
+  (system.extendModules {
+    modules = [
+      { mountainous.features.pi-assistant.people.simon.apps = flake.inputs.nixpkgs.lib.mkForce { }; }
+    ];
+  }).config.mountainous.features.pi-assistant.mcpServers.simon;
+
 true
