@@ -4,6 +4,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import time
@@ -72,8 +73,14 @@ with log.open("w") as output:
 if deployed.returncode == 0:
     raise RuntimeError("Broken service was incorrectly accepted")
 text = log.read_text()
-if "activation readiness timed out" not in text or "rolled back to previous generation" not in text:
+rejection = next((message for message in ("activation readiness timed out", "activation stability check failed") if message in text), None)
+if rejection is None or "rolled back to previous generation" not in text:
     raise RuntimeError("Missing evidence of runtime readiness rejection and deploy-rs rollback")
+# deploy-rs may normalize input refs differently during its own evaluation.
+# Record the candidate it actually activated, not only the preparatory build.
+activated = re.findall(r'^path = "(/nix/store/[^\"]+)"$', text, flags=re.MULTILINE)
+if len(activated) != 1:
+    raise RuntimeError("Expected exactly one activated profile in deployment evidence")
 for _ in range(a.recovery_timeout):
     if current() == before and active():
         try:
@@ -88,7 +95,8 @@ else:
 if a.health_identity_key and after_health[a.health_identity_key] != before_health[a.health_identity_key]:
     raise RuntimeError("Health identity changed during rollback")
 receipt = {"source_commit": a.expected_sha, "host": a.host, "app": a.app, "fixture": str(fixture_path),
-    "app_revision": locked["rev"], "broken_activation": activation, "deploy_exit": deployed.returncode,
+    "app_revision": locked["rev"], "broken_activation": activated[0], "prebuilt_activation": activation,
+    "runtime_rejection": rejection, "deploy_exit": deployed.returncode,
     "profile_before": before, "profile_after": current(), "all_units_active": active(),
     "health_before": before_health, "health_after": after_health,
     "rollback": "verified-without-manual-repair", "runtime_readiness_failure_seen": True,

@@ -42,7 +42,10 @@ let
       done
       # Type=simple can briefly be active even when exec fails. Require stability.
       ${pkgs.coreutils}/bin/sleep 3
-      ready
+      ready || {
+        echo '${name}: activation stability check failed' >&2
+        exit 1
+      }
     '';
 in
 {
