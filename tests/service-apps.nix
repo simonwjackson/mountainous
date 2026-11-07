@@ -15,6 +15,9 @@ let
   );
 in
 assert app.port == 4382;
+assert !app.rollbackCanary;
+assert rakku.mountainous.serviceApps.service-app-canary.rollbackCanary;
+assert !(builtins.elem "--name" rakku.mountainous.serviceApps.service-app-canary.sidecarArgs);
 assert rakku.users.users.groceries.isSystemUser;
 assert rakku.users.users.groceries.group == "groceries";
 assert rakku.users.users.groceries.homeMode == "0700";

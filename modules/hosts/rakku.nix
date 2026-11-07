@@ -71,6 +71,19 @@ in
           port = 4382;
           schedule = "*-*-* 04:15:00 UTC";
         };
+        # Isolated rollback canary: no tailnet registration or production state.
+        mountainous.serviceApps.service-app-canary = {
+          rollbackCanary = true;
+          port = 4398;
+          sidecarArgs = [
+            "--host"
+            "127.0.0.1"
+            "--port"
+            "4399"
+          ];
+          smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:4398/healthz >/dev/null";
+          schedule = "*-*-* 04:30:00 UTC";
+        };
         mountainous.features.ai-gateway-staging.enable = true;
         mountainous.features.ai-gateway.enable = true;
         mountainous.features.notify-server.enable = true;

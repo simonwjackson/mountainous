@@ -30,8 +30,12 @@ let
       /run/wrappers/bin/sudo -n "$control" start
       deadline=$((SECONDS + ${toString app.activationTimeout}))
       ready() {
-        ${pkgs.systemd}/bin/systemctl is-active --quiet ${name}.service &&
-          ${pkgs.systemd}/bin/systemctl is-active --quiet ${name}-tsnet.service && ${smoke}
+        [[ "$(${pkgs.systemd}/bin/systemctl show ${name}.service -p ActiveState --value)" == active ]] &&
+          [[ "$(${pkgs.systemd}/bin/systemctl show ${name}-tsnet.service -p ActiveState --value)" == active ]] && ${smoke}
+      }
+      incarnations() {
+        ${pkgs.systemd}/bin/systemctl show ${name}.service ${name}-tsnet.service \
+          -p ActiveState -p MainPID -p InvocationID -p NRestarts
       }
       until ready; do
         if (( SECONDS >= deadline )); then
@@ -40,12 +44,16 @@ let
         fi
         ${pkgs.coreutils}/bin/sleep 1
       done
-      # Type=simple can briefly be active even when exec fails. Require stability.
-      ${pkgs.coreutils}/bin/sleep 3
-      ready || {
-        echo '${name}: activation stability check failed' >&2
-        exit 1
-      }
+      # RestartSec is 3s. Observe a longer window, and reject any restart even
+      # if it lands between samples and happens to be active at both endpoints.
+      initial=$(incarnations)
+      for ((settled = 0; settled < 5; settled++)); do
+        ${pkgs.coreutils}/bin/sleep 1
+        if ! ready || [[ "$(incarnations)" != "$initial" ]]; then
+          echo '${name}: activation stability check failed' >&2
+          exit 1
+        fi
+      done
     '';
 in
 {
@@ -63,6 +71,11 @@ in
         { name, config, ... }:
         {
           options = {
+            rollbackCanary = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Allow destructive rollback probes only for isolated, data-free test instances.";
+            };
             input = lib.mkOption {
               type = lib.types.str;
               default = name;

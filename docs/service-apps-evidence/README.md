@@ -1,5 +1,10 @@
 # Service-app pilot evidence — 2026-11-07
 
+**Review correction:** a later production sidecar test caused a P1 outage.
+The historical backend proof below did not establish sidecar restart-loop safety.
+See [`review1-incident.md`](review1-incident.md) for the timeline, manual recovery,
+root cause and mandatory canary-only test policy.
+
 Verified: groceries runs on Rakku at its original HTTPS address. Signed app-only
 deployment and automatic rollback work. Groceries' own update gate is open.
 Pi's global gate remains closed; pi was not deployed in this stage.

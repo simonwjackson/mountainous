@@ -1,7 +1,7 @@
 # Test-only candidate: keep the real sidecar, but exit before serving HTTP.
 {
   inputs = {
-    application.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/groceries?ref=main";
+    application.url = "path:../service-app-canary";
     nixpkgs.follows = "application/nixpkgs";
   };
   outputs =
@@ -12,11 +12,11 @@
           pkgs = nixpkgs.legacyPackages.x86_64-linux;
           healthy = application.packages.x86_64-linux.default;
         in
-        pkgs.runCommand "broken-groceries-${healthy.version}" { inherit (healthy) version; } ''
+        pkgs.runCommand "broken-canary-${healthy.version}" { inherit (healthy) version; } ''
           mkdir -p "$out/bin"
-          ln -s ${healthy}/bin/groceries-tsnet "$out/bin/groceries-tsnet"
-          printf '#!%s\nexit 1\n' ${pkgs.runtimeShell} > "$out/bin/groceries-server"
-          chmod +x "$out/bin/groceries-server"
+          ln -s ${healthy}/bin/service-app-canary-tsnet "$out/bin/service-app-canary-tsnet"
+          printf '#!%s\nexit 1\n' ${pkgs.runtimeShell} > "$out/bin/service-app-canary-server"
+          chmod +x "$out/bin/service-app-canary-server"
         '';
     };
 }

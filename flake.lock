@@ -1091,6 +1091,7 @@
         "profont-src": "profont-src",
         "pyxamp": "pyxamp",
         "retrosmart-cursors-src": "retrosmart-cursors-src",
+        "service-app-canary": "service-app-canary",
         "sops-nix": "sops-nix",
         "vela": "vela",
         "w95fa-src": "w95fa-src_2"
@@ -1253,6 +1254,22 @@
         "type": "file",
         "url": "https://tuf-repo-cdn.sigstore.dev/targets/6494e21ea73fa7ee769f85f57d5a3e6a08725eae1e38c755fc3517c9e6bc0b66.trusted_root.json"
       }
+    },
+    "service-app-canary": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./tests/fixtures/service-app-canary",
+        "type": "path"
+      },
+      "original": {
+        "path": "./tests/fixtures/service-app-canary",
+        "type": "path"
+      },
+      "parent": []
     },
     "sops-nix": {
       "inputs": {

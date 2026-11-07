@@ -50,7 +50,10 @@ still fail closed until an approved native execution transport exists. A remote
 Activation resolves the platform's installed immutable controller and uses only
 its two permitted sudo commands, `start` and `stop`. The controller controls only
 that app's two units. Readiness requires **each unit separately** to be active,
-plus the app smoke contract, then a three-second stability check. A timeout or
+plus the app smoke contract, then five one-second stability samples. Five seconds
+exceeds the units' three-second `RestartSec`. Every sample must remain exactly
+`active`, with unchanged `MainPID`, `InvocationID` and `NRestarts` for both units.
+`activating`, `failed`, and transient restart-loop active windows are rejected. A timeout or
 failure rejects activation. Deploy-rs restores the previous executable profile
 and runs its activation. Data is not rolled back. Each actual activation briefly
 interrupts requests; incompatible data schemas require a separate backup plan.
@@ -87,12 +90,20 @@ including unit files. Inspect it for feature losses before switching. Recheck
 current-system identity; do not override a concurrent switch. On Rakku supply
 all seven household core units as repeated health arguments.
 
+**Never run rollback probes against a production app.** The probe refuses apps
+unless their host declaration explicitly sets `rollbackCanary = true`. Rakku's
+`service-app-canary` has its own account, units, private empty state, and two
+loopback HTTP ports (4398/4399). It never registers a tailnet name and holds no
+credentials or household data. Both failing fixtures target this canary only.
+
 Rollback fixtures expose the healthy app as their `application` input. The probe
 pins that nested input to the real app's locked revision, signs the broken
 activation, uses deployment graph SSH options/port, and requires runtime rejection,
 deploy-rs rollback, the original profile, **all units**, and the supplied public
 health contract. It never repairs the destination manually. Backend and sidecar
-failures each need their own proof. Myoko now uses the default OpenSSH port 22;
+failures each need their own isolated canary proof. Do not change the groceries
+profile while testing. A production sidecar proof on 2026-11-07 caused an outage;
+see `service-apps-evidence/review1-incident.md` for the timeline and root cause. Myoko now uses the default OpenSSH port 22;
 Tailscale SSH is off. Hiyori remains excluded while offline/unpinned.
 
 ## One guarded cutover command

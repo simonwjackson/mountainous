@@ -31,6 +31,9 @@ local_host(a.runner_host)
 native(a.system)
 ref = pinned(a.repo, a.expected_sha)
 repo = a.repo.resolve()
+canary = json.loads(run(["nix", "eval", "--json", f"{ref}#nixosConfigurations.{a.host}.config.mountainous.serviceApps.{a.app}.rollbackCanary"]))
+if canary is not True:
+    raise RuntimeError("Refuse destructive rollback probe: app is not declared an isolated rollbackCanary")
 fixture_path = (repo / a.fixture).resolve().relative_to(repo)
 health = Health(a.health_url, a.health_equals, a.health_identity_key)
 node = json.loads(run(["nix", "eval", "--json", f"{ref}#deploy.nodes.{a.host}", "--apply",
@@ -55,8 +58,13 @@ if locked["type"] == "git":
     application = "git+" + locked["url"] + "?rev=" + locked["rev"]
 elif locked["type"] == "github":
     application = f'github:{locked["owner"]}/{locked["repo"]}/{locked["rev"]}'
+elif locked["type"] == "path" and not Path(locked["path"]).is_absolute():
+    # Repository-owned canaries stay pinned to the tested root SHA, not mutable
+    # working-directory contents. Never follow an arbitrary absolute path input.
+    relative_input = (repo / locked["path"]).resolve().relative_to(repo)
+    application = f"{ref}&dir={relative_input}"
 else:
-    raise ValueError("Fixture application input must be pinned git or GitHub source")
+    raise ValueError("Fixture application input must be pinned git/GitHub or repo-relative canary source")
 flags = ["--override-input", app_input, f"{ref}&dir={fixture_path}",
          "--override-input", app_input + "/application", application, "--no-write-lock-file", *build_flags()]
 os.environ["LOCAL_KEY"] = str(a.state / "signing-key")
