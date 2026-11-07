@@ -31,6 +31,7 @@
     };
 
     # Groceries has no published remote. Follow its canonical Git source on Zao.
+    pyxis.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/github/simonwjackson/pyxis?ref=service-apps-unzen";
     ossicle.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/ossicle?ref=service-apps-unzen";
     youtube.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/youtube?ref=service-apps-unzen";
     groceries.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/groceries?ref=main";
