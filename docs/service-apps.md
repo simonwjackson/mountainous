@@ -4,6 +4,8 @@ Mountainous owns accounts, units, storage, secrets and tailnet identity. The
 signed app profile owns executables. Logbook and CLIProxyAPI retain their own
 deploy paths. The completed groceries pilot is recorded in
 [`service-apps-evidence/README.md`](service-apps-evidence/README.md).
+Unzen's stage-3 migrations and remaining reader/comics blocker are recorded in
+[`stage3-unzen.md`](service-apps-evidence/stage3-unzen.md).
 
 ## Declare an app
 
