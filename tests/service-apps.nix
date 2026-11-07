@@ -58,6 +58,10 @@ assert
   unzen.systemd.services.app-update-pi.unitConfig.ConditionPathExists
   == "/var/lib/app-updater/enabled";
 assert !(builtins.elem "hiyori" unzen.mountainous.appUpdates.pi.hosts);
+assert rakku.mountainous.serviceApps.meetings.port == 8179;
+assert rakku.mountainous.serviceApps.meetings.serverArgs == [ ];
+assert rakku.systemd.services.meetings.environment.MEETINGS_DATA_DIR == "/var/lib/meetings/data";
+assert unzen.mountainous.appUpdates.meetings.hosts == [ "rakku" ];
 assert rakku.mountainous.serviceApps.knowledge.port == 4381;
 assert
   rakku.mountainous.serviceApps.knowledge.serverArgs == [

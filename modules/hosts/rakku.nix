@@ -76,6 +76,17 @@ in
           port = 4381;
           schedule = "*-*-* 04:35:00 UTC";
         };
+        mountainous.serviceApps.meetings = {
+          input = "meetings";
+          port = 8179;
+          serverArgs = [ ];
+          environment.MEETINGS_DATA_DIR = "/var/lib/meetings/data";
+          schedule = "*-*-* 04:40:00 UTC";
+          smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 3 http://127.0.0.1:8179/healthz >/dev/null";
+          checkCommand = ''
+            test "$("$APP_PACKAGE/bin/meetings-server" --version)" = 'meetings-server 0.1.0'
+          '';
+        };
         # Isolated rollback canary: no tailnet registration or production state.
         mountainous.serviceApps.service-app-canary = {
           package =
