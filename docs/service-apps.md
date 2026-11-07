@@ -83,7 +83,7 @@ constants:
 | `service-apps-stage-source-target` | `--runner-host --repo --bundle --branch --expected-sha`; locks against active updater jobs and preserves the previous ref |
 | `service-apps-host-target` | `health/compare/switch --host`, repeated `--health-unit`; compare/switch also need `--old --new`; switch requires the exact `--reviewed-diff-sha256` printed by compare |
 | `service-apps-run-update-target` | `--runner-host --app --expected-sha --system`; check-only by default; deployment requires explicit `--deploy` |
-| `service-apps-rollback-probe` | `--runner-host --repo --expected-sha --state --host --app --system --fixture --health-url --health-equals --output`; optional stable public `--health-identity-key` |
+| `service-apps-rollback-probe` | `--runner-host --repo --expected-sha --state --host --app --system --fixture --health-url --health-equals --output`; optional stable public `--health-identity-key` and `--health-via-target` for loopback-only canaries |
 
 The host comparison covers closure changes and all `/etc` file contents,
 including unit files. Inspect it for feature losses before switching. Recheck

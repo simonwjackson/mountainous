@@ -73,12 +73,19 @@ class Health:
     equals: dict
     identity_key: str | None = None
 
-    def read(self) -> dict:
+    def __post_init__(self):
         if not self.url.startswith(("https://", "http://127.0.0.1:", "http://localhost:")):
             raise ValueError("Health URL must use HTTPS or HTTP loopback")
-        context = ssl.create_default_context(cafile="/etc/ssl/certs/ca-certificates.crt")
+        if not isinstance(self.equals, dict):
+            raise ValueError("Health equality contract must be a JSON object")
+
+    def read(self) -> dict:
+        context = ssl.create_default_context(cafile="/etc/ssl/certs/ca-certificates.crt") if self.url.startswith("https://") else None
         with urllib.request.urlopen(self.url, context=context, timeout=10) as response:
             value = json.load(response)
+        return self.validate(value)
+
+    def validate(self, value: dict) -> dict:
         for path, expected in self.equals.items():
             actual = value
             for component in path.split("."):

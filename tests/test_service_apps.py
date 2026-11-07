@@ -10,10 +10,20 @@ import unittest
 
 SCRIPTS = Path(os.environ.get("SERVICE_APP_SCRIPTS", Path(__file__).parents[1] / "scripts"))
 sys.path.insert(0, str(SCRIPTS))
-from service_apps import all_units_active, recovery_units, require_cutover_ready
+from service_apps import Health, all_units_active, recovery_units, require_cutover_ready
 
 
 class ServiceAppSafetyTests(unittest.TestCase):
+    def test_health_contract_rejects_mismatch_and_non_public_transports(self):
+        contract = Health("http://127.0.0.1:4398/healthz", {"status": "ok", "phase": "ready"})
+        self.assertEqual(contract.validate({"status": "ok", "phase": "ready"})["phase"], "ready")
+        with self.assertRaises(RuntimeError):
+            contract.validate({"status": "ok", "phase": "starting"})
+        with self.assertRaises(ValueError):
+            Health("file:///run/secrets/token", {})
+        with self.assertRaises(ValueError):
+            Health("http://127.0.0.1:4398/healthz", [])
+
     def test_requires_every_unit_not_any_unit(self):
         # Real process with configured status; rejects multi-unit invocations.
         status = ["sh", "-c", 'test "$#" = 3 && test "$3" = active', "unit-status"]

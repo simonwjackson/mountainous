@@ -23,6 +23,7 @@ p.add_argument("--fixture", type=Path, required=True, help="Fixture directory re
 p.add_argument("--health-url", required=True)
 p.add_argument("--health-equals", type=json.loads, required=True, help="Public JSON dot-path equality contract")
 p.add_argument("--health-identity-key", help="Public health field that must not change")
+p.add_argument("--health-via-target", action="store_true", help="Read a loopback-only test endpoint through the target's SSH connection")
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--recovery-timeout", type=int, default=90)
 a = p.parse_args()
@@ -42,8 +43,13 @@ ssh = SSH(node["hostname"], node["sshUser"], tuple(node["sshOpts"]))
 profile = node["profilePath"]
 units = [a.app + ".service", a.app + "-tsnet.service"]
 current = lambda: ssh.read("readlink", "-e", profile)
+def read_health():
+    if a.health_via_target:
+        return health.validate(json.loads(ssh.read("curl", "--fail", "--silent", "--show-error", "--max-time", "10", a.health_url)))
+    return health.read()
+
 before = current()
-before_health = health.read()
+before_health = read_health()
 # Each remote unit query must be one escaped command, not an SSH argument list.
 def active():
     return all(subprocess.run(ssh.command("systemctl", "is-active", "--quiet", unit),
@@ -92,8 +98,8 @@ if len(activated) != 1:
 for _ in range(a.recovery_timeout):
     if current() == before and active():
         try:
-            after_health = health.read()
-        except (urllib.error.URLError, TimeoutError, RuntimeError, KeyError):
+            after_health = read_health()
+        except (urllib.error.URLError, TimeoutError, RuntimeError, KeyError, subprocess.CalledProcessError):
             pass
         else:
             break
