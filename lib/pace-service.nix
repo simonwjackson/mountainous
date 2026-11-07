@@ -18,7 +18,7 @@ runtime
     pace-typesafe-api-key = "config/typesafe-api-key";
   };
   readOnlyBinds = runtime.readOnlyBinds ++ [
-    "/var/lib/pace/config/typesafe-api-key:/home/simonwjackson/.config/pace/typesafe-api-key.iYu0D0"
+    "/run/secrets/pace-typesafe-api-key:/home/simonwjackson/.config/pace/typesafe-api-key.iYu0D0"
   ];
   scheduledCommands.sync = {
     args = [
