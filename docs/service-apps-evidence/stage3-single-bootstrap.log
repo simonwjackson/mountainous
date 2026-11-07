@@ -1,0 +1,43 @@
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/repository', using 'master'
+warning: ignoring untrusted flake configuration setting 'extra-substituters'.
+Pass '--accept-flake-config' to trust it
+warning: ignoring untrusted flake configuration setting 'extra-trusted-public-keys'.
+Pass '--accept-flake-config' to trust it
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Evaluating flake in git+file:///var/lib/app-updater/repository?rev=e712d639b29e1c1772fc0bcb1d9fdd2b3e94908d
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/repository', using 'master'
+warning: ignoring untrusted flake configuration setting 'extra-substituters'.
+Pass '--accept-flake-config' to trust it
+warning: ignoring untrusted flake configuration setting 'extra-trusted-public-keys'.
+Pass '--accept-flake-config' to trust it
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] The following profiles are going to be deployed:
+[rakku.service-app-single-canary]
+user = "app-deploy"
+ssh_user = "app-deploy"
+path = "/nix/store/6iqqc2d547b1f5cskib72cplf90j28d6-activatable-service-app-single-canary-server"
+hostname = "rakku.hummingbird-lake.ts.net"
+ssh_opts = ["-p", "22", "-F", "/dev/null", "-i", "/var/lib/app-updater/ssh/id_ed25519", "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o", "HostKeyAlias=rakku", "-o", "HostKeyAlgorithms=ssh-ed25519", "-o", "UserKnownHostsFile=/nix/store/nlk3wlr480wdd6d61bk3dj6vnf23g2kc-known_hosts", "-o", "GlobalKnownHostsFile=/dev/null", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4"]
+
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Building profile `service-app-single-canary` for node `rakku`
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Building profile `service-app-single-canary` for node `rakku`
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Signing key present! Signing profile `service-app-single-canary` for node `rakku`
+warning: 'sign-paths' is a deprecated alias for 'store sign'
+added 0 signatures
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Copying profile `service-app-single-canary` to node `rakku`
+copying 6 paths...
+copying path '/nix/store/fngc61szhb2yqfd3d1gg5wspdkrgaryl-service-app-single-canary-server' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/nm1wlbd34bpkvrsk5akacdd76fgac4k7-service-app-single-canary-server-activate-rs' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/rdwbrsjl77gx4rbxf80gyf465vji81rn-service-app-single-canary-smoke' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/xgjsqsc2wk6s8hs16qr96rwvi7hjl8s7-activate' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/5miab8swhf0sqw4vn3g5zjf6xy99fcd3-service-app-single-canary-server-activate-path' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/6iqqc2d547b1f5cskib72cplf90j28d6-activatable-service-app-single-canary-server' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Activating profile `service-app-single-canary` for node `rakku`
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Creating activation waiter
+📠 ⭐ ℹ️ [activate] [[38;5;51mINFO[0m] Activating profile
+📠 👀 ℹ️ [wait] [[38;5;51mINFO[0m] Waiting for confirmation event...
+📠 curl: (7) Failed to connect to 127.0.0.1:4400 after 0 ms: Could not connect to server
+📠 ⭐ ℹ️ [activate] [[38;5;51mINFO[0m] Activation succeeded!
+📠 ⭐ ℹ️ [activate] [[38;5;51mINFO[0m] Magic rollback is enabled, setting up confirmation hook...
+📠 ⭐ ℹ️ [activate] [[38;5;51mINFO[0m] Waiting for confirmation event...
+📠 👀 ℹ️ [wait] [[38;5;51mINFO[0m] Found canary file, done waiting!
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Success activating, attempting to confirm activation
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Deployment confirmed.

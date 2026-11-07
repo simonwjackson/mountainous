@@ -1,0 +1,16 @@
+{
+  "source_commit": "e712d639b29e1c1772fc0bcb1d9fdd2b3e94908d",
+  "host": "rakku",
+  "app": "service-app-single-canary",
+  "bootstrap": "verified",
+  "profile": "/nix/store/6iqqc2d547b1f5cskib72cplf90j28d6-activatable-service-app-single-canary-server",
+  "units": [
+    "service-app-single-canary.service"
+  ],
+  "health": {
+    "status": "ok",
+    "phase": "ready",
+    "buildId": "canary-v1"
+  },
+  "log": "/var/lib/app-updater/receipts/stage3-single-bootstrap.log"
+}

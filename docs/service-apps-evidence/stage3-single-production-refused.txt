@@ -1,0 +1,9 @@
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/repository', using 'master'
+warning: ignoring untrusted flake configuration setting 'extra-substituters'.
+Pass '--accept-flake-config' to trust it
+warning: ignoring untrusted flake configuration setting 'extra-trusted-public-keys'.
+Pass '--accept-flake-config' to trust it
+Traceback (most recent call last):
+  File "/nix/store/ljv6v62mjbbgfaa04g7mb5p1h5r0lgjy-service-app-tools/libexec/service-apps/service-apps-rollback-probe", line 43, in <module>
+    raise RuntimeError("Refuse destructive rollback probe: app is not declared an isolated rollbackCanary")
+RuntimeError: Refuse destructive rollback probe: app is not declared an isolated rollbackCanary

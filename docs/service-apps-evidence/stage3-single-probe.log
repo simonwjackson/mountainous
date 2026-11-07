@@ -1,0 +1,47 @@
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/repository', using 'master'
+warning: ignoring untrusted flake configuration setting 'extra-substituters'.
+Pass '--accept-flake-config' to trust it
+warning: ignoring untrusted flake configuration setting 'extra-trusted-public-keys'.
+Pass '--accept-flake-config' to trust it
+🚀 ⚠️ [deploy] [[38;5;208mWARN[0m] The --file option for deployments without flakes is experimental
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Evaluating flake in /var/lib/app-updater/service-app-probe-s2iv0niy
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/repository', using 'master'
+warning: Nix search path entry '/nix/var/nix/profiles/per-user/root/channels' does not exist, ignoring
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] The following profiles are going to be deployed:
+[rakku.service-app-single-canary]
+user = "app-deploy"
+ssh_user = "app-deploy"
+path = "/nix/store/gm1k2c98xxqq62kv5mn0nhw6fik1nqlv-activatable-broken-single-canary-1.0.0"
+hostname = "rakku.hummingbird-lake.ts.net"
+ssh_opts = ["-p", "22", "-F", "/dev/null", "-i", "/var/lib/app-updater/ssh/id_ed25519", "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o", "HostKeyAlias=rakku", "-o", "HostKeyAlgorithms=ssh-ed25519", "-o", "UserKnownHostsFile=/nix/store/nlk3wlr480wdd6d61bk3dj6vnf23g2kc-known_hosts", "-o", "GlobalKnownHostsFile=/dev/null", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=15", "-o", "ServerAliveCountMax=4"]
+
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Building profile `service-app-single-canary` for node `rakku`
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Building profile `service-app-single-canary` for node `rakku`
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Signing key present! Signing profile `service-app-single-canary` for node `rakku`
+warning: 'sign-paths' is a deprecated alias for 'store sign'
+added 0 signatures
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Copying profile `service-app-single-canary` to node `rakku`
+copying 4 paths...
+copying path '/nix/store/a2yhy04v8dpwfmcayl6xwvznj7nqrg8x-broken-single-canary-1.0.0' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/p5gk2axyxvfwg7pbfy4mqz08pii0hcza-broken-single-canary-1.0.0-activate-rs' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/yq2p7izxisyyxl2q74cw5f0m18la7dz2-broken-single-canary-1.0.0-activate-path' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+copying path '/nix/store/gm1k2c98xxqq62kv5mn0nhw6fik1nqlv-activatable-broken-single-canary-1.0.0' to 'ssh://app-deploy@rakku.hummingbird-lake.ts.net'...
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Activating profile `service-app-single-canary` for node `rakku`
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Creating activation waiter
+📠 ⭐ ℹ️ [activate] [[38;5;51mINFO[0m] Activating profile
+📠 👀 ℹ️ [wait] [[38;5;51mINFO[0m] Waiting for confirmation event...
+📠 curl: (7) Failed to connect to 127.0.0.1:4400 after 0 ms: Could not connect to server
+📠 curl: (7) Failed to connect to 127.0.0.1:4400 after 0 ms: Could not connect to server
+📠 curl: (7) Failed to connect to 127.0.0.1:4400 after 0 ms: Could not connect to server
+📠 curl: (7) Failed to connect to 127.0.0.1:4400 after 0 ms: Could not connect to server
+📠 curl: (7) Failed to connect to 127.0.0.1:4400 after 0 ms: Could not connect to server
+📠 curl: (7) Failed to connect to 127.0.0.1:4400 after 0 ms: Could not connect to server
+📠 curl: (7) Failed to connect to 127.0.0.1:4400 after 0 ms: Could not connect to server
+📠 curl: (7) Failed to connect to 127.0.0.1:4400 after 0 ms: Could not connect to server
+📠 service-app-single-canary: activation readiness timed out
+📠 ⭐ ⚠️ [activate] [[38;5;208mWARN[0m] De-activating due to error
+📠 👀 ❌ [wait] [[38;5;196mERROR[0m] Error waiting for activation: Activation cancelled by deployment client
+🚀 ❌ [deploy] [[38;5;196mERROR[0m] SSH wait command command resulted in a bad exit status: exit status: 1. The failed command is provided below:
+Command { std: "ssh" "app-deploy@rakku.hummingbird-lake.ts.net" "-p" "22" "-F" "/dev/null" "-i" "/var/lib/app-updater/ssh/id_ed25519" "-o" "IdentitiesOnly=yes" "-o" "BatchMode=yes" "-o" "StrictHostKeyChecking=yes" "-o" "HostKeyAlias=rakku" "-o" "HostKeyAlgorithms=ssh-ed25519" "-o" "UserKnownHostsFile=/nix/store/nlk3wlr480wdd6d61bk3dj6vnf23g2kc-known_hosts" "-o" "GlobalKnownHostsFile=/dev/null" "-o" "ConnectTimeout=10" "-o" "ServerAliveInterval=15" "-o" "ServerAliveCountMax=4" "/nix/store/gm1k2c98xxqq62kv5mn0nhw6fik1nqlv-activatable-broken-single-canary-1.0.0/activate-rs wait '/nix/store/gm1k2c98xxqq62kv5mn0nhw6fik1nqlv-activatable-broken-single-canary-1.0.0' --temp-path '/tmp' --activation-timeout 90", kill_on_drop: false }
+🚀 ℹ️ [deploy] [[38;5;51mINFO[0m] Revoking previous deploys
+🚀 ❌ [deploy] [[38;5;196mERROR[0m] Deployment to node rakku failed, rolled back to previous generation
