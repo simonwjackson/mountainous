@@ -832,6 +832,22 @@
     },
     "nixpkgs_11": {
       "locked": {
+        "lastModified": 1792094642,
+        "narHash": "sha256-zp8ToDMnqZcu4o4IH9pdwXFXGp7yLm/M0dEnNWnyd7I=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "fe13242281a67641c0102cdb1087f0ebe586c7df",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_12": {
+      "locked": {
         "lastModified": 1787736819,
         "narHash": "sha256-cV5xEJJK3BvhU8rEd4mC9UsmDi5qscv/kzGPhBRC5WA=",
         "owner": "NixOS",
@@ -1291,6 +1307,7 @@
         "pyxamp": "pyxamp",
         "retrosmart-cursors-src": "retrosmart-cursors-src",
         "sops-nix": "sops-nix",
+        "storia": "storia",
         "vela": "vela",
         "w95fa-src": "w95fa-src_2",
         "youtube": "youtube"
@@ -1472,6 +1489,25 @@
         "owner": "Mic92",
         "repo": "sops-nix",
         "type": "github"
+      }
+    },
+    "storia": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_11"
+      },
+      "locked": {
+        "lastModified": 1794078225,
+        "narHash": "sha256-tt9zM/2NJbKbZjc8yVjxvlc7olW62O5T90SqKltfSqQ=",
+        "ref": "service-app-rakku",
+        "rev": "6c108b1a21b1fc806405f01ccdbabb7d273cda52",
+        "revCount": 26,
+        "type": "git",
+        "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/no-evil"
+      },
+      "original": {
+        "ref": "service-app-rakku",
+        "type": "git",
+        "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/no-evil"
       }
     },
     "systems": {
@@ -1754,7 +1790,7 @@
     "youtube": {
       "inputs": {
         "flake-utils": "flake-utils_4",
-        "nixpkgs": "nixpkgs_11",
+        "nixpkgs": "nixpkgs_12",
         "yattee-server": "yattee-server"
       },
       "locked": {
