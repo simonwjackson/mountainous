@@ -34,6 +34,7 @@
     youtube.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/youtube?ref=service-apps-unzen";
     groceries.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/groceries?ref=main";
     knowledge.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/knowledge?ref=service-app-version";
+    meetings.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/meetings?ref=service-app-rakku";
 
     pi.url = "github:lukasl-dev/pi.nix";
     # Pi extensions, each loaded with -e by the pi wrapper (modules/pi.nix).
