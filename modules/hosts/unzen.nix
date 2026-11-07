@@ -113,6 +113,34 @@
           inputs.disko.nixosModules.disko
           ../../disks/unzen.nix
         ];
+        mountainous.serviceApps.pyxis = {
+          port = 4488;
+          server = "pyxis";
+          serverArgs = [
+            "--state-dir"
+            "/var/lib/pyxis/data"
+          ];
+          sidecarArgs = [
+            "--name"
+            "pyxis"
+            "--upstream"
+            "http://127.0.0.1:4488"
+            "--state"
+            "/var/lib/pyxis/state/tsnet"
+          ];
+          environment = {
+            PYXIS_STATE_DIR = "/var/lib/pyxis/data";
+            PYXIS_YT_DLP_DATA_DIR = "/var/lib/pyxis/data/yt-dlp";
+            PYXIS_ALLOWED_ORIGINS = "https://vela.hummingbird-lake.ts.net";
+            PYXIS_LAN_BASE_URL = "http://192.168.1.114:9000";
+          };
+          schedule = "*-*-* 05:15:00 UTC";
+          ytDlpSchedule = "*-*-* 03:30:00 America/Denver";
+          smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 5 http://127.0.0.1:4488/healthz >/dev/null";
+          checkCommand = ''test "$($APP_PACKAGE/bin/pyxis --version)" = 'pyxis 2.0.0' '';
+        };
+        # Sonos fetches media from this LAN-only listener, not the RPC backend.
+        networking.firewall.interfaces.bond0.allowedTCPPorts = [ 9000 ];
         mountainous.serviceApps.ossicle = {
           port = 4388;
           serverArgs = [
@@ -132,7 +160,7 @@
             OSSICLE_ALLOWED_ORIGINS = "https://vela.hummingbird-lake.ts.net";
           };
           schedule = "*-*-* 05:00:00 UTC";
-          ytDlpSchedule = "*-*-* 03:30:00 UTC";
+          ytDlpSchedule = "*-*-* 03:30:00 America/Denver";
           smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 5 http://127.0.0.1:4388/healthz >/dev/null";
           checkCommand = ''test "$($APP_PACKAGE/bin/ossicle-server --version)" = 'ossicle-server 0.1.0' '';
         };
@@ -151,7 +179,7 @@
           environment.YOUTUBE_YT_DLP_DATA_DIR = "/var/lib/youtube/data/yt-dlp-bin";
           secrets.youtube-env = ".config/youtube/env";
           schedule = "*-*-* 04:45:00 UTC";
-          ytDlpSchedule = "*-*-* 04:15:00 UTC";
+          ytDlpSchedule = "*-*-* 04:15:00 America/Denver";
           smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 5 http://127.0.0.1:4491/health >/dev/null";
           checkCommand = ''test "$($APP_PACKAGE/bin/youtube-server --version)" = 'youtube 0.1.0' '';
         };

@@ -27,6 +27,12 @@ app gets the same units and signed deploy profile, but **no `appUpdates` entry**
 Its package and tests travel with the pinned mountainous commit; no local flake
 input is needed. The canary imports `tests/fixtures/service-app-canary/default.nix`.
 
+Set `ytDlpSchedule` only for apps whose existing `<name>-ytdlp-update` binary
+refreshes mutable yt-dlp independently of the app input. The platform runs that
+binary as the app account in its private home. Set its existing data-directory
+environment variable to the migrated state path. The app updater still follows
+the input; it does not discover yt-dlp nightlies on its own.
+
 Defaults: account/group `<name>`, 0700 `/var/lib/<name>`, data in `data`, tsnet
 state in `state/tsnet`, binaries `<name>-server` and `<name>-tsnet`, profile
 `/nix/var/nix/profiles/apps/<name>`. Override CLI arguments, environment and
@@ -36,7 +42,8 @@ the sidecar. Impermanence persistence is automatic; Rakku uses
 `/tundra/permafrost`.
 
 `secrets` maps host SOPS keys to home-relative regular 0600 files copied from
-0400 SOPS files before startup. Mutable OAuth state belongs in persistent data,
+0400 SOPS files before startup. Tmpfiles creates every intermediate private
+directory with the app's ownership, including `.config`. Mutable OAuth state belongs in persistent data,
 not fixed secrets. `readOnlyBinds` adapts legacy credential paths in the unit's
 mount namespace. Do not embed credentials in arguments, health contracts or the
 store. `checkCommand` is secret/network-free and gets `APP_PACKAGE` in the build
@@ -155,6 +162,15 @@ destination units are stopped, the destination profile is absent, and the
 persistence bind and old public health contract pass. Source/state path mappings
 must be non-overlapping regular directories without symlinks. Platform-provisioned
 destination directories may be empty; existing state is never overwritten.
+
+For upstream health endpoints with an empty HTTP 200 body, set the plan's health
+contract to `{"url":"https://APP/healthz","equals":{},"status_only":true}`.
+JSON equality remains the default. Status-only contracts cannot specify JSON fields.
+
+When workers share Unzen's updater checkout, hold
+`flock /var/lib/app-updater/stage3-migration.lock` from source pinning through
+preflight, cutover and the result check. Take `unzen-switch.lock` inside that lock
+if a system switch is needed. Never take them in the opposite order.
 
 The tool snapshots active source units, stops and confirms them, retains a stopped
 archive on the destination, copies and verifies private state, then executes the

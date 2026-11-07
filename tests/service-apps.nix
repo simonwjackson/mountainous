@@ -59,7 +59,9 @@ assert
   == "/var/lib/app-updater/enabled";
 assert !(builtins.elem "hiyori" unzen.mountainous.appUpdates.pi.hosts);
 assert rakku.mountainous.serviceApps.storia.port == 4390;
-assert rakku.systemd.services.storia.environment.STORIA_CLIPROXY_URL == "https://ai.hummingbird-lake.ts.net";
+assert
+  rakku.systemd.services.storia.environment.STORIA_CLIPROXY_URL
+  == "https://ai.hummingbird-lake.ts.net";
 assert rakku.sops.secrets.storia-jev-key.owner == "storia";
 assert unzen.mountainous.appUpdates.storia.hosts == [ "rakku" ];
 assert rakku.mountainous.serviceApps.meetings.port == 8179;
@@ -84,6 +86,16 @@ assert builtins.elem "d /var/lib/youtube/.config 0700 youtube youtube -"
   unzen.systemd.tmpfiles.rules;
 assert builtins.elem "d /var/lib/youtube/.config/youtube 0700 youtube youtube -"
   unzen.systemd.tmpfiles.rules;
+assert unzen.mountainous.serviceApps.pyxis.server == "pyxis";
+assert unzen.mountainous.serviceApps.pyxis.port == 4488;
+assert unzen.mountainous.serviceApps.pyxis.environment.PYXIS_STATE_DIR == "/var/lib/pyxis/data";
+assert
+  unzen.mountainous.serviceApps.pyxis.environment.PYXIS_YT_DLP_DATA_DIR
+  == "/var/lib/pyxis/data/yt-dlp";
+assert builtins.elem 9000 unzen.networking.firewall.interfaces.bond0.allowedTCPPorts;
+assert
+  unzen.mountainous.serviceApps.ossicle.environment.OSSICLE_ALLOWED_ORIGINS
+  == "https://vela.hummingbird-lake.ts.net";
 assert !(rakku.systemd.services ? groceries-ytdlp-update);
 assert lib.all
   (
