@@ -32,6 +32,7 @@
 
     # Groceries has no published remote. Follow its canonical Git source on Zao.
     groceries.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/groceries?ref=main";
+    knowledge.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/knowledge?ref=service-app-version";
 
     pi.url = "github:lukasl-dev/pi.nix";
     # Pi extensions, each loaded with -e by the pi wrapper (modules/pi.nix).
