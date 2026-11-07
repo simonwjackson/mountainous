@@ -1,0 +1,21 @@
+# WARNING: this file is generated from the nix.* options in
+# your NixOS configuration, typically
+# /etc/nixos/configuration.nix.  Do not edit it!
+allowed-users = *
+always-allow-substitutes = true
+auto-optimise-store = true
+builders = 
+cores = 4
+experimental-features = nix-command flakes nix-command flakes nix-command
+fallback = false
+max-jobs = 0
+require-sigs = true
+sandbox = true
+sandbox-fallback = false
+substituters = https://cache.nixos.org/ https://github.com/korri-os/nix-cache/releases/download/cache/
+system-features = nixos-test benchmark big-parallel kvm
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= app-updater-1:gn1abGFkIEnq2UsjXSenWZjNSv6/m1Wb5/vyLDF1WRo= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= korri-cache-fuji-1:E8MOww6FoNRlVavEll8JPc2XHYC4HhZnrhqQcd64OtQ= korri-cache-zao-1:thKjQnMnPl8AqTuZWJTn+ej9BORTPqzleGue4ZfJ2u4= korri-cache-ci-1:iH8gsPMtGrreeuXt2kt6M2ca+y4u/dO+T2km6AUuI8c= korri-plugins-1:qlK5Mgb3dYhF76WC4jGhrvL+CHsU93De7GpBFtrXb98=
+trusted-substituters = 
+trusted-users = root @wheel
+extra-sandbox-paths = 
+

@@ -1,0 +1,40 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3 curl
+"""Read Groceries through its unchanged HTTPS address without logging data or tokens."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import pwd
+import socket
+import subprocess
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("token", type=Path)
+parser.add_argument("person", choices=["simon", "laure"])
+args = parser.parse_args()
+base = "https://groceries.hummingbird-lake.ts.net"
+token = args.token.read_text().strip()
+assert len(token) == 64
+
+def request(path, authenticated=False):
+    command = ["curl", "--fail", "--silent", "--show-error", "--max-time", "20"]
+    headers = None
+    if authenticated:
+        command += ["-H", "@-"]
+        headers = f"Authorization: Bearer {token}\nX-Assistant-Person: {args.person}\n"
+    result = subprocess.run(command + [base + path], input=headers, text=True, capture_output=True, check=True)
+    return json.loads(result.stdout)
+
+health = request("/healthz")
+assert health["status"] == "ok" and health["phase"] == "ready" and health["shoppingEnabled"]
+context = request("/api/household/context", True)
+assert isinstance(context["lines"], list) and "person" in context
+print(json.dumps({
+    "host": socket.gethostname(), "user": pwd.getpwuid(os.getuid()).pw_name,
+    "person": args.person, "url": base, "buildId": health["buildId"],
+    "line_count": len(context["lines"]),
+    "lines_sha256": hashlib.sha256(json.dumps(context["lines"], sort_keys=True).encode()).hexdigest(),
+    "authenticated": True,
+}, sort_keys=True))

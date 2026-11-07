@@ -1,0 +1,37 @@
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/groceries-fixture-source', using 'master'
+warning: Nix search path entry '/nix/var/nix/profiles/per-user/root/channels' does not exist, ignoring
+this derivation will be built:
+  /nix/store/5qpkkd2mcydcs35bmwnya7l597ca6aqw-groceries-household-isolation.drv
+building '/nix/store/5qpkkd2mcydcs35bmwnya7l597ca6aqw-groceries-household-isolation.drv'...
+error: Cannot build '/nix/store/5qpkkd2mcydcs35bmwnya7l597ca6aqw-groceries-household-isolation.drv'.
+       Reason: builder failed with exit code 1.
+       Output paths:
+         /nix/store/03j2608l8b1jk5ss9w599m2h8s6kr2fp-groceries-household-isolation
+       Last 25 log lines:
+       >  FAIL  src/storage/household.test.ts > malformed attribution "100000000000000000000" fails add, batch and persisted reads without partial writes
+       >  FAIL  src/storage/household.test.ts > malformed attribution 12345 fails add, batch and persisted reads without partial writes
+       >  FAIL  src/storage/household.test.ts > malformed attribution null fails add, batch and persisted reads without partial writes
+       > AssertionError: expected [Function] to throw error including 'state is invalid' but got 'Household database already has anothe…'
+       >
+       > Expected: "state is invalid"
+       > Received: "Household database already has another store"
+       >
+       >  ❯ src/storage/household.test.ts:179:51
+       >     177|     const corruptPath = await directory();
+       >     178|     await persistedFixture(corruptPath, { lines: [{ ...line, addedById…
+       >     179|     await expect(HouseholdStore.open(corruptPath)).rejects.toThrow("st…
+       >        |                                                   ^
+       >     180|   },
+       >     181| );
+       >
+       > ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯
+       >
+       > 
+       >  Test Files  1 failed (1)
+       >       Tests  13 failed | 74 passed (87)
+       >    Start at  00:50:23
+       >    Duration  4.89s (tests 96%, import 3%, transform 1%)
+       >
+       > 
+       For full logs, run:
+         nix log /nix/store/5qpkkd2mcydcs35bmwnya7l597ca6aqw-groceries-household-isolation.drv

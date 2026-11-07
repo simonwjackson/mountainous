@@ -29,7 +29,10 @@ while IFS= read -r -d '' file; do
   fi
   if ! cmp -s "$old/etc/$file" "$new/etc/$file"; then
     printf '\n### %s\n' "$file"
-    diff -u --label "old/$file" --label "new/$file" "$old/etc/$file" "$new/etc/$file" || true
+    before=$old/etc/$file; after=$new/etc/$file
+    [[ -e $before ]] || before=/dev/null
+    [[ -e $after ]] || after=/dev/null
+    diff -u --label "old/$file" --label "new/$file" "$before" "$after" || true
   fi
 done < <({ find -L "$old/etc" -type f -printf '%P\0'; find -L "$new/etc" -type f -printf '%P\0'; } | sort -zu)
 (( removed == 0 )) || { echo 'Stop: candidate loses files. Find their source branch.' >&2; exit 3; }

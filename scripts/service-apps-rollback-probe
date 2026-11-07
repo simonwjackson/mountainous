@@ -1,0 +1,76 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3 nix git openssh
+"""Deploy the deliberately failing service candidate and verify real rollback.
+
+Run as root on Unzen, from the clean mountainous checkout at EXPECTED_SOURCE_SHA.
+No service data or credentials are read. The application must already be healthy.
+"""
+import argparse
+import json
+import os
+from pathlib import Path
+import ssl
+import subprocess
+import time
+import urllib.request
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("expected_source_sha")
+parser.add_argument("output", type=Path)
+args = parser.parse_args()
+os.umask(0o077)
+repo = Path.cwd()
+state = Path("/var/lib/app-updater")
+assert os.getuid() == 0 and os.uname().nodename == "unzen"
+assert subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip() == args.expected_source_sha
+assert not subprocess.check_output(["git", "status", "--porcelain"], text=True).strip()
+known = str(repo / "deploy/known_hosts")
+os.environ["LOCAL_KEY"] = str(state / "signing-key")
+os.environ["GIT_SSH_COMMAND"] = f"ssh -F /dev/null -i {state}/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={known}"
+ssh = ["ssh", "-F", "/dev/null", "-i", str(state / "ssh/id_ed25519"), "-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-o", "HostKeyAlias=rakku", "-o", f"UserKnownHostsFile={known}", "app-deploy@rakku"]
+profile = "/nix/var/nix/profiles/apps/groceries"
+
+def run(command):
+    return subprocess.check_output(command, text=True).strip()
+
+def current():
+    return run(ssh + ["readlink", "-f", profile])
+
+def health():
+    context = ssl.create_default_context(cafile="/etc/ssl/certs/ca-certificates.crt")
+    with urllib.request.urlopen("https://groceries.hummingbird-lake.ts.net/healthz", context=context, timeout=20) as response:
+        result = json.load(response)
+    assert result["status"] == "ok" and result["phase"] == "ready"
+    return result
+
+before = current()
+before_health = health()
+lock = json.loads((repo / "flake.lock").read_text())
+node = lock["nodes"][lock["nodes"][lock["root"]]["inputs"]["groceries"]]["locked"]
+application = "git+" + node["url"] + "?rev=" + node["rev"]
+fixture = f"git+file://{repo}?rev={args.expected_source_sha}&dir=tests/fixtures/service-app-broken"
+flags = ["--override-input", "groceries", fixture, "--override-input", "groceries/application", application, "--no-write-lock-file", "--max-jobs", "2", "--option", "builders", ""]
+activation = run(["nix", "build", "--no-link", "--print-out-paths", ".#deploy.nodes.rakku.profiles.groceries.path", *flags]).splitlines()[-1]
+subprocess.run(["nix", "store", "sign", "--recursive", "--key-file", str(state / "signing-key"), activation], check=True)
+assert run(["git", "rev-parse", "HEAD"]) == args.expected_source_sha
+args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+log = args.output.with_suffix(".log")
+with log.open("w") as output:
+    deployed = subprocess.run(["nix", "run", "--max-jobs", "2", "--option", "builders", "", ".#app-deployer", "--", ".#rakku.groceries", "--skip-checks", "--checksigs", "--auto-rollback", "true", "--magic-rollback", "true", "--", *flags], stdout=output, stderr=subprocess.STDOUT, text=True)
+assert deployed.returncode != 0, "Broken service was incorrectly accepted"
+# Wait only for deploy-rs' old activation to finish; never repair it ourselves.
+for _ in range(90):
+    active = subprocess.run(ssh + ["systemctl", "is-active", "--quiet", "groceries.service", "groceries-tsnet.service"]).returncode == 0
+    if current() == before and active:
+        break
+    time.sleep(1)
+else:
+    raise RuntimeError("Previous profile and units did not recover")
+after_health = health()
+assert after_health["buildId"] == before_health["buildId"]
+receipt = {"source_commit": args.expected_source_sha, "app_revision": node["rev"], "broken_activation": activation,
+           "deploy_exit": deployed.returncode, "profile_before": before, "profile_after": current(),
+           "both_units_active": active, "health_before": before_health, "health_after": after_health,
+           "rollback": "verified-without-manual-repair", "log": str(log)}
+args.output.write_text(json.dumps(receipt, indent=2) + "\n")
+print(json.dumps(receipt, indent=2))

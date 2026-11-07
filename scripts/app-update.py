@@ -51,12 +51,11 @@ def deploy_hosts(hosts, deploy):
     return results
 
 
-def build_command(system, attribute, flags, builder):
-    command = ["nix", "build", "--no-link", "--print-out-paths", "--max-jobs", "2",
-               "--cores", "4", "--option", "builders", ""]
-    if system == "aarch64-linux":
-        command += ["--eval-store", "auto", "--store", "ssh-ng://simon@" + builder["hostName"]]
-    return command + [attribute, *flags]
+def build_command(system, attribute, flags):
+    if system != "x86_64-linux":
+        raise ValueError("Native target build transport is not provisioned")
+    return ["nix", "build", "--no-link", "--print-out-paths", "--max-jobs", "2",
+            "--cores", "4", "--option", "builders", "", attribute, *flags]
 
 
 def main():
@@ -68,14 +67,6 @@ def main():
     os.umask(0o077)
     config = read_json(args.config)
     app = config["apps"][args.app]
-    builder = config["builder"]
-    # Build ARM on Fuji's daemon, never through another remote builder. The
-    # existing key permits only nix-daemon --stdio, not a shell or root login.
-    builder_env = os.environ | {"NIX_SSHOPTS": (
-        f"-F /dev/null -i {builder['privateKey']} -o IdentitiesOnly=yes "
-        f"-o BatchMode=yes -o StrictHostKeyChecking=yes -o HostKeyAlias={builder['alias']} "
-        f"-o UserKnownHostsFile={builder['knownHosts']} -o GlobalKnownHostsFile=/dev/null"
-    )}
     root = Path(config["stateDirectory"])
     repo = root / "repository"
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -109,7 +100,8 @@ def main():
             selected = metadata["locked"]
             # The exact revision (not a moving branch) is reused for every build.
             ref = metadata["url"]
-            flags = ["--override-input", app["input"], ref, "--no-write-lock-file"]
+            flags = ["--override-input", app["input"], ref, "--no-write-lock-file",
+                     "--max-jobs", "2", "--option", "builders", ""]
             version_attr = f".#packages.x86_64-linux.app-{args.app}.version"
             version = run(["nix", "eval", version_attr, "--raw", *flags])
             baseline = {"version": run(["nix", "eval", version_attr, "--raw", "--no-update-lock-file"]),
@@ -129,14 +121,16 @@ def main():
             builds = {}
             activations = {}
             for system in systems:
+                if system != "x86_64-linux":
+                    # Remote-store build options do not constrain the target
+                    # daemon. Refuse rather than risk Fuji/Yari builder hops.
+                    builds[system] = "blocked-native-build-transport"
+                    continue
                 try:
-                    env = builder_env if system == "aarch64-linux" else None
-                    run(build_command(system, f".#checks.{system}.app-{args.app}", flags, builder), timeout=7200, env=env)
-                    run(build_command(system, f".#checks.{system}.deploy-schema", flags, builder), env=env)
+                    run(build_command(system, f".#checks.{system}.app-{args.app}", flags), timeout=7200)
+                    run(build_command(system, f".#checks.{system}.deploy-schema", flags))
                     representative = next(h for h in app["hosts"] if config["hosts"][h] == system)
-                    activation = run(build_command(system, f".#deploy.nodes.{representative}.profiles.{args.app}.path", flags, builder), timeout=7200, env=env).splitlines()[-1]
-                    if system == "aarch64-linux":
-                        run(["nix", "copy", "--from", "ssh-ng://simon@" + builder["hostName"], activation], env=env)
+                    activation = run(build_command(system, f".#deploy.nodes.{representative}.profiles.{args.app}.path", flags), timeout=7200).splitlines()[-1]
                     activations[system] = activation
                     builds[system] = "checked"
                 except (subprocess.SubprocessError, OSError) as error:

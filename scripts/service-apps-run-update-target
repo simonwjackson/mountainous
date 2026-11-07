@@ -1,0 +1,50 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p python3
+"""Run the deployed updater's exact command/environment as root on Unzen.
+
+Pi is permitted only in x86-only check mode in this stage. Never opens a gate.
+"""
+import argparse
+import json
+import os
+from pathlib import Path
+import shlex
+import subprocess
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("app", choices=["groceries", "pi"])
+parser.add_argument("expected_source_sha")
+parser.add_argument("--check-only", action="store_true")
+parser.add_argument("--x86-only", action="store_true")
+args = parser.parse_args()
+assert os.getuid() == 0 and os.uname().nodename == "unzen"
+assert args.app != "pi" or (args.check_only and args.x86_only), "Pi deployments are blocked pending native ARM transport"
+unit = "app-update-" + args.app + ".service"
+
+def output(command):
+    return subprocess.check_output(command, text=True).strip()
+
+repo = Path(output(["systemctl", "show", unit, "-p", "WorkingDirectory", "--value"]))
+assert output(["git", "-C", str(repo), "rev-parse", "HEAD"]) == args.expected_source_sha
+assert not output(["git", "-C", str(repo), "status", "--porcelain"])
+env = os.environ.copy()
+for item in shlex.split(output(["systemctl", "show", unit, "-p", "Environment", "--value"])):
+    key, value = item.split("=", 1)
+    env[key] = value.replace("\\n", "\n")
+start = [line.removeprefix("ExecStart=") for line in output(["systemctl", "cat", unit]).splitlines() if line.startswith("ExecStart=")][-1]
+command = shlex.split(start)
+if args.x86_only:
+    index = command.index("--config") + 1
+    config = json.loads(Path(command[index]).read_text())
+    config["apps"][args.app]["hosts"] = [host for host in config["apps"][args.app]["hosts"] if config["hosts"][host] == "x86_64-linux"]
+    path = Path("/var/lib/app-updater/pi-x86-check.json")
+    previous = os.umask(0o077)
+    path.write_text(json.dumps(config) + "\n")
+    os.umask(previous)
+    command[index] = str(path)
+    print("Check-only x86 hosts: " + ", ".join(config["apps"][args.app]["hosts"]), flush=True)
+if args.check_only:
+    command.append("--check-only")
+result = subprocess.run(command, cwd=repo, env=env)
+assert output(["git", "-C", str(repo), "rev-parse", "HEAD"]) == args.expected_source_sha
+raise SystemExit(result.returncode)

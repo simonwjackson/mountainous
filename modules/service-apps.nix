@@ -196,12 +196,20 @@ in
         {
           assertions = [
             {
-              assertion = builtins.match "[a-z][a-z0-9-]*" name != null;
+              assertion = builtins.match "[a-z][a-z0-9-]{0,30}" name != null;
               message = "serviceApps names must be safe system account and unit names.";
             }
             {
               assertion = inputs ? ${app.input};
               message = "serviceApps.${name}: input ${app.input} does not exist.";
+            }
+            {
+              assertion =
+                !(lib.any (
+                  arg:
+                  arg == "--host" || lib.hasPrefix "--host=" arg || arg == "--port" || lib.hasPrefix "--port=" arg
+                ) app.serverArgs);
+              message = "serviceApps.${name}: serverArgs cannot override the loopback host or declared port.";
             }
             {
               assertion = lib.all (
@@ -222,6 +230,7 @@ in
           security.sudo.extraRules = [
             {
               users = [ "app-deploy" ];
+              runAs = "root";
               commands =
                 map
                   (action: {
@@ -240,9 +249,9 @@ in
             "d ${home}/state 0700 ${name} ${name} -"
             "d ${home}/state/tsnet 0700 ${name} ${name} -"
           ]
-          ++ lib.mapAttrsToList (
-            _: path: "d ${home}/${builtins.dirOf path} 0700 ${name} ${name} -"
-          ) app.secrets;
+          ++ map (directory: "d ${home}/${directory} 0700 ${name} ${name} -") (
+            lib.unique (map builtins.dirOf (lib.attrValues app.secrets))
+          );
           sops.secrets = lib.mapAttrs (_: path: {
             sopsFile = ../secrets/hosts/${config.networking.hostName}.yaml;
             owner = name;
@@ -305,10 +314,23 @@ in
         mountainous.appUpdates = lib.mkIf (config.networking.hostName == "unzen") (
           lib.genAttrs names (name: {
             inherit (appFor name) input schedule;
+            gateFile = "/var/lib/app-updater/enabled-${name}";
             hosts = lib.filter (host: appsFor host ? ${name}) (lib.attrNames hosts);
           })
         );
-        assertions = lib.concatMap (r: r.assertions) resources;
+        assertions =
+          lib.concatMap (r: r.assertions) resources
+          ++ map (name: {
+            assertion = lib.all (
+              host:
+              let
+                app = (appsFor host).${name};
+                canonical = appFor name;
+              in
+              app.input == canonical.input && app.schedule == canonical.schedule
+            ) (lib.filter (host: appsFor host ? ${name}) (lib.attrNames hosts));
+            message = "serviceApps.${name} input and schedule must agree between hosts.";
+          }) names;
         users.users = lib.mkMerge (map (r: r.users.users) resources);
         users.groups = lib.mkMerge (map (r: r.users.groups) resources);
         environment.systemPackages = lib.concatMap (r: r.environment.systemPackages) resources;

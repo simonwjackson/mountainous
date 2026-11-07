@@ -13,6 +13,11 @@ let
         input = lib.mkOption { type = lib.types.str; };
         schedule = lib.mkOption { type = lib.types.str; };
         hosts = lib.mkOption { type = lib.types.listOf lib.types.str; };
+        gateFile = lib.mkOption {
+          type = lib.types.str;
+          default = "${state}/enabled";
+          description = "Runtime gate, created only after a successful signed deployment.";
+        };
         substituters = lib.mkOption {
           type = lib.types.listOf lib.types.str;
           default = [ ];
@@ -83,7 +88,7 @@ in
               description = "Build and deploy only the ${name} application profile";
               wants = [ "network-online.target" ];
               after = [ "network-online.target" ];
-              unitConfig.ConditionPathExists = "${state}/enabled";
+              unitConfig.ConditionPathExists = app.gateFile;
               environment = {
                 HOME = state;
                 NIX_REMOTE = "daemon";

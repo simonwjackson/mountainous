@@ -37,5 +37,11 @@ assert deploy.nodes.rakku.profiles.groceries.profilePath == path;
 assert !(deploy.nodes.unzen.profiles ? groceries);
 assert unzen.mountainous.appUpdates.groceries.hosts == [ "rakku" ];
 assert unzen.mountainous.appUpdates.groceries.input == "groceries";
+assert
+  unzen.systemd.services.app-update-groceries.unitConfig.ConditionPathExists
+  == "/var/lib/app-updater/enabled-groceries";
+assert
+  unzen.systemd.services.app-update-pi.unitConfig.ConditionPathExists
+  == "/var/lib/app-updater/enabled";
 assert !(builtins.elem "hiyori" unzen.mountainous.appUpdates.pi.hosts);
 true

@@ -1,0 +1,5 @@
+ssh-ng://simon@nix-builder-aka x86_64-linux /etc/ssh/ssh_host_ed25519_key 3 4 big-parallel,benchmark,kvm,nixos-test - -
+ssh-ng://simon@nix-builder-fuji aarch64-linux /etc/ssh/ssh_host_ed25519_key 1 1 big-parallel,benchmark - -
+ssh-ng://simon@nix-builder-myoko x86_64-linux /etc/ssh/ssh_host_ed25519_key 4 1 big-parallel,benchmark - -
+ssh-ng://simon@nix-builder-yari aarch64-linux /etc/ssh/ssh_host_ed25519_key 1 1 big-parallel,benchmark - -
+ssh-ng://simonwjackson@nix-builder-zao x86_64-linux /etc/ssh/ssh_host_ed25519_key 4 3 big-parallel,benchmark,kvm,nixos-test - -

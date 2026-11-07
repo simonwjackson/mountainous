@@ -67,6 +67,11 @@ in
             );
           };
           appDeployment = {
+            sshPort = lib.mkOption {
+              type = lib.types.port;
+              default = 22;
+              description = "OpenSSH deployment port (not Tailscale SSH).";
+            };
             enable = lib.mkEnableOption "app deployment access after provisioning public keys";
             deployPublicKey = lib.mkOption {
               type = lib.types.str;
@@ -148,6 +153,8 @@ in
       activationTimeout = 300;
       confirmTimeout = 60;
       sshOpts = [
+        "-p"
+        (toString self.nixosConfigurations.${name}.config.mountainous.appDeployment.sshPort)
         "-F"
         "/dev/null"
         "-i"
@@ -187,7 +194,11 @@ in
     perSystem =
       { pkgs, system, ... }:
       {
-        packages = lib.mapAttrs' (name: app: lib.nameValuePair "app-${name}" (app.package system)) registry;
+        packages =
+          (lib.mapAttrs' (name: app: lib.nameValuePair "app-${name}" (app.package system)) registry)
+          // {
+            app-deployer = inputs.deploy-rs.packages.${system}.default;
+          };
         checks =
           (inputs.deploy-rs.lib.${system}.deployChecks {
             nodes = lib.filterAttrs (name: _: hosts.${name}.system == system) self.deploy.nodes;

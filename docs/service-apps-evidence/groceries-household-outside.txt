@@ -1,0 +1,13 @@
+
+ RUN  v5.0.3 /var/lib/app-updater/groceries-fixture-source
+
+ ✓ src/storage/household.test.ts (87 tests) 4955ms
+   ✓ a send locks only the approved subset before HTTP and atomically clears it while keeping new lines 555ms
+   ✓ a killed sender recovers as Check Kroger without retries and keeps additions when a person confirms added 370ms
+   ✓ SQLite rolls back a killed uncommitted writer with no stale lock file to delete 339ms
+
+ Test Files  1 passed (1)
+      Tests  87 passed (87)
+   Start at  00:46:56
+   Duration  5.26s (tests 96%, import 3%, transform 1%)
+

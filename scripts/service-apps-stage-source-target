@@ -1,0 +1,16 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash git
+# Update only a clean Unzen updater checkout. Retain its previous commit/ref.
+set -euo pipefail
+bundle=${1:?Mountainous bundle}
+expected=${2:?Expected source SHA}
+[[ $(hostname) == unzen && $EUID == 0 && $expected =~ ^[0-9a-f]{40}$ ]]
+repo=/var/lib/app-updater/repository
+test -z "$(git -C "$repo" status --porcelain --untracked-files=all)"
+old=$(git -C "$repo" rev-parse HEAD)
+git -C "$repo" update-ref "refs/heads/before-service-apps-$old" "$old"
+git -C "$repo" fetch "$bundle" foundation-service-apps
+git -C "$repo" switch --detach "$expected"
+test "$(git -C "$repo" rev-parse HEAD)" = "$expected"
+test -z "$(git -C "$repo" status --porcelain --untracked-files=all)"
+printf 'Updater source pinned to %s; old commit %s retained\n' "$expected" "$old"

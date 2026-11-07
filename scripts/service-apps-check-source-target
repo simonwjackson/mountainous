@@ -1,0 +1,15 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash git nix coreutils
+# Run natively as root on Unzen. A remote --store build does NOT override the
+# target daemon's builders. Use a clean, SHA-pinned checkout here instead.
+set -euo pipefail
+expected=${1:?Expected source SHA}
+bundle=${2:?Expected Git bundle}
+source=${3:?Expected new or existing source checkout}
+[[ $expected =~ ^[0-9a-f]{40}$ ]]
+if [[ ! -d $source ]]; then git clone "$bundle" "$source"; git -C "$source" checkout --detach "$expected"; fi
+test "$(git -C "$source" rev-parse HEAD)" = "$expected"
+test -z "$(git -C "$source" status --porcelain)"
+nix build "git+file://$source?rev=$expected#packages.x86_64-linux.default" \
+  --no-link --print-out-paths --max-jobs 2 --cores 4 --option builders ''
+test "$(git -C "$source" rev-parse HEAD)" = "$expected"

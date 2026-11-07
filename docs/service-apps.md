@@ -50,10 +50,14 @@ update schedule must agree between hosts.
 
 Unzen's updater requires a clean, pinned mountainous checkout. It follows the
 app input, pins the selected revision, rejects downgrades, and builds only that
-app's check and deploy-rs attributes. Jobs are bounded to two. ARM builds run
-on Fuji's daemon with `builders = ""`; they cannot hand work back to Yari.
-The builder key allows only the daemon protocol. Receipts record the source
-commit, candidate, builds and per-host outcomes in `/var/lib/app-updater`.
+app's check and deploy-rs attributes. Native x86 jobs are bounded to two with
+`builders = ""`. ARM builds currently fail closed with
+`blocked-native-build-transport`: remote-store builds do not forward that
+builder policy to the target daemon. The existing Fuji key allows only the
+daemon protocol, not a native build command. Do not use it for remote builds.
+Receipts record the source commit, candidate, builds and per-host outcomes in
+`/var/lib/app-updater`. A scoped native build key/controller is a follow-up,
+not provisioned in this stage.
 
 The updater signs the activation closure with `app-updater-1`. Deploy-rs uses
 `app-deploy`, strict SSH pins and `--checksigs`, with automatic and magic
@@ -70,7 +74,9 @@ deploy. Deploy-rs restores the previous profile and runs its activation, which
 restarts the old executables. Data is **not** rolled back. An incompatible data
 schema needs its own backup and restore plan. Every update briefly interrupts
 requests. Keep the previous generation and test rollback before enabling a new
-app's automatic deployment.
+app's automatic deployment. Each service app uses its own
+`/var/lib/app-updater/enabled-<name>` gate. Create it only after the signed
+pilot deploy and rollback proof. Pi retains the separate `enabled` gate.
 
 ## Cut over an existing node
 
@@ -120,5 +126,7 @@ existing Rakku SOPS value stays unchanged. Mutable credentials/config are
 copied with the service state, not embedded in a Nix derivation.
 
 Hiyori is excluded from pi updates while offline and without a verified SSH
-pin. The global updater gate must remain closed until one signed pi run
-succeeds on every remaining pi host. Do not open it on a partial receipt.
+pin. Myoko's OpenSSH deploy port is 2222; port 22 still reaches Tailscale SSH.
+The global updater gate remains closed while ARM's native transport is absent.
+The approved pi run in this stage is x86-only and `--check-only`: it does not
+deploy pi or create the gate. Do not open it on a partial receipt.

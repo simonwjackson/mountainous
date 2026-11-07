@@ -1,0 +1,18 @@
+Verified source: groceries main 51ccf1a0ad37782828ee935bcb2465b83e0a1d6d
+Native build host: Unzen, root; builders=""; max-jobs=2; cores=4.
+No --store build and no build-dir override were used for this successful build.
+Derivation: /nix/store/86j752pxgzv5gq4qlkjj1id9hhaigfs9-groceries-server-0.1.0.drv
+Application: /nix/store/9lcqc04lxdmpyrvh079j62l0l7pdgrvp-groceries-0.1.0
+Server: /nix/store/ggwy1wvjgpj30fscayz4l7n8vkyr3958-groceries-server-0.1.0
+Result: build and upstream doCheck passed.
+Upstream check: npm run typecheck && npm test && npm run gates && npm run lint
+Vitest: 65 files passed; 999 tests passed, 1 pre-existing private-dataset test skipped (B0_EVAL_DIRECTORY absent); 94.68 s.
+Node script tests passed. Gates passed. ESLint and Prettier passed.
+Full native build log is available through `nix log` for the derivation above on Unzen.
+
+Test-only source commits:
+8c41730e6f792ca6e12e13275f2d7d4009779d22: image:null expectations/provider fixture; no live images in mounted browser fixture; bounded real HTTP completion waits.
+51ccf1a0ad37782828ee935bcb2465b83e0a1d6d: close the reopened persistence fixture before opening the independent invalid-state fixture.
+No application behavior or source build checks changed. No new tests were skipped.
+Main was fast-forwarded only after the full checked package succeeded.
+The untracked groceries progress.md was not edited.

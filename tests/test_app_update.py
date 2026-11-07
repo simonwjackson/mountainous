@@ -36,16 +36,14 @@ class AppUpdateTests(unittest.TestCase):
         self.assertEqual([results[h]["status"] for h in results], ["deployed", "failed", "deployed"])
 
     def test_builds_are_bounded_and_do_not_delegate(self):
-        command = updater.build_command("x86_64-linux", ".#checks.x86_64-linux.app-pi", [], {"hostName": "fuji"})
+        command = updater.build_command("x86_64-linux", ".#checks.x86_64-linux.app-pi", [])
         self.assertIn("2", command[command.index("--max-jobs") + 1:])
         self.assertEqual(command[command.index("--option") + 1:command.index("--option") + 3], ["builders", ""])
         self.assertNotIn("--store", command)
 
-    def test_arm_builds_on_target_without_builder_hops(self):
-        command = updater.build_command("aarch64-linux", ".#checks.aarch64-linux.app-pi", [], {"hostName": "fuji"})
-        self.assertEqual(command[command.index("--store") + 1], "ssh-ng://simon@fuji")
-        self.assertIn("--eval-store", command)
-        self.assertEqual(command[command.index("--option") + 1:command.index("--option") + 3], ["builders", ""])
+    def test_arm_refuses_unprovisioned_native_build_transport(self):
+        with self.assertRaisesRegex(ValueError, "Native target build transport"):
+            updater.build_command("aarch64-linux", ".#checks.aarch64-linux.app-pi", [])
 
     def test_receipt_is_private_and_atomic(self):
         import os

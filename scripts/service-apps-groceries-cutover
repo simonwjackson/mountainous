@@ -1,0 +1,63 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p bash nix openssh coreutils gnutar python3 systemd
+# Operator on Zao. Both systems and the clean updater source must already be
+# built, compared and staged. All old Zao files and data remain untouched.
+set -euo pipefail
+umask 077
+old=${1:?Rakku running system path}
+new=${2:?Reviewed Rakku candidate path}
+source_sha=${3:?Pinned mountainous updater source SHA}
+repo=$(cd "$(dirname "$0")/.." && pwd)
+evidence=$repo/docs/service-apps-evidence
+mkdir -p "$evidence"
+python=$(readlink -f "$(command -v python3)")
+python_package=$(dirname "$(dirname "$python")")
+export NIX_SSHOPTS='-F /dev/null'
+nix copy --no-check-sigs --to ssh-ng://root@rakku "$python_package"
+nix copy --no-check-sigs --to ssh-ng://root@unzen "$python_package"
+scp -F /dev/null "$repo/scripts/service-apps-host-target" "$repo/scripts/service-apps-groceries-state-target" "$repo/scripts/service-apps-groceries-probe" root@rakku:/tmp/
+# The comparison happens before any outage as well as inside switch.
+ssh -F /dev/null root@rakku bash /tmp/service-apps-host-target compare "$old" "$new" > "$evidence/rakku-compare-final.txt"
+"$python" "$repo/scripts/service-apps-groceries-probe" "$HOME/.config/groceries/assistant-service-token" simon > "$evidence/groceries-zao-before.json"
+archive=$(mktemp -t groceries-cutover-XXXXXXXXXX.tar)
+stopped=false
+destination_started=false
+finish() {
+  status=$?
+  trap - EXIT
+  if (( status != 0 )) && "$stopped"; then
+    if "$destination_started"; then
+      if ! ssh -F /dev/null root@rakku systemctl stop groceries-tsnet.service groceries.service; then
+        echo 'STOP: cannot verify destination stopped; do not duplicate its tailnet identity.' >&2
+        exit "$status"
+      fi
+    fi
+    systemctl --user start groceries.service groceries-proxy.service
+    echo 'Cutover failed. Zao groceries restarted; all source state retained.' >&2
+  fi
+  rm -f "$archive"
+  exit "$status"
+}
+trap finish EXIT
+systemctl --user stop groceries-proxy.service groceries.service
+stopped=true
+[[ $(systemctl --user show groceries.service -p MainPID --value) == 0 ]]
+[[ $(systemctl --user show groceries-proxy.service -p MainPID --value) == 0 ]]
+tar -cpf "$archive" -C "$HOME" .local/share/groceries .config/groceries .config/groceries-tsnet
+scp -F /dev/null "$archive" root@rakku:/tmp/groceries-stopped-source.tar
+ssh -F /dev/null root@rakku bash /tmp/service-apps-groceries-state-target stage /tmp/groceries-stopped-source.tar > "$evidence/groceries-state-stage.txt"
+ssh -F /dev/null root@rakku bash /tmp/service-apps-host-target switch "$old" "$new" > "$evidence/rakku-switch.txt" 2>&1
+ssh -F /dev/null root@rakku bash /tmp/service-apps-groceries-state-target own >> "$evidence/groceries-state-stage.txt"
+destination_started=true
+ssh -F /dev/null root@unzen "$python" /var/lib/app-updater/repository/scripts/service-apps-run-update-target groceries "$source_sha" > "$evidence/groceries-first-deploy.txt" 2>&1
+for person in simon laure household; do
+  caller=$person
+  [[ $person != household ]] || caller=simon
+  ssh -F /dev/null root@rakku runuser -u "pi-assistant-$person" -- "$python" /tmp/service-apps-groceries-probe "/var/lib/pi-assistant-$person/.config/assistant/groceries-service-token" "$caller" > "$evidence/groceries-assistant-$person.json"
+done
+"$python" "$repo/scripts/service-apps-groceries-probe" "$HOME/.config/groceries/assistant-service-token" simon > "$evidence/groceries-zao-after.json"
+# Compare only household meanings, never print those meanings or the token.
+"$python" -c 'import json,sys; a,b=map(lambda p:json.load(open(p)),sys.argv[1:]); assert a["lines_sha256"]==b["lines_sha256"] and a["buildId"]==b["buildId"]' "$evidence/groceries-zao-before.json" "$evidence/groceries-zao-after.json"
+ssh -F /dev/null root@rakku bash /tmp/service-apps-host-target health > "$evidence/rakku-after-cutover-health.txt"
+systemctl --user disable groceries.service groceries-proxy.service
+printf 'Groceries cut over with unchanged data, build and FQDN; all three assistant credentials work. Old Zao files retained.\n'

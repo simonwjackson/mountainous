@@ -1,0 +1,10 @@
+Verified before cutover:
+Old server: /nix/store/r2haycqdl0xdiz8xnwrzr9hv5iqszw3n-groceries-server-0.1.0
+New server: /nix/store/ggwy1wvjgpj30fscayz4l7n8vkyr3958-groceries-server-0.1.0
+Both versions: 0.1.0.
+`diff -rq OLD/lib/groceries/dist NEW/lib/groceries/dist`: exit 0, no differences.
+`diff -rq OLD/share/groceries/public NEW/share/groceries/public`: exit 0, no differences.
+Both build IDs: da964fb179357a30.
+Old and new groceries-tsnet resolve to the identical executable:
+/nix/store/vwcr9vb7870k0b58a6s2f16fjk0k5k04-groceries-tsnet-1.0.0/bin/groceries-tsnet
+Thus the pilot does not change the server routes, behavior, web assets or tsnet code.
