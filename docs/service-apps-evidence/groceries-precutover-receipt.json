@@ -1,0 +1,22 @@
+{
+  "app": "groceries",
+  "started_at": 1794016288,
+  "system_deployment": false,
+  "hosts": {},
+  "status": "checks-passed",
+  "command_log": "/var/lib/app-updater/receipts/1794016288176992243.log",
+  "source_commit": "2a304e3abc2d044e9c83557dd3ba5725bed498f5",
+  "candidate": {
+    "version": "0.1.0",
+    "rev": "51ccf1a0ad37782828ee935bcb2465b83e0a1d6d",
+    "lastModified": 1794012743,
+    "ref": "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/groceries?ref=main&rev=51ccf1a0ad37782828ee935bcb2465b83e0a1d6d"
+  },
+  "builds": {
+    "x86_64-linux": "checked"
+  },
+  "activations": {
+    "x86_64-linux": "/nix/store/2yb2n6qhmrihm7jsvxgp2jhh0jc5byw4-activatable-groceries-0.1.0"
+  },
+  "finished_at": 1794016341
+}

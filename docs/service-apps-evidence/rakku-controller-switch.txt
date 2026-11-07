@@ -1,0 +1,72 @@
+Running: /nix/store/454ldwbl3xvklrpf57dws0asayyavyjz-nixos-system-rakku-26.11.20260923.4975466
+Candidate: /nix/store/jabc98p2grcv0f5h04v01yq1rgqpm625-nixos-system-rakku-26.11.20260923.4975466
+
+### dbus-1/session.conf
+--- old/dbus-1/session.conf
++++ new/dbus-1/session.conf
+@@ -73,4 +73,4 @@
+   <limit name="max_match_rules_per_connection">50000</limit>
+   <limit name="max_replies_per_connection">50000</limit>
+ 
+-<apparmor mode="disabled"/><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/session.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/session.d</includedir><servicedir>/nix/store/c73yalyqjdzvxp9k3yf198a9c89a3z95-system-path/share/dbus-1/services</servicedir><includedir>/nix/store/c73yalyqjdzvxp9k3yf198a9c89a3z95-system-path/etc/dbus-1/session.d</includedir><includedir>/nix/store/c73yalyqjdzvxp9k3yf198a9c89a3z95-system-path/share/dbus-1/session.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/session.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/session.d</includedir></busconfig>
++<apparmor mode="disabled"/><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/session.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/session.d</includedir><servicedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/share/dbus-1/services</servicedir><includedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/etc/dbus-1/session.d</includedir><includedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/share/dbus-1/session.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/session.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/session.d</includedir></busconfig>
+
+### dbus-1/system.conf
+--- old/dbus-1/system.conf
++++ new/dbus-1/system.conf
+@@ -119,4 +119,4 @@
+ 
+   
+ 
+-<apparmor mode="disabled"/><servicehelper>/run/wrappers/bin/dbus-daemon-launch-helper</servicehelper><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system-services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/system.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system.d</includedir><servicedir>/nix/store/c73yalyqjdzvxp9k3yf198a9c89a3z95-system-path/share/dbus-1/system-services</servicedir><includedir>/nix/store/c73yalyqjdzvxp9k3yf198a9c89a3z95-system-path/etc/dbus-1/system.d</includedir><includedir>/nix/store/c73yalyqjdzvxp9k3yf198a9c89a3z95-system-path/share/dbus-1/system.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system-services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/system.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system.d</includedir></busconfig>
++<apparmor mode="disabled"/><servicehelper>/run/wrappers/bin/dbus-daemon-launch-helper</servicehelper><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system-services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/system.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system.d</includedir><servicedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/share/dbus-1/system-services</servicedir><includedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/etc/dbus-1/system.d</includedir><includedir>/nix/store/ivni75pj75ywlmj3pnr0z1vp2bw06vap-system-path/share/dbus-1/system.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system-services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/system.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system.d</includedir></busconfig>
+
+### systemd/system/dbus-broker.service.d/overrides.conf
+--- old/systemd/system/dbus-broker.service.d/overrides.conf
++++ new/systemd/system/dbus-broker.service.d/overrides.conf
+@@ -1,6 +1,6 @@
+ [Unit]
+ RequiresMountsFor=/tmp
+-X-Restart-Triggers=/nix/store/mrijfwrnhgd7grzqmblig6cj38p77xj9-X-Restart-Triggers-dbus-broker
++X-Restart-Triggers=/nix/store/l6bk68wdf163pya3r47m3zfmwvhlvxki-X-Restart-Triggers-dbus-broker
+ 
+ [Service]
+ Environment="LD_LIBRARY_PATH=/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/lib"
+
+### systemd/user/dbus-broker.service.d/overrides.conf
+--- old/systemd/user/dbus-broker.service.d/overrides.conf
++++ new/systemd/user/dbus-broker.service.d/overrides.conf
+@@ -1,5 +1,5 @@
+ [Unit]
+-X-Restart-Triggers=/nix/store/mrijfwrnhgd7grzqmblig6cj38p77xj9-X-Restart-Triggers-dbus-broker
++X-Restart-Triggers=/nix/store/l6bk68wdf163pya3r47m3zfmwvhlvxki-X-Restart-Triggers-dbus-broker
+ 
+ [Service]
+ Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
+Checking switch inhibitors... done
+Skipping "/boot/EFI/systemd/systemd-bootx64.efi", same boot loader version in place already.
+Skipping "/boot/EFI/BOOT/BOOTX64.EFI", same boot loader version in place already.
+activating the configuration...
+sops-install-secrets: Imported /tundra/permafrost/etc/ssh/ssh_host_ed25519_key as age key with fingerprint age15t6g4dck4vpkfg80303wy8fvl3ptczd7ehgd3ppqrcgv2fszkv4q50s2a4
+setting up /etc...
+sops-install-secrets: Imported /tundra/permafrost/etc/ssh/ssh_host_ed25519_key as age key with fingerprint age15t6g4dck4vpkfg80303wy8fvl3ptczd7ehgd3ppqrcgv2fszkv4q50s2a4
+reloading user units for root...
+reloading the following user units: dbus-broker.service
+restarting the following user units: nixos-activation.service
+reloading user units for simonwjackson...
+reloading the following user units: dbus-broker.service
+Failed to reload user unit dbus-broker.service: Transaction for dbus-broker.service/reload is destructive (dbus-broker.service has 'stop' job queued, but 'reload' is included in transaction).
+Failed to start user unit timers.target: Connection was disconnected before a reply was received
+Failed to start user unit sockets.target: Connection is closed
+Failed to start user unit default.target: Connection is closed
+Failed to start user unit paths.target: Connection is closed
+Failed to start user unit basic.target: Connection is closed
+restarting the following user units: nixos-activation.service
+Failed to restart nixos-activation.service: Connection is closed
+Error: Failed to remove jobs token
+
+Caused by:
+    Connection is closed
+warning: user activation for simonwjackson failed
+restarting sysinit-reactivation.target
+reloading the following units: dbus-broker.service

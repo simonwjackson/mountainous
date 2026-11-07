@@ -1,0 +1,6 @@
+-rw------- 1 root root 0 Nov  7 03:36 /var/lib/app-updater/enabled-groceries
+NEXT                         LEFT LAST PASSED UNIT                       ACTIVATES
+Sat 2026-11-07 04:15:00 UTC 38min -         - app-update-groceries.timer app-update-groceries.service
+
+1 timers listed.
+Pass --all to see loaded but inactive timers, too.

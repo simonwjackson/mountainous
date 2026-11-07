@@ -1,0 +1,1 @@
+Preserved unaccepted profile as /nix/var/nix/profiles/apps/groceries-aborted-1794018964 -> /nix/store/2yb2n6qhmrihm7jsvxgp2jhh0jc5byw4-activatable-groceries-0.1.0; canonical profile absent

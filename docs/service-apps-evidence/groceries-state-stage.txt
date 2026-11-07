@@ -1,0 +1,2 @@
+Staged data, mutable configuration and original tsnet identity; source snapshot retained
+All copied file hashes match; ownership groceries:groceries; persistence bind verified

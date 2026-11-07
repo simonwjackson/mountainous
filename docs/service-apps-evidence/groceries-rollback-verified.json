@@ -1,0 +1,25 @@
+{
+  "source_commit": "96f6fb242558eb1f97e2af8e189e470b9de6a820",
+  "app_revision": "51ccf1a0ad37782828ee935bcb2465b83e0a1d6d",
+  "broken_activation": "/nix/store/hcblz10h4fgkyhbp6l0qf0z8s9d1w2dk-activatable-broken-groceries-0.1.0",
+  "deploy_exit": 1,
+  "profile_before": "/nix/store/3sqalgsl6c581x9wwa6q9f0fmcil60pv-activatable-groceries-0.1.0",
+  "profile_after": "/nix/store/3sqalgsl6c581x9wwa6q9f0fmcil60pv-activatable-groceries-0.1.0",
+  "both_units_active": true,
+  "health_before": {
+    "status": "ok",
+    "buildId": "da964fb179357a30",
+    "phase": "ready",
+    "shoppingEnabled": true
+  },
+  "health_after": {
+    "status": "ok",
+    "buildId": "da964fb179357a30",
+    "phase": "ready",
+    "shoppingEnabled": true
+  },
+  "rollback": "verified-without-manual-repair",
+  "runtime_readiness_failure_seen": true,
+  "deploy_rollback_seen": true,
+  "log": "/var/lib/app-updater/receipts/groceries-rollback-verified.log"
+}

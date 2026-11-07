@@ -1,0 +1,32 @@
+warning: could not read HEAD ref from repo at '/var/lib/app-updater/repository', using 'master'
+warning: ignoring untrusted flake configuration setting 'extra-substituters'.
+Pass '--accept-flake-config' to trust it
+warning: ignoring untrusted flake configuration setting 'extra-trusted-public-keys'.
+Pass '--accept-flake-config' to trust it
+error:
+       … while evaluating the attribute 'optionalValue.value'
+         at «github:NixOS/nixpkgs/4975466d324710c576dc11ad614684e6bd8cad8e?narHash=sha256-xJ%2BX4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU%3D»/lib/modules.nix:1342:5:
+         1341|
+         1342|     optionalValue = if isDefined then { value = mergedValue; } else { };
+             |     ^
+         1343|   };
+
+       … while evaluating a branch condition
+         at «github:NixOS/nixpkgs/4975466d324710c576dc11ad614684e6bd8cad8e?narHash=sha256-xJ%2BX4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU%3D»/lib/modules.nix:1342:21:
+         1341|
+         1342|     optionalValue = if isDefined then { value = mergedValue; } else { };
+             |                     ^
+         1343|   };
+
+       … while evaluating definitions from `/nix/store/9iv83r72z5xwgylkwms1qip1ijnr6jqs-source/modules/transposition.nix':
+
+       … while evaluating definitions from `/nix/store/n6vjs475yd4a0amrhipw3jack48i767p-source/modules/app-profiles-check.nix, via option perSystem':
+
+       (stack trace truncated; use '--show-trace' to show the full, detailed trace)
+
+       error: assertion '((builtins).all (name: (let c = (hosts)."${name}".config; in ((((((((((((((((((((((((((c).mountainous.appProfiles.pi.enable && ((c).mountainous.appProfiles.pi.profilePath == "/nix/var/nix/profiles/apps/pi")) && (c).mountainous.appDeployment.enable) && ((c).mountainous.appDeployment.deployPublicKey == (unzen).mountainous.appDeployment.deployPublicKey)) && ((c).mountainous.appDeployment.signingPublicKey == (unzen).mountainous.appDeployment.signingPublicKey)) && ((c).mountainous.appDeployment.builderPublicKey == (unzen).mountainous.appDeployment.builderPublicKey)) && ((builtins).elem ("restrict " + (c).mountainous.appDeployment.deployPublicKey) (c).users.users.app-deploy.openssh.authorizedKeys.keys)) && ((builtins).elem (c).mountainous.appDeployment.signingPublicKey (c).nix.settings.trusted-public-keys)) && ((name != "fuji") || ((builtins).elem ("restrict,command=\"" + (c).nix.package + "/bin/nix-daemon --stdio\" " + (c).mountainous.appDeployment.builderPublicKey) (c).users.users.simon.openssh.authorizedKeys.keys))) && (c).users.users.app-deploy.isSystemUser) && (! ((builtins).elem "wheel" (c).users.users.app-deploy.extraGroups))) && (! ((builtins).elem "app-deploy" (c).nix.settings.trusted-users))) && ((lib).hasPrefix "/run/" (c).sops.secrets.pi-cliproxyapi-api-key.path)) && ((c).sops.secrets.pi-cliproxyapi-api-key.owner == "simon")) && ((c).sops.secrets.pi-cliproxyapi-api-key.mode == "0400")) && ((lib).hasPrefix "/run/" (c).sops.secrets.pi-decide-api-key.path)) && ((c).sops.secrets.pi-decide-api-key.owner == "simon")) && ((c).sops.secrets.pi-decide-api-key.mode == "0400")) && (! ((builtins).any (m: ((m).where == "/var/lib/pi/simon/agent/settings.json")) (c).systemd.mounts))) && ((deploy).nodes."${name}".profiles.pi.profilePath == (c).mountainous.appProfiles.pi.profilePath)) && ((deploy).nodes."${name}".sshUser == "app-deploy")) && ((deploy).nodes."${name}".user == "app-deploy")) && (deploy).nodes."${name}".magicRollback) && (deploy).nodes."${name}".autoRollback) && ((builtins).elem "d /home/simon/.pi/agent 0700 simon users -" (c).systemd.tmpfiles.rules)) && ((builtins).elem "L /home/simon/.pi/agent/settings.json - - - - /home/simon/.local/share/fleet-sync/pi/settings.json" (c).systemd.tmpfiles.rules)))) ((builtins).attrNames hosts))' failed
+       at «git+file:///var/lib/app-updater/repository?ref=master&rev=cd79a089d384c1e264dfe825507f0234c2d9092a»/tests/app-profiles.nix:7:1:
+            6| }:
+            7| assert builtins.all (
+             | ^
+            8|   name:

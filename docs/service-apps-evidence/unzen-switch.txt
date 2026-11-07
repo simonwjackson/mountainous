@@ -1,0 +1,170 @@
+Running: /nix/store/01ryl8slvlp7l92h6py14g55vdmnd30b-nixos-system-unzen-26.11.20260923.4975466
+Candidate: /nix/store/f7csfm4wi578fk0h7yd3pb4kpx4yd5cw-nixos-system-unzen-26.11.20260923.4975466
+unit-app-update-groceries.service: ∅ → ε
+unit-app-update-groceries.timer: ∅ → ε
+
+### dbus-1/session.conf
+--- old/dbus-1/session.conf
++++ new/dbus-1/session.conf
+@@ -73,4 +73,4 @@
+   <limit name="max_match_rules_per_connection">50000</limit>
+   <limit name="max_replies_per_connection">50000</limit>
+ 
+-<apparmor mode="disabled"/><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/session.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/session.d</includedir><servicedir>/nix/store/06nwxwzxjzcjj6k91cbrzaz14nfdvyx4-system-path/share/dbus-1/services</servicedir><includedir>/nix/store/06nwxwzxjzcjj6k91cbrzaz14nfdvyx4-system-path/etc/dbus-1/session.d</includedir><includedir>/nix/store/06nwxwzxjzcjj6k91cbrzaz14nfdvyx4-system-path/share/dbus-1/session.d</includedir><servicedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/share/dbus-1/services</servicedir><includedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/etc/dbus-1/session.d</includedir><includedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/share/dbus-1/session.d</includedir><servicedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/share/dbus-1/services</servicedir><includedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/etc/dbus-1/session.d</includedir><includedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/share/dbus-1/session.d</includedir><servicedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/share/dbus-1/services</servicedir><includedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/etc/dbus-1/session.d</includedir><includedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/share/dbus-1/session.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/session.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/session.d</includedir><servicedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/share/dbus-1/services</servicedir><includedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/etc/dbus-1/session.d</includedir><includedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/share/dbus-1/session.d</includedir></busconfig>
++<apparmor mode="disabled"/><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/session.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/session.d</includedir><servicedir>/nix/store/b6ddzfki49qsjsvj8ybs8vn14ymkay5j-system-path/share/dbus-1/services</servicedir><includedir>/nix/store/b6ddzfki49qsjsvj8ybs8vn14ymkay5j-system-path/etc/dbus-1/session.d</includedir><includedir>/nix/store/b6ddzfki49qsjsvj8ybs8vn14ymkay5j-system-path/share/dbus-1/session.d</includedir><servicedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/share/dbus-1/services</servicedir><includedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/etc/dbus-1/session.d</includedir><includedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/share/dbus-1/session.d</includedir><servicedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/share/dbus-1/services</servicedir><includedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/etc/dbus-1/session.d</includedir><includedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/share/dbus-1/session.d</includedir><servicedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/share/dbus-1/services</servicedir><includedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/etc/dbus-1/session.d</includedir><includedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/share/dbus-1/session.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/session.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/session.d</includedir><servicedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/share/dbus-1/services</servicedir><includedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/etc/dbus-1/session.d</includedir><includedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/share/dbus-1/session.d</includedir></busconfig>
+
+### dbus-1/system.conf
+--- old/dbus-1/system.conf
++++ new/dbus-1/system.conf
+@@ -119,4 +119,4 @@
+ 
+   
+ 
+-<apparmor mode="disabled"/><servicehelper>/run/wrappers/bin/dbus-daemon-launch-helper</servicehelper><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system-services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/system.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system.d</includedir><servicedir>/nix/store/06nwxwzxjzcjj6k91cbrzaz14nfdvyx4-system-path/share/dbus-1/system-services</servicedir><includedir>/nix/store/06nwxwzxjzcjj6k91cbrzaz14nfdvyx4-system-path/etc/dbus-1/system.d</includedir><includedir>/nix/store/06nwxwzxjzcjj6k91cbrzaz14nfdvyx4-system-path/share/dbus-1/system.d</includedir><servicedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/share/dbus-1/system-services</servicedir><includedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/etc/dbus-1/system.d</includedir><includedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/share/dbus-1/system.d</includedir><servicedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/share/dbus-1/system-services</servicedir><includedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/etc/dbus-1/system.d</includedir><includedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/share/dbus-1/system.d</includedir><servicedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/share/dbus-1/system-services</servicedir><includedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/etc/dbus-1/system.d</includedir><includedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/share/dbus-1/system.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system-services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/system.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system.d</includedir><servicedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/share/dbus-1/system-services</servicedir><includedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/etc/dbus-1/system.d</includedir><includedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/share/dbus-1/system.d</includedir></busconfig>
++<apparmor mode="disabled"/><servicehelper>/run/wrappers/bin/dbus-daemon-launch-helper</servicehelper><servicedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system-services</servicedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/etc/dbus-1/system.d</includedir><includedir>/nix/store/zjslpcn77sh4qwm0jwv5xil8jwacckdi-dbus-1.16.2/share/dbus-1/system.d</includedir><servicedir>/nix/store/b6ddzfki49qsjsvj8ybs8vn14ymkay5j-system-path/share/dbus-1/system-services</servicedir><includedir>/nix/store/b6ddzfki49qsjsvj8ybs8vn14ymkay5j-system-path/etc/dbus-1/system.d</includedir><includedir>/nix/store/b6ddzfki49qsjsvj8ybs8vn14ymkay5j-system-path/share/dbus-1/system.d</includedir><servicedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/share/dbus-1/system-services</servicedir><includedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/etc/dbus-1/system.d</includedir><includedir>/nix/store/1hpd24ww83z2x1366jdv046h2s08623s-wpa_supplicant-2.12/share/dbus-1/system.d</includedir><servicedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/share/dbus-1/system-services</servicedir><includedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/etc/dbus-1/system.d</includedir><includedir>/nix/store/80ww8vwb347f6hpxip20p9ns9qm2s2v8-networkmanager-1.58.1/share/dbus-1/system.d</includedir><servicedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/share/dbus-1/system-services</servicedir><includedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/etc/dbus-1/system.d</includedir><includedir>/nix/store/xw5lmid8j3918qh55xaw8jps6vbjq4cv-modemmanager-1.24.2/share/dbus-1/system.d</includedir><servicedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system-services</servicedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/etc/dbus-1/system.d</includedir><includedir>/nix/store/my4ll7q9ymkh2p26cbpm76xkrc3g20rh-beszel-agent.conf/share/dbus-1/system.d</includedir><servicedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/share/dbus-1/system-services</servicedir><includedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/etc/dbus-1/system.d</includedir><includedir>/nix/store/zv9j8ckqlivmnmiwjspkn28jc5l3ls0m-polkit-127/share/dbus-1/system.d</includedir></busconfig>
+
+### systemd/system/app-update-groceries.service
+--- old/systemd/system/app-update-groceries.service
++++ new/systemd/system/app-update-groceries.service
+@@ -0,0 +1,42 @@
++[Unit]
++After=network-online.target
++ConditionPathExists=/var/lib/app-updater/enabled-groceries
++Description=Build and deploy only the groceries application profile
++Wants=network-online.target
++
++[Service]
++Environment="GIT_SSH_COMMAND=ssh -F /dev/null -i /var/lib/app-updater/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/nix/store/nlk3wlr480wdd6d61bk3dj6vnf23g2kc-known_hosts"
++Environment="HOME=/var/lib/app-updater"
++Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
++Environment="LOCAL_KEY=/var/lib/app-updater/signing-key"
++Environment="NIX_CONFIG=builders-use-substitutes = true\nextra-substituters = \nextra-trusted-public-keys = \n"
++Environment="NIX_REMOTE=daemon"
++Environment="NIX_SSHOPTS=-F /dev/null -o BatchMode=yes"
++Environment="PATH=/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/bin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/bin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/bin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/bin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/bin:/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/sbin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/sbin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/sbin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/sbin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/sbin"
++Environment="TZDIR=/nix/store/fh8svr4ds87z84iarfnxrlfpjlbmc816-tzdata-2026c/share/zoneinfo"
++CPUQuota=400%
++ExecStart=/nix/store/pdabqv5qk2hmlrzd6vh4dgqxj0jphk5l-app-update/bin/app-update --config /nix/store/ac41h4xwcjwm0fxbsrgkn4ydda007nx0-app-updates.json --app groceries
++MemoryMax=8G
++Nice=10
++NoNewPrivileges=true
++PrivateTmp=true
++ProtectControlGroups=true
++ProtectHome=true
++ProtectKernelModules=true
++ProtectKernelTunables=true
++ProtectSystem=strict
++ReadWritePaths=/var/lib/app-updater
++ReadWritePaths=/nix/var
++RestrictAddressFamilies=AF_INET
++RestrictAddressFamilies=AF_INET6
++RestrictAddressFamilies=AF_UNIX
++RestrictRealtime=true
++RestrictSUIDSGID=true
++StateDirectory=app-updater
++StateDirectoryMode=0700
++TasksMax=512
++TimeoutStartSec=8h
++Type=oneshot
++UMask=0077
++User=root
++WorkingDirectory=/var/lib/app-updater/repository
+
+### systemd/system/app-update-groceries.timer
+--- old/systemd/system/app-update-groceries.timer
++++ new/systemd/system/app-update-groceries.timer
+@@ -0,0 +1,10 @@
++[Unit]
++
++[Timer]
++OnCalendar=*-*-* 04:15:00 UTC
++Persistent=true
++Unit=app-update-groceries.service
++
++
++[Install]
++WantedBy=timers.target
+
+### systemd/system/app-update-pi.service
+--- old/systemd/system/app-update-pi.service
++++ new/systemd/system/app-update-pi.service
+@@ -5,6 +5,7 @@
+ Wants=network-online.target
+ 
+ [Service]
++Environment="GIT_SSH_COMMAND=ssh -F /dev/null -i /var/lib/app-updater/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/nix/store/nlk3wlr480wdd6d61bk3dj6vnf23g2kc-known_hosts"
+ Environment="HOME=/var/lib/app-updater"
+ Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
+ Environment="LOCAL_KEY=/var/lib/app-updater/signing-key"
+@@ -14,7 +15,7 @@
+ Environment="PATH=/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/bin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/bin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/bin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/bin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/bin:/nix/store/xjl7p8dvyk2j53kqf7f43kdj4ypbxz7g-coreutils-9.11/sbin:/nix/store/i9wgqa0l88aprvpwfaq5hkfa6pklhlv0-findutils-4.11.0/sbin:/nix/store/xmvbzzxm5snla5a2cyfhm7hjy9bifx7n-gnugrep-3.12/sbin:/nix/store/qf2wzyq4irhgyhnq3s2hz0ldjq3w8a3x-gnused-4.10/sbin:/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/sbin"
+ Environment="TZDIR=/nix/store/fh8svr4ds87z84iarfnxrlfpjlbmc816-tzdata-2026c/share/zoneinfo"
+ CPUQuota=400%
+-ExecStart=/nix/store/34rdlh8m1bpblbxhj1phazlcl6pp2rvn-app-update/bin/app-update --config /nix/store/7gsa7jrfwh8j811cibzz2r7v7r8ycyxl-app-updates.json --app pi
++ExecStart=/nix/store/pdabqv5qk2hmlrzd6vh4dgqxj0jphk5l-app-update/bin/app-update --config /nix/store/ac41h4xwcjwm0fxbsrgkn4ydda007nx0-app-updates.json --app pi
+ MemoryMax=8G
+ Nice=10
+ NoNewPrivileges=true
+
+### systemd/system/dbus-broker.service.d/overrides.conf
+--- old/systemd/system/dbus-broker.service.d/overrides.conf
++++ new/systemd/system/dbus-broker.service.d/overrides.conf
+@@ -1,6 +1,6 @@
+ [Unit]
+ RequiresMountsFor=/tmp
+-X-Restart-Triggers=/nix/store/pnl5rjzhg2d25nmnsjy6vf7x3vjciwk2-X-Restart-Triggers-dbus-broker
++X-Restart-Triggers=/nix/store/h3sih82ds9v7dxl9j01mdng3156kxa44-X-Restart-Triggers-dbus-broker
+ 
+ [Service]
+ Environment="LD_LIBRARY_PATH=/nix/store/baxgs06659w4i6ggsfr56srjrb52v1h8-systemd-261.2/lib"
+
+### systemd/system/polkit.service.d/overrides.conf
+--- old/systemd/system/polkit.service.d/overrides.conf
++++ new/systemd/system/polkit.service.d/overrides.conf
+@@ -1,6 +1,6 @@
+ [Unit]
+ X-Reload-Triggers=/nix/store/ipfg278gmfilkaly9ys1vnbwm2c4qv9m-X-Reload-Triggers-polkit
+-X-Restart-Triggers=/nix/store/73mq78dsbl8b8hms3xpp9f371n45p41x-X-Restart-Triggers-polkit
++X-Restart-Triggers=/nix/store/zxj82bplyra4n7jr9yx268jspqwb4nda-X-Restart-Triggers-polkit
+ 
+ [Service]
+ Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
+
+### systemd/system/timers.target.wants/app-update-groceries.timer
+--- old/systemd/system/timers.target.wants/app-update-groceries.timer
++++ new/systemd/system/timers.target.wants/app-update-groceries.timer
+@@ -0,0 +1,10 @@
++[Unit]
++
++[Timer]
++OnCalendar=*-*-* 04:15:00 UTC
++Persistent=true
++Unit=app-update-groceries.service
++
++
++[Install]
++WantedBy=timers.target
+
+### systemd/user/dbus-broker.service.d/overrides.conf
+--- old/systemd/user/dbus-broker.service.d/overrides.conf
++++ new/systemd/user/dbus-broker.service.d/overrides.conf
+@@ -1,5 +1,5 @@
+ [Unit]
+-X-Restart-Triggers=/nix/store/pnl5rjzhg2d25nmnsjy6vf7x3vjciwk2-X-Restart-Triggers-dbus-broker
++X-Restart-Triggers=/nix/store/h3sih82ds9v7dxl9j01mdng3156kxa44-X-Restart-Triggers-dbus-broker
+ 
+ [Service]
+ Environment="LOCALE_ARCHIVE=/nix/store/hvznc01w42na6hiad627833ci4dhjvnc-glibc-locales-2.42-84/lib/locale/locale-archive"
+Checking switch inhibitors... done
+updating GRUB 2 menu...
+activating the configuration...
+sops-install-secrets: Imported /etc/ssh/ssh_host_ed25519_key as age key with fingerprint age1keuga3fh4s42sm9ze4kcwmqe8mkt4tyw9jzgdtur2e24ntszqc5s8c98jz
+setting up /etc...
+sops-install-secrets: Imported /etc/ssh/ssh_host_ed25519_key as age key with fingerprint age1keuga3fh4s42sm9ze4kcwmqe8mkt4tyw9jzgdtur2e24ntszqc5s8c98jz
+reloading user units for root...
+reloading the following user units: dbus-broker.service
+restarting the following user units: nixos-activation.service
+restarting sysinit-reactivation.target
+reloading the following units: dbus-broker.service
+the following new units were started: app-update-groceries.timer, NetworkManager-dispatcher.service
+running

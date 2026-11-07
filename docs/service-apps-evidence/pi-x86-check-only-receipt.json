@@ -1,0 +1,22 @@
+{
+  "app": "pi",
+  "started_at": 1794022269,
+  "system_deployment": false,
+  "hosts": {},
+  "status": "checks-passed",
+  "command_log": "/var/lib/app-updater/receipts/1794022269528644956.log",
+  "source_commit": "96f6fb242558eb1f97e2af8e189e470b9de6a820",
+  "candidate": {
+    "version": "1.5.0",
+    "rev": "a8602962df79d4be488c7a08ce56307370f4b475",
+    "lastModified": 1793980817,
+    "ref": "github:lukasl-dev/pi.nix/a8602962df79d4be488c7a08ce56307370f4b475?narHash=sha256-2r3A8rLDIxG2P0/cOUsswcjULfTzcRAqgzNLHoohxro%3D"
+  },
+  "builds": {
+    "x86_64-linux": "checked"
+  },
+  "activations": {
+    "x86_64-linux": "/nix/store/5s0qxlcfvzd8y2slmcw9n0nxp95y5jnd-activatable-pi"
+  },
+  "finished_at": 1794022310
+}

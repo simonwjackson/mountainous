@@ -1,0 +1,2 @@
+Running: /nix/store/jabc98p2grcv0f5h04v01yq1rgqpm625-nixos-system-rakku-26.11.20260923.4975466
+Candidate: /nix/store/jabc98p2grcv0f5h04v01yq1rgqpm625-nixos-system-rakku-26.11.20260923.4975466

@@ -1,0 +1,1 @@
+Scoped controller stop permitted: /nix/store/a1fg591wz04vxbnv32662kmxqh9ssmim-groceries-service-control/bin/groceries-service-control; unrelated restart denied

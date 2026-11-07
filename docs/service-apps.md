@@ -74,7 +74,11 @@ deploy. Deploy-rs restores the previous profile and runs its activation, which
 restarts the old executables. Data is **not** rolled back. An incompatible data
 schema needs its own backup and restore plan. Every update briefly interrupts
 requests. Keep the previous generation and test rollback before enabling a new
-app's automatic deployment. Each service app uses its own
+app's automatic deployment. On a first install there is no previous accepted
+profile. A failed deploy can leave its candidate link in place. Stop both units
+and quarantine that link (retain its generation links) before restarting an
+old source node. Otherwise a later reboot can start the unaccepted destination.
+Each service app uses its own
 `/var/lib/app-updater/enabled-<name>` gate. Create it only after the signed
 pilot deploy and rollback proof. Pi retains the separate `enabled` gate.
 
@@ -91,21 +95,34 @@ pilot deploy and rollback proof. Pi retains the separate `enabled` gate.
    inspect the closure diff and **file-content** diffs for all of `NEW/etc`,
    including units. A missing running feature is a stop condition: find the
    source branch instead of switching. Recheck the running path at switch.
-4. Stop only the source app and proxy. Do not delete their files. Copy data,
+4. With the destination app profile absent, activate the reviewed system with
+   `scripts/service-apps-host-target switch OLD NEW`. It sets the system
+   profile, switches without rebooting, and checks system health. On Rakku all
+   seven household core units must remain active. Check that the installed
+   controller resolves with `readlink -e`, and test its exact scoped sudo stop
+   before stopping the source. The profile gate prevents premature startup.
+5. Test assistant credentials against the still-running old address. Read each
+   assistant unit's `User=` with `systemctl show`; the unit name is not its
+   account name. `service-apps-assistant-probes` performs these real requests.
+6. Stop only the source app and proxy. Do not delete their files. Copy data,
    config (including mutable refresh tokens) and tsnet state while stopped.
-   Keep the old directories untouched. Verify hashes and set the destination
-   account's ownership. Never run two copies of a tsnet identity.
-5. Activate the reviewed system with `scripts/service-apps-host-target switch
-   OLD NEW`. It sets the system profile, switches without rebooting, and
-   checks system health. On Rakku all seven household core units must remain
-   active. The profile gate prevents the new app from starting too early.
-6. Run the signed app deployment from Unzen. Check old data and the unchanged
+   Keep the old directories untouched. Verify hashes and set ownership and
+   0700 private directories. Take a fresh stopped snapshot after any backout.
+   A loopback-only backend preflight can test copied data and private binds
+   without starting a second tsnet node. Never run two copies of an identity.
+7. Run the signed app deployment from Unzen. Check old data and the unchanged
    tailnet FQDN through HTTPS, including authenticated requests as each Rakku
-   assistant. Only then disable the two source units. Retain source state.
-7. Deploy an intentionally failing candidate and save the deploy exit status,
-   before/after profile targets, and old service health as rollback evidence.
-   If data or node identity cannot be carried, stop the destination and start
-   the source units again. Never start both nodes to diagnose the problem.
+   assistant. Only then disable the two source units. Use
+   `service-apps-disable-source-units` to retain unit-definition symlinks:
+   plain `systemctl disable` removes these as well as target enablement links.
+   External-store definitions report `linked` with exit 1, not `enabled`.
+   Leave both source units inactive, with no `*.target.wants` links.
+8. Deploy an intentionally failing candidate and save its runtime failure,
+   deploy exit status, before/after profile targets, and old HTTPS health as
+   rollback evidence. Wait for HTTPS readiness, not only Type=simple active.
+   If data or node identity cannot be carried, stop the destination, quarantine
+   its unaccepted profile, and start the source units again. Preserve any new
+   destination writes for recovery. Never start both nodes to diagnose it.
 
 ## Groceries source
 
@@ -123,7 +140,9 @@ A future source relocation must retain Git history and update this input.
 Kroger's fixed `/run/agenix` paths. `scripts/service-apps-import-groceries-secrets`
 imports six fixed credentials without printing them and verifies that every
 existing Rakku SOPS value stays unchanged. Mutable credentials/config are
-copied with the service state, not embedded in a Nix derivation.
+copied with the service state, not embedded in a Nix derivation. The server's
+`groceries-assistant-service-token` and clients' existing
+`pi-assistant-groceries-token` must stay equal; rotate both SOPS entries together.
 
 Hiyori is excluded from pi updates while offline and without a verified SSH
 pin. Myoko's OpenSSH deploy port is 2222; port 22 still reaches Tailscale SSH.

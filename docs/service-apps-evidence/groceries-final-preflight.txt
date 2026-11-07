@@ -1,0 +1,1 @@
+app-update: groceries: checks-passed; receipt /var/lib/app-updater/receipts/1794019830696114642.json

@@ -6,8 +6,13 @@ set -euo pipefail
 original=/nix/store/hd7x2gnyprhlq76vp329r87bsbz50z8z-groceries-0.1.0/share/systemd/user
 for unit in groceries.service groceries-proxy.service; do
   target=$HOME/.config/systemd/user/$unit
-  [[ -f $original/$unit && ! -e $target && ! -L $target ]]
-  ln -s "$original/$unit" "$target"
+  [[ -f $original/$unit ]]
+  if [[ -L $target ]]; then
+    [[ $(readlink "$target") == "$original/$unit" ]]
+  else
+    [[ ! -e $target ]]
+    ln -s "$original/$unit" "$target"
+  fi
 done
 systemctl --user daemon-reload
 systemctl --user stop groceries.service groceries-proxy.service

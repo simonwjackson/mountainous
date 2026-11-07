@@ -1,0 +1,41 @@
+# /home/simonwjackson/.config/systemd/user/groceries.service -> /nix/store/hd7x2gnyprhlq76vp329r87bsbz50z8z-groceries-0.1.0/share/systemd/user/groceries.service
+[Unit]
+Description=Groceries household list on zao
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/nix/store/r2haycqdl0xdiz8xnwrzr9hv5iqszw3n-groceries-server-0.1.0/bin/groceries-server --host 127.0.0.1 --port 4382 --data-dir %h/.local/share/groceries
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=default.target
+
+# /home/simonwjackson/.config/systemd/user/groceries-proxy.service -> /nix/store/hd7x2gnyprhlq76vp329r87bsbz50z8z-groceries-0.1.0/share/systemd/user/groceries-proxy.service
+[Unit]
+Description=Groceries dedicated tailnet HTTPS node on zao
+Wants=network-online.target groceries.service
+After=network-online.target groceries.service
+
+[Service]
+ExecStart=/nix/store/vwcr9vb7870k0b58a6s2f16fjk0k5k04-groceries-tsnet-1.0.0/bin/groceries-tsnet --name groceries --expected-fqdn groceries.hummingbird-lake.ts.net --upstream http://127.0.0.1:4382 --state %h/.config/groceries-tsnet
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+
+[Install]
+WantedBy=default.target

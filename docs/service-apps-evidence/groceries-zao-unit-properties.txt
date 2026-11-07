@@ -1,0 +1,9 @@
+FragmentPath=/home/simonwjackson/.config/systemd/user/groceries.service
+DropInPaths=
+Environment=
+WorkingDirectory=!/home/simonwjackson
+
+FragmentPath=/home/simonwjackson/.config/systemd/user/groceries-proxy.service
+DropInPaths=
+Environment=
+WorkingDirectory=!/home/simonwjackson

@@ -1,0 +1,4 @@
+groceries.service -> /nix/store/hd7x2gnyprhlq76vp329r87bsbz50z8z-groceries-0.1.0/share/systemd/user/groceries.service
+groceries.service: enabled=linked active=inactive
+groceries-proxy.service -> /nix/store/hd7x2gnyprhlq76vp329r87bsbz50z8z-groceries-0.1.0/share/systemd/user/groceries-proxy.service
+groceries-proxy.service: enabled=linked active=inactive

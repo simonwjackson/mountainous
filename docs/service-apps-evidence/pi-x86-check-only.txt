@@ -1,0 +1,2 @@
+Check-only x86 hosts: aka, ibuki, myoko, rakku, tate, unzen
+app-update: pi: checks-passed; receipt /var/lib/app-updater/receipts/1794022269528688652.json
