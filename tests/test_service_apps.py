@@ -13,7 +13,7 @@ from urllib.error import HTTPError
 
 SCRIPTS = Path(os.environ.get("SERVICE_APP_SCRIPTS", Path(__file__).parents[1] / "scripts"))
 sys.path.insert(0, str(SCRIPTS))
-from service_apps import Health, all_units_active, declared_units, migration_source_units, package_canary_expression, recovery_units, require_cutover_ready
+from service_apps import Health, all_units_active, declared_units, migration_source_units, state_exclusions, package_canary_expression, recovery_units, require_cutover_ready
 
 
 class ServiceAppSafetyTests(unittest.TestCase):
@@ -62,6 +62,22 @@ class ServiceAppSafetyTests(unittest.TestCase):
             package_canary_expression(ref, "host", "canary", "x86_64-linux", "../outside.nix")
         with self.assertRaises(ValueError):
             package_canary_expression(ref, "host", "canary", "x86_64-linux", "/outside.nix")
+
+    def test_only_explicit_convenience_file_symlinks_can_be_excluded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "data").write_text("household state")
+            (root / "script-link").symlink_to(root / "data")
+            with self.assertRaises(ValueError):
+                state_exclusions(root, [])
+            self.assertEqual(state_exclusions(root, ["script-link"]), {"script-link"})
+            for invalid in (["data"], ["../escape"], ["/absolute"]):
+                with self.assertRaises(ValueError):
+                    state_exclusions(root, invalid)
+            (root / "script-link").unlink()
+            (root / "directory-link").symlink_to(root, target_is_directory=True)
+            with self.assertRaises(ValueError):
+                state_exclusions(root, ["directory-link"])
 
     def test_migration_includes_timers_but_recovers_only_previously_active_units(self):
         primary = ["pace.service", "pace-proxy.service"]

@@ -191,7 +191,12 @@ Run `STORE/bin/service-apps-cutover source --plan PLAN` on the source host.
 It refuses before any outage unless **every source unit is active**, all declared
 destination units are stopped, the destination profile is absent, and the
 persistence bind and old public health contract pass. Source/state path mappings
-must be non-overlapping regular directories without symlinks. Platform-provisioned
+must be non-overlapping regular directories without symlinks. A reviewed state
+mapping may explicitly list `exclude_symlinks: ["legacy-script-link"]` for a
+convenience link to an existing regular file. The source link is retained, never
+followed or copied. Excluding a regular state file or directory link is refused;
+all undeclared symlinks still fail closed. Validation repeats after source stop.
+Do not use this exception for symlink-heavy state. Platform-provisioned
 destination directories may be empty; existing state is never overwritten.
 
 For upstream health endpoints with an empty HTTP 200 body, set the plan's health

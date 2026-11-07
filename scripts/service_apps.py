@@ -63,6 +63,27 @@ def package_canary_expression(ref: str, host: str, app: str, system: str, fixtur
     )
 
 
+def state_exclusions(root: Path, values: list[str]) -> set[str]:
+    """Permit explicitly retained convenience file links, never omit regular state."""
+    if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+        raise ValueError("File-link exclusions must be a list of relative paths")
+    excluded = set()
+    for value in values:
+        path = Path(value)
+        if path.is_absolute() or not path.parts or ".." in path.parts:
+            raise ValueError("File-link exclusions must stay inside the state source")
+        source = root / path
+        if not source.is_symlink() or not source.is_file():
+            raise ValueError("Only existing file symlinks may be excluded; retain all regular state")
+        excluded.add(str(path))
+    for parent, directories, files in os.walk(root):
+        for filename in directories + files:
+            path = Path(parent, filename)
+            if path.is_symlink() and str(path.relative_to(root)) not in excluded:
+                raise ValueError("State sources must not contain undeclared symlinks")
+    return excluded
+
+
 def migration_source_units(primary: list[str], auxiliary: list[str]) -> list[str]:
     """Keep mandatory live servers distinct from possibly inactive jobs/timers."""
     if not isinstance(primary, list) or not primary or not isinstance(auxiliary, list):

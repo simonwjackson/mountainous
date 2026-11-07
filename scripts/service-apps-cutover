@@ -20,7 +20,7 @@ import tarfile
 import tempfile
 import time
 import uuid
-from service_apps import Health, SSH, declared_units, migration_source_units, name, recovery_units, require_cutover_ready, run
+from service_apps import Health, SSH, declared_units, migration_source_units, state_exclusions, name, recovery_units, require_cutover_ready, run
 
 
 def relative(value):
@@ -175,9 +175,7 @@ def source(plan):
         root = Path(item["source"])
         if not root.is_absolute() or not root.is_dir() or root.is_symlink():
             raise ValueError("State sources must be absolute regular directories")
-        for parent, directories, files in os.walk(root):
-            if any(Path(parent, filename).is_symlink() for filename in directories + files):
-                raise ValueError("State sources must not contain symlinks")
+        state_exclusions(root, item.get("exclude_symlinks", []))
     # Validate recovery and deployment contracts before the first outage.
     for field in ("deploy_command", "verify_command"):
         if not isinstance(plan[field], list) or not plan[field] or not all(isinstance(x, str) for x in plan[field]):
@@ -193,7 +191,11 @@ def source(plan):
             archive = Path(directory) / "state.tar"
             with tarfile.open(archive, "w") as output:
                 for item in plan["state_paths"]:
-                    output.add(item["source"], arcname=relative(item["relative"]))
+                    archive_root = relative(item["relative"])
+                    excluded = {archive_root + "/" + value for value in
+                                state_exclusions(Path(item["source"]), item.get("exclude_symlinks", []))}
+                    output.add(item["source"], arcname=archive_root,
+                               filter=lambda member: None if member.name in excluded else member)
             archive.chmod(0o600)
             with archive.open("rb") as data:
                 remote("stage", stdin=data)
