@@ -155,6 +155,10 @@ in
             bash scripts/test-pi-assistant-skills
             touch "$out"
           '';
+      checks.pi-assistant-remote-apps = import ../tests/pi-assistant-remote-apps.nix {
+        flake = self;
+        inherit pkgs;
+      };
       checks.pi-assistant-resources =
         if import ../tests/pi-assistant-resources.nix { flake = self; } then
           pkgs.runCommand "pi-assistant-resources" { } "touch $out"
@@ -254,6 +258,12 @@ in
           inherit (spec) title readOnlyTools;
           url = "http://127.0.0.1:${toString spec.port}/mcp";
         }) (instances.${name}.apps or { })
+        # Remote modules supply their own manifests, like Atlas. They have no
+        # local units or startup port waits; core handles an unreachable module.
+        ++ lib.mapAttrsToList (id: spec: {
+          inherit id;
+          inherit (spec) title url;
+        }) instances.${name}.remoteApps
         # Atlas is a module: its manifest supplies tools, risks, capabilities
         # and the default view, so the entry names only where it is. The
         # Household instance has no person, and modules need one.
@@ -421,6 +431,24 @@ in
 
       # Personal and Household instances use the same reviewed resources.
       resourceOptions = {
+        remoteApps = lib.mkOption {
+          type = lib.types.attrsOf (
+            lib.types.submodule {
+              options = {
+                title = lib.mkOption {
+                  type = lib.types.str;
+                  description = "The module's name in the assistant.";
+                };
+                url = lib.mkOption {
+                  type = lib.types.strMatching "https?://[^[:space:]]+";
+                  description = "The module's HTTP(S) MCP endpoint.";
+                };
+              };
+            }
+          );
+          default = { };
+          description = "Remote modules for this instance, by MCP server id. Only id, title and url are written to mcp-apps.json; the module manifest supplies its tools and risks. No local service is started and no remote port is waited on.";
+        };
         skills = lib.mkOption {
           type = lib.types.attrsOf lib.types.str;
           default = { };

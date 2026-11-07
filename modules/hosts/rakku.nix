@@ -289,6 +289,10 @@ in
               github = true;
               # Training in the Assistant: Logbook on loopback and the Coach skill.
               logbook = true;
+              remoteApps.forgerie = {
+                title = "Forgerie";
+                url = "http://zao.hummingbird-lake.ts.net:3190/mcp";
+              };
               # Logbook's dates are [start,end): today and the six preceding days.
               defaultViews.logbook = {
                 tool = "days_summary";

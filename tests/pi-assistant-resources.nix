@@ -151,6 +151,18 @@ assert
   ];
 assert builtins.elem (builtins.head cfg.mcpServers.laure) cfg.mcpServers.simon;
 assert cfg.mcpServers.household == [ ];
+# Remote modules belong only to the instance that names them. Their manifest
+# supplies tool risks, just like Atlas; no local app service is created.
+assert builtins.elem {
+  id = "forgerie";
+  title = "Forgerie";
+  url = "http://zao.hummingbird-lake.ts.net:3190/mcp";
+} cfg.mcpServers.simon;
+assert cfg.people.laure.remoteApps == { } && cfg.household.remoteApps == { };
+assert (unit "simon").environment.ASSISTANT_PERSON == "simon";
+assert !(config.systemd.services ? assistant-app-simon-forgerie);
+assert !(builtins.elem "assistant-app-simon-forgerie.service" (unit "simon").wants);
+assert !(builtins.elem "assistant-app-simon-forgerie.service" (unit "simon").after);
 assert config.systemd.services.atlas.serviceConfig.User == "pi-atlas";
 assert config.systemd.services.atlas.environment.ATLAS_DB == "/var/lib/atlas/atlas.sqlite";
 assert builtins.any (
