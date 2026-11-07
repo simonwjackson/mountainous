@@ -13,6 +13,17 @@ let
     builtins.toJSON {
       defaultProvider = "cliproxyapi";
       defaultModel = "claude-opus-5-5";
+      defaultThinkingLevel = "medium";
+      compaction = {
+        enabled = true;
+        reserveTokens = 16384;
+        keepRecentTokens = 20000;
+      };
+      retry.provider = {
+        timeoutMs = 900000;
+        maxRetryDelayMs = 60000;
+        maxRetries = 2;
+      };
       packages = [ (toString provider) ];
     }
   );
