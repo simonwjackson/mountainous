@@ -300,6 +300,21 @@
         "type": "github"
       }
     },
+    "crane_2": {
+      "locked": {
+        "lastModified": 1793836618,
+        "narHash": "sha256-TREenflwEjxOSq292FYwbc3kEm7TDRtXCZRNWEdjBmg=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "79fd63528501446749c09f08cad486a58c7d173e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
     "deploy-rs": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -2069,14 +2084,15 @@
     },
     "torrents": {
       "inputs": {
+        "crane": "crane_2",
         "nixpkgs": "nixpkgs_17"
       },
       "locked": {
-        "lastModified": 1794094086,
-        "narHash": "sha256-iYU3mCQTC3tyqs6BuGWxub1q4lS/kmta3MtJpo381N4=",
+        "lastModified": 1794098080,
+        "narHash": "sha256-Jvpamqic2k9b6X/7/X6D1jeO6O6UKNlHVDGbmQmwC3w=",
         "ref": "main",
-        "rev": "8aa1f98c16c50bb703a22acd3946c333a70256e4",
-        "revCount": 1,
+        "rev": "8760f6c3c3eb3bc4d987bbe5421ffd74990828d9",
+        "revCount": 7,
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/torrents"
       },
