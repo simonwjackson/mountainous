@@ -1,7 +1,7 @@
 # The Korri product on a mountainous host.
 #
-# Korri owns the whole product composition: korrid, the portal and its
-# browser, the compositor, input, the plugin host, and the `korri` account.
+# Korri owns the whole product composition: korrid, the native shell, the
+# compositor, input, the plugin host, and the `korri` account.
 # A host adds only its hardware facts under services.korriLinuxHost.
 # This layer departs from Korri's device policy in two places only, both so
 # mountainous can keep managing the machine: root's password and SSH.
