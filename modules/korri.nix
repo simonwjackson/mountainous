@@ -1,24 +1,26 @@
-# The Korri product on a mountainous host.
+# The Korri product on a mountainous host, as two layers: `korri` (the whole
+# product) and `korri-server` (its server part alone, with no UI).
 #
-# Korri owns the whole product composition: korrid, the native shell, the
-# compositor, input, the plugin host, and the `korri` account.
+# Korri owns the composition: korrid, the compositor, the plugin host, the
+# `korri` account and, in `korri`, the native shell and local input.
 # A host adds only its hardware facts under services.korriLinuxHost.
-# This layer departs from Korri's device policy in two places only, both so
+# Both layers depart from Korri's device policy in two places only, both so
 # mountainous can keep managing the machine: root's password and SSH.
 #
-# A host that takes this layer must also set
+# A host that takes either layer must also set
 #   nixpkgs = inputs.korri.inputs.nixpkgs;
 # Korri patches Sway for one exact upstream version, so its modules do not
 # evaluate on our nixpkgs.
 { inputs, ... }:
-{
-  nixos.modules.korri =
+let
+  korriHost =
+    product:
     { config, lib, pkgs, ... }:
     let
       runtimeUid = toString config.services.korriProduct.runtimeAccount.uid;
     in
     {
-      imports = [ inputs.korri.nixosModules.korri-product ];
+      imports = [ product ];
 
       # The published @korri:sunshine runtime.sh hard-codes /run/user/1000,
       # Korri's default runtime UID. Here simon holds 1000 and the korri
@@ -59,4 +61,11 @@
       services.korri.pluginHost.officialCatalogUrl =
         (import "${inputs.korri}/nix/product/published-plugins.nix").catalogUrl;
     };
+in
+{
+  # The whole product, for a device people use at its own screen.
+  nixos.modules.korri = korriHost inputs.korri.nixosModules.korri-product;
+  # Korri's server part alone (korri ADR 0051): korrid, plugins, games and
+  # their stream, and no UI. For a host that only serves other devices.
+  nixos.modules.korri-server = korriHost inputs.korri.nixosModules.korri-server;
 }

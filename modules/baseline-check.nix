@@ -27,7 +27,7 @@ in
             c.users.users.simon.uid == (if name == "rakku" then 1001 else 1000)
           ) "simon has the wrong uid"
           ++ want (
-            has "korri" || !c.services.openssh.openFirewall
+            has "korri" || has "korri-server" || !c.services.openssh.openFirewall
           ) "SSH is open outside Tailscale (only Korri devices may)"
           ++ want (builtins.elem 22 c.networking.firewall.interfaces.tailscale0.allowedTCPPorts) "SSH is closed on Tailscale"
           ++ want (

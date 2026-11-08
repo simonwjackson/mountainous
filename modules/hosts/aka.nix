@@ -31,7 +31,8 @@ in
     nixpkgs = inputs.korri.inputs.nixpkgs;
     layers = [
       "server"
-      "korri"
+      # Only Korri's server part: other devices bring the UI (korri ADR 0051).
+      "korri-server"
     ];
 
     module =
@@ -134,12 +135,6 @@ in
           publicKey = "simonwjackson-plugins-1:4SchQgTMNU3syZ2ZzN/cJXPMigc/PIt+EaqHAStgJs8=";
           cacheUrl = "file:///var/lib/korri-private-cache/cache";
         };
-
-        # No one looks at a panel here: the HDMI dummy plug exists only for
-        # Sunshine's KMS capture. Korri's idle service powers outputs off after
-        # five minutes, and a powered-off output leaves Sunshine with no display
-        # to capture or encode, so it fails at startup.
-        systemd.services.korri-display-idle.enable = lib.mkForce false;
 
         # amd-pstate-epp offers only performance and powersave. powersave is
         # its load-following mode, the role schedutil has on other devices.
