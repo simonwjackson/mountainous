@@ -126,6 +126,15 @@ in
           ];
         };
 
+        # The owner's personal plugin publisher, as on the Odin and the Mini V2
+        # (korri nix/devices/odin2portal/owner-publisher.nix): packages arrive
+        # signed by this key into a root-only file cache on aka; nothing is
+        # published. First case: @simonwjackson:savagewind.
+        services.korri.pluginHost.publishers."@simonwjackson" = {
+          publicKey = "simonwjackson-plugins-1:4SchQgTMNU3syZ2ZzN/cJXPMigc/PIt+EaqHAStgJs8=";
+          cacheUrl = "file:///var/lib/korri-private-cache/cache";
+        };
+
         # amd-pstate-epp offers only performance and powersave. powersave is
         # its load-following mode, the role schedutil has on other devices.
         # korri-limits refuses to start on a governor the CPU lacks.
