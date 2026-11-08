@@ -126,6 +126,11 @@ in
           ];
         };
 
+        # amd-pstate-epp offers only performance and powersave. powersave is
+        # its load-following mode, the role schedutil has on other devices.
+        # korri-limits refuses to start on a governor the CPU lacks.
+        services.korri.clockGovernor.cpuGovernor = "powersave";
+
         # simon holds UID 1000, Korri's default for its runtime account
         # (see ibuki.nix). 56774 matches ibuki.
         services.korriProduct.runtimeAccount.uid = 56774;
