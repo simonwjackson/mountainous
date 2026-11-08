@@ -293,11 +293,11 @@ in
                 title = "Forgerie";
                 url = "http://zao.hummingbird-lake.ts.net:3190/mcp";
               };
-              # Logbook's dates are [start,end): today and the six preceding days.
+              # Logbook's dates are [start,end): today only. A week of summed calories is useless.
               defaultViews.logbook = {
                 tool = "days_summary";
                 input = {
-                  start = "$today-6d";
+                  start = "$today";
                   end = "$today+1d";
                 };
               };
