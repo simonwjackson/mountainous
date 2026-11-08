@@ -135,6 +135,12 @@ in
           cacheUrl = "file:///var/lib/korri-private-cache/cache";
         };
 
+        # No one looks at a panel here: the HDMI dummy plug exists only for
+        # Sunshine's KMS capture. Korri's idle service powers outputs off after
+        # five minutes, and a powered-off output leaves Sunshine with no display
+        # to capture or encode, so it fails at startup.
+        systemd.services.korri-display-idle.enable = lib.mkForce false;
+
         # amd-pstate-epp offers only performance and powersave. powersave is
         # its load-following mode, the role schedutil has on other devices.
         # korri-limits refuses to start on a governor the CPU lacks.
