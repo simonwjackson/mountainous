@@ -46,8 +46,16 @@
         localInput.enable = true;
         drmDevice = "/dev/dri/by-path/pci-0000:00:02.0-card";
         renderDevice = "/dev/dri/by-path/pci-0000:00:02.0-render";
-        outputName = "DP-1";
-        mode = "3840x2160@60Hz";
+        mainDisplay = "DP-1";
+        displays = [
+          {
+            name = "DP-1";
+            mode = "3840x2160@60Hz";
+            x = 0;
+            y = 0;
+            touch = null;
+          }
+        ];
       };
 
       # simon already holds UID 1000, Korri's default for its runtime

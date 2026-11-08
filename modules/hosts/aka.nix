@@ -114,8 +114,16 @@ in
           backend = "drm";
           drmDevice = "/dev/dri/by-path/pci-0000:03:00.0-card";
           renderDevice = "/dev/dri/by-path/pci-0000:03:00.0-render";
-          outputName = "HDMI-A-1";
-          mode = "1920x1080@60Hz";
+          mainDisplay = "HDMI-A-1";
+          displays = [
+            {
+              name = "HDMI-A-1";
+              mode = "1920x1080@60Hz";
+              x = 0;
+              y = 0;
+              touch = null;
+            }
+          ];
         };
 
         # simon holds UID 1000, Korri's default for its runtime account
