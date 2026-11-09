@@ -162,16 +162,9 @@ in
         # Its forwarding stays off (builders = "", distributedBuilds = false).
         nix.settings.max-jobs = lib.mkOverride 49 "auto";
 
-        # Gaming belongs to Korri. Steam is the one exception: Korri has no
-        # Steam provider for x86_64.
-        programs.steam.enable = true;
-        nixpkgs.config.allowUnfreePredicate =
-          pkg:
-          builtins.elem (lib.getName pkg) [
-            "steam"
-            "steam-unwrapped"
-            "steam-run"
-          ];
+        # Gaming belongs to Korri, Steam included: @korri:steam runs on x86_64
+        # since korri-os/plugins 207796f, with the library in the person's
+        # Korri Steam home.
 
         # Nobody works at this machine, so it carries no coding agent and
         # needs no AI gateway key.
