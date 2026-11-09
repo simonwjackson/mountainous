@@ -123,6 +123,9 @@ in
               x = 0;
               y = 0;
               touch = null;
+              # Nobody watches the dummy plug; it exists for Sunshine's
+              # capture, so Korri must never idle it off.
+              unwatched = true;
             }
           ];
         };

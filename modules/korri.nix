@@ -53,13 +53,6 @@ let
       # so the port opens too.
       services.openssh.enable = lib.mkForce true;
       services.openssh.openFirewall = lib.mkForce true;
-
-      # Korri images set the official plugin catalog in their image module,
-      # which a mountainous host does not import. Use the same pinned catalog
-      # (korri nix/product/published-plugins.nix) so korri-plugin can install
-      # @korri plugins such as Gamescope and Sunshine.
-      services.korri.pluginHost.officialCatalogUrl =
-        (import "${inputs.korri}/nix/product/published-plugins.nix").catalogUrl;
     };
 in
 {
