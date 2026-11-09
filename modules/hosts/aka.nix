@@ -77,8 +77,11 @@ in
         # The second NVMe carries a spare ESP. Copy /boot to it after each
         # install, as a backup of the boot files only. Root is RAID0 across
         # both drives, so losing either drive still loses the system.
+        # Every command has a store path: nixos-rebuild runs the switch in a
+        # systemd-run unit whose PATH has no coreutils, and a bare mkdir
+        # failed the bootloader install there on 2026-11-09.
         boot.loader.systemd-boot.extraInstallCommands = ''
-          mkdir -p /boot/efi-backup
+          ${pkgs.coreutils}/bin/mkdir -p /boot/efi-backup
           if ! ${pkgs.util-linux}/bin/mountpoint -q /boot/efi-backup; then
             ${pkgs.util-linux}/bin/mount /dev/disk/by-partlabel/disk-nvme1-ESP /boot/efi-backup || true
           fi
