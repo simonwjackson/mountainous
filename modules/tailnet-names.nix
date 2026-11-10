@@ -118,9 +118,9 @@
                 description = "Enrollment tags for this service identity.";
               };
               mcpTools = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-                description = "When nonempty, serve only these stateless MCP tools, with tailnet peer verification. All other MCP methods except initialize and tools/list are denied.";
+                type = lib.types.nullOr (lib.types.nonEmptyListOf (lib.types.strMatching "[a-zA-Z0-9_-]+"));
+                default = null;
+                description = "When set, serve only these stateless MCP tools, with tailnet peer verification. Empty allowlists are invalid, not an unrestricted proxy. All other MCP methods except initialize and tools/list are denied.";
               };
             };
           }
@@ -169,7 +169,7 @@
                 + " -oauth-id-file %d/oauth-id -oauth-secret-file %d/oauth-secret"
                 + " -tags ${lib.escapeShellArg (lib.concatStringsSep "," cfg.tags)}"
                 + lib.optionalString (
-                  cfg.mcpTools != [ ]
+                  cfg.mcpTools != null
                 ) " -mcp-tools ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpTools)}";
               Restart = "always";
               RestartSec = "30s";

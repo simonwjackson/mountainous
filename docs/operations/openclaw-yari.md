@@ -85,6 +85,9 @@ This filter does not support general stateful or streaming MCP servers.
 OpenClaw's `transport = "streamable-http"` / `toolFilter.include` configuration.
 To add a tool, review its real implementation for reads and data exposure first,
 then edit that policy and update `checks.claw-tools` and its HTTP boundary tests.
+A restricted endpoint must have a nonempty allowlist; an empty list is a type
+error. To retire one endpoint, remove its complete policy entry and update the
+focused check, rather than clearing its tools.
 Do not add a write or mail tool to the calendar endpoint. A future view needs an
 explicit exact-URI resource policy and tests; do not allow all `ui://` resources.
 Run the focused check, evaluate Rakku and Yari, build Rakku on Unzen, deploy
@@ -93,7 +96,8 @@ reach it before deploying Yari. OpenClaw's allowlist is defense in depth, not
 the authorization boundary.
 
 To remove these tools, remove Rakku's `claw-tools` layer and the imported remote
-servers in `lib/openclaw-container.nix`, then deploy Yari and Rakku. This stops
+servers in `lib/openclaw-container.nix`, retire `modules/claw-tools.nix` (including
+its check) and the unused policy, then deploy Yari and Rakku. This stops
 the endpoints without changing Simon's assistant or deleting its Google auth.
 Retain proxy identity state for rollback. Removing saved identities or tailnet
 registrations is separate from stopping the services. Once no endpoint remains,
@@ -224,3 +228,41 @@ irreversible data-deletion decision, not part of a routine rollback.
   gateway status; do not weaken gateway auth to silence it. Browser device pairing,
   authenticated chat and normal audit were verified separately. Screenshots: `/tmp/claw/control-chat.png` and
   `/tmp/claw/mcp-app.png` on Zao; probes and health logs are beside them.
+
+## Calendar/maps deployment evidence (2026-11-10)
+
+- Implementation: `1567c5b6` on `cairn`. Rakku generation **128**
+  (`sjs93jn50sv77ly3yccp6afyc3isgn3h`), built on Unzen; Yari generation **12**
+  (`l6pq2sr4qxkb343d1l9a12zsr4xgfr30`), built on Yari. No host reboot.
+- `checks.x86_64-linux.claw-tools`: both HTTP boundary tests passed. Denied
+  mail/write/unknown tool calls never reached the upstream; listings were
+  filtered, batch/resource requests were denied, and an unverified peer with
+  spoofed forwarding headers received HTTP 403. The packaged proxy's full
+  nine tests passed, including enrollment and saved-identity checks. Focused
+  `openclaw` and `tailnet-names` checks passed. ARM `openclaw-config` was
+  rechecked on Yari; deployed config also passed real CLI validation.
+- Home Assistant, Z-Wave, ai-gateway, all three pi-assistant units, and both
+  personal apps remained active with **unchanged start times**. Simon's own
+  loopback Google endpoint still listed all 11 original tools. Only tsnet
+  proxy processes restarted during Rakku's switch.
+- Yari's deployed config contains both remote servers and matching include
+  lists. The gateway is active. Security audit: **0 critical, 1 expected MCP
+  Apps warning, 1 information**. Rakku `100.88.212.117:22` still timed out from
+  the OpenClaw user after deployment.
+- **Blocked at enrollment:** the fleet OAuth token succeeds (HTTP 200), but
+  creating a key with only `tag:claw-tools` returns HTTP 400:
+  `requested tags [tag:claw-tools] are invalid or not permitted`. The console
+  policy had not been saved. Neither node is registered, so endpoint listings,
+  live denials and real calendar/maps answers are not yet verified. No ACL was
+  relaxed and no broader tag was substituted.
+- Both units already retry automatically every 30 seconds. Once Simon saves
+  the tag owner and destination rules, registration needs no code change.
+  Immediate retry if needed: `sudo systemctl restart tsnet-proxy-claw-calendar
+  tsnet-proxy-claw-maps` on Rakku. Then verify each node has only
+  `tag:claw-tools`, run the container endpoint probes, and ask OpenClaw for
+  calendar busy blocks and a real route. Test coordinates from Wikipedia's
+  coordinate API: Denver Union Station `(39.75305556, -105)` to Colorado State
+  Capitol `(39.7392321, -104.9848677)`; these are not invented locations.
+- Local evidence and copied probe scripts: `/tmp/claw-tools-evidence/`,
+  `/tmp/claw-tools-probe` and `/tmp/claw-yari-health` on Zao (scripts also on
+  Yari). Do not record calendar event titles, mail, or credential values here.
