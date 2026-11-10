@@ -742,11 +742,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1794264735,
-        "narHash": "sha256-JBckn3BXkJCpnFDkyTTUmtw1fvJJZKA6IW1qCJ/7zNk=",
+        "lastModified": 1794271605,
+        "narHash": "sha256-dq6sOvEtESJYQ6y6WVZU/mG2WhJpfhTXOW42nJ74OzQ=",
         "owner": "korri-os",
         "repo": "korri",
-        "rev": "36f645eac2c03bad36612c1eb1f9e2e48204efe7",
+        "rev": "3a64f8a24540d3ec73b9fb7e1c970dfd79675aff",
         "type": "github"
       },
       "original": {
