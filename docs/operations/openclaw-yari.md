@@ -19,7 +19,11 @@ and TUN device. Yari itself keeps Oracle egress for builds and Forgerie.
 An inet nftables OUTPUT policy permits only loopback, tailscale0, and the
 separate trusted tailscaled UID. All other IPv4 and IPv6 output is dropped.
 There is no established-connection bypass. DNS uses Tailscale's resolver, not
-Yari's resolver. Losing the exit node or stopping tailscaled cannot expose an
+Yari's resolver. A loopback-only dnsmasq sends tailnet-name queries to Quad100
+and public queries to public resolvers **through the exit node**. Only the
+trusted overlay UID gets service-private bootstrap DNS and direct egress.
+The OpenClaw service cannot access the host Nix daemon socket, overlay socket,
+or source credential mounts; LoadCredential supplies only its own two secrets. Losing the exit node or stopping tailscaled cannot expose an
 Oracle fallback route to the OpenClaw user. The overlay daemon alone needs
 direct internet access to bootstrap the encrypted overlay.
 
@@ -65,8 +69,10 @@ container and are root-only. The registration OAuth secret is not readable by
 OpenClaw. Control UI uses OpenClaw token auth, plus device pairing; Serve does
 not bypass auth. Retrieve the token privately as root from
 `/run/secrets/openclaw-gateway-token` on Yari, then paste it into the UI's token
-field. Approve the browser's pending pairing with `openclaw devices` inside the
-container, under the service user's environment. Do not put tokens in URLs.
+field. Approve the browser's pending pairing with
+`nixos-container run openclaw -- openclaw-admin devices approve REQUEST_ID`.
+`openclaw-admin` is a root-only credential-loading wrapper that runs the real
+CLI as the service user. It also supports `devices list` and `security audit`. Do not put tokens in URLs.
 
 ## Build and deploy
 

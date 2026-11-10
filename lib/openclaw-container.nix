@@ -13,10 +13,27 @@ let
   };
   bootstrapDns = pkgs.writeText "claw-overlay-resolv.conf" "nameserver 1.1.1.1\nnameserver 8.8.8.8\n";
   exitNode = "100.120.204.5"; # Unzen's stable tailnet address, not a LAN route.
+  admin = pkgs.writeShellApplication {
+    name = "openclaw-admin";
+    runtimeInputs = [
+      pkgs.util-linux
+      package
+    ];
+    text = ''
+      FRONT_DOOR_API_KEY="$(cat /run/host-credentials/front-door)"
+      OPENCLAW_GATEWAY_TOKEN="$(cat /run/host-credentials/gateway-token)"
+      export FRONT_DOOR_API_KEY OPENCLAW_GATEWAY_TOKEN
+      export OPENCLAW_STATE_DIR=/var/lib/openclaw
+      export OPENCLAW_CONFIG_PATH=/etc/openclaw/openclaw.json
+      exec runuser -u openclaw -- openclaw "$@"
+    '';
+  };
   origin = "https://claw.hummingbird-lake.ts.net";
   launch = pkgs.writeShellScript "openclaw-start" ''
-    export FRONT_DOOR_API_KEY="$(cat "$CREDENTIALS_DIRECTORY/front-door")"
-    export OPENCLAW_GATEWAY_TOKEN="$(cat "$CREDENTIALS_DIRECTORY/gateway-token")"
+    set -euo pipefail
+    FRONT_DOOR_API_KEY="$(cat "$CREDENTIALS_DIRECTORY/front-door")"
+    OPENCLAW_GATEWAY_TOKEN="$(cat "$CREDENTIALS_DIRECTORY/gateway-token")"
+    export FRONT_DOOR_API_KEY OPENCLAW_GATEWAY_TOKEN
     exec ${package}/bin/openclaw gateway --port 18789
   '';
 in
@@ -26,7 +43,7 @@ in
   networking = {
     hostName = "claw";
     useHostResolvConf = false;
-    nameservers = [ "100.100.100.100" ];
+    nameservers = [ "127.0.0.1" ];
     firewall = {
       enable = true;
       trustedInterfaces = [ "tailscale0" ];
@@ -51,6 +68,23 @@ in
   };
   services = {
     resolved.enable = false;
+    # Quad100 resolves tailnet names but has no public forwarder when DNS
+    # management is disabled. This split resolver's public queries are still
+    # confined to tailscale0 by the same OUTPUT policy as the app.
+    dnsmasq = {
+      enable = true;
+      resolveLocalQueries = false;
+      settings = {
+        listen-address = "127.0.0.1";
+        bind-interfaces = true;
+        no-resolv = true;
+        server = [
+          "/hummingbird-lake.ts.net/100.100.100.100"
+          "1.1.1.1"
+          "8.8.8.8"
+        ];
+      };
+    };
     tailscale = {
       enable = true;
       useRoutingFeatures = "client";
@@ -226,6 +260,13 @@ in
           "front-door:/run/host-credentials/front-door"
           "gateway-token:/run/host-credentials/gateway-token"
         ];
+        # Nspawn shares the host's Nix daemon socket by default. Read-only
+        # mounting a Unix socket does not stop clients connecting to it.
+        InaccessiblePaths = [
+          "/nix/var/nix/daemon-socket"
+          "/run/host-credentials"
+          "/run/tailscale"
+        ];
         ProtectSystem = "strict";
         ProtectHome = true;
         NoNewPrivileges = true;
@@ -250,6 +291,7 @@ in
     };
   };
   environment.systemPackages = [
+    admin
     package
     pkgs.curl
     pkgs.jq

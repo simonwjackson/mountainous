@@ -76,6 +76,8 @@
     {
       checks = {
         openclaw =
+          assert c.networking.nameservers == [ "127.0.0.1" ];
+          assert c.services.dnsmasq.settings.listen-address == [ "127.0.0.1" ];
           assert container.privateNetwork && container.enableTun && container.autoStart;
           assert gateway.config.gateway.bind == "loopback";
           assert gateway.config.gateway.auth.mode == "token" && !gateway.config.gateway.auth.allowTailscale;
