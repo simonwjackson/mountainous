@@ -290,6 +290,13 @@ in
       };
     };
   };
+  # The service's strict mount namespace keeps this declarative file read-only.
+  # A private /etc copy also satisfies OpenClaw's config-permission audit.
+  environment.etc."openclaw/openclaw.json" = {
+    mode = lib.mkForce "0600";
+    user = "openclaw";
+    group = "openclaw";
+  };
   environment.systemPackages = [
     admin
     package

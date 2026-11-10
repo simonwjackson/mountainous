@@ -89,6 +89,8 @@
           assert lib.hasInfix "--advertise-tags=tag:claw" c.systemd.services.claw-tailnet.script;
           assert c.systemd.services.claw-tailnet.serviceConfig.User == "tailscale";
           assert !gateway.config.plugins.enabled;
+          assert c.environment.etc."openclaw/openclaw.json".mode == "0600";
+          assert lib.elem "/nix/var/nix/daemon-socket" unit.InaccessiblePaths;
           assert lib.hasInfix "--exit-node=100.120.204.5" c.systemd.services.claw-tailnet.script;
           assert lib.hasInfix "--exit-node-allow-lan-access=false" c.systemd.services.claw-tailnet.script;
           assert
