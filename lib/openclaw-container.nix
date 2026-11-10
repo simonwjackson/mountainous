@@ -142,10 +142,17 @@ in
           };
         };
         mcp = {
-          servers.basic-react = {
-            command = "${demo}/bin/mcp-server-basic-react";
-            args = [ "--stdio" ];
-          };
+          servers = {
+            basic-react = {
+              command = "${demo}/bin/mcp-server-basic-react";
+              args = [ "--stdio" ];
+            };
+          }
+          // lib.mapAttrs (name: endpoint: {
+            transport = "streamable-http";
+            url = "https://${name}.hummingbird-lake.ts.net/mcp";
+            toolFilter.include = endpoint.tools;
+          }) (import ./claw-tools.nix);
           apps = {
             enabled = true;
             sandboxPort = 18790;

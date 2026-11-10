@@ -112,6 +112,16 @@
                 default = [ ];
               };
               description = lib.mkOption { type = lib.types.str; };
+              tags = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = tailscale.tags;
+                description = "Enrollment tags for this service identity.";
+              };
+              mcpTools = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
+                description = "When nonempty, serve only these stateless MCP tools, with tailnet peer verification. All other MCP methods except initialize and tools/list are denied.";
+              };
             };
           }
         );
@@ -157,7 +167,10 @@
                 "${proxy}/bin/tsnet-proxy -hostname ${name} -state ${state name}"
                 + " -backend ${cfg.backend} -port 443"
                 + " -oauth-id-file %d/oauth-id -oauth-secret-file %d/oauth-secret"
-                + " -tags ${lib.concatStringsSep "," tailscale.tags}";
+                + " -tags ${lib.escapeShellArg (lib.concatStringsSep "," cfg.tags)}"
+                + lib.optionalString (
+                  cfg.mcpTools != [ ]
+                ) " -mcp-tools ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpTools)}";
               Restart = "always";
               RestartSec = "30s";
               NoNewPrivileges = true;

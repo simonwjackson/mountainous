@@ -30,7 +30,9 @@ direct internet access to bootstrap the encrypted overlay.
 The tailnet policy must auto-approve exit nodes for `tag:mountainous` and let
 that tag mint `tag:claw`. Claw must **not** receive `tag:mountainous`. Its ACL
 permits only `autogroup:internet:*` and `100.108.77.86:443` (ai-front-door).
-Members can reach Claw's 443 and 8443. This policy lives in Tailscale's admin
+It also permits `tag:claw-tools:443`. The fleet OAuth client, owned by
+`tag:mountainous`, may mint `tag:claw-tools`; its tagOwners are
+`autogroup:admin` and `tag:mountainous`. Members can reach Claw's 443 and 8443. This policy lives in Tailscale's admin
 console, outside this repository. Never relax it to make registration work.
 
 OpenClaw 2026.11.3 uses nix-openclaw's locked npm package, patches and Nix-mode
@@ -38,14 +40,65 @@ wrapper. nix-openclaw has no aarch64-linux flake package, so
 `lib/openclaw-package.nix` supplies the pinned Node 24.22.1 ARM runtime.
 All external release files are flake inputs. The official MCP React clock demo
 2.0.4 is a pinned, self-contained release, tested offline over stdio. No runtime
-npm installation is needed. No marketplace skills, messaging channels, Google
-app, browser automation, or elevated tools are configured.
+npm installation is needed. No marketplace skills, messaging channels, browser automation, or elevated
+tools are configured. Calendar and maps use the restricted remote endpoints below.
 
 Security review on 2026-11-10 read all 722 published OpenClaw advisories using
 GitHub's cursor pagination. The highest published fixed version was 2026.9.3.
 The old GHSA-7xr2-q9vf-x4r5 lists no patched version and a vulnerable range
 `<= 2026.2.22`; a release version alone does not prove that old report resolved.
 Keep treating the service as hostile and keep its boundaries in place.
+
+## Read-only calendar and maps
+
+Rakku retains Simon's existing loopback-only apps and their credentials. Its
+usual assistant still uses the complete Google MCP API on port 3171 and maps
+on 3172. OpenClaw cannot reach those ports or the assistant endpoint.
+
+| Endpoint (HTTPS 443, `/mcp`) | Upstream | Only exposed tool |
+| --- | --- | --- |
+| `claw-calendar.hummingbird-lake.ts.net` | `127.0.0.1:3171` | `calendar_busy` |
+| `claw-maps.hummingbird-lake.ts.net` | `127.0.0.1:3172` | `travel_time` |
+
+Each identity has only `tag:claw-tools`, enrolls with the existing fleet OAuth
+client, and retains its state in `/var/lib/tsnet-proxy-claw-{calendar,maps}`
+under Rakku's persistence volume. The `tsnet-proxy-*` units use tsnet's tailnet
+TLS listener, not a LAN or public listener. There is no Funnel. Before serving
+an MCP request, local-client WhoIs must identify the actual remote peer;
+forwarding headers do not establish identity. Tailnet ACLs still decide which
+peers can connect. A non-tailnet peer is refused.
+
+`packages/media-tsnet-proxy/mcp-filter.go` enforces the boundary independently
+of OpenClaw. Only POST `/mcp` is accepted. `initialize` advertises only tools;
+`notifications/initialized` is acknowledged locally. `tools/list` returns only
+allowed descriptors and no pagination cursor. `tools/call` requires an exact
+allowed name. Other methods, unknown tools, mail tools, writes, batch requests,
+and requests without an ID receive JSON-RPC errors before contacting the app.
+The filter canonicalizes requests, strips caller headers and metadata, fixes
+the upstream Host header to the app's accepted loopback host, disables redirects,
+and limits request/response bodies to 4 MiB and upstream requests to 60 seconds.
+Stateless upstream JSON and SSE replies are converted to JSON. These two apps
+currently register no views, so **all resources/read and ui:// reads are denied**.
+This filter does not support general stateful or streaming MCP servers.
+
+`lib/claw-tools.nix` is the single tool policy used by both endpoints and
+OpenClaw's `transport = "streamable-http"` / `toolFilter.include` configuration.
+To add a tool, review its real implementation for reads and data exposure first,
+then edit that policy and update `checks.claw-tools` and its HTTP boundary tests.
+Do not add a write or mail tool to the calendar endpoint. A future view needs an
+explicit exact-URI resource policy and tests; do not allow all `ui://` resources.
+Run the focused check, evaluate Rakku and Yari, build Rakku on Unzen, deploy
+Rakku first, and prove registration uses only `tag:claw-tools` and Claw can
+reach it before deploying Yari. OpenClaw's allowlist is defense in depth, not
+the authorization boundary.
+
+To remove these tools, remove Rakku's `claw-tools` layer and the imported remote
+servers in `lib/openclaw-container.nix`, then deploy Yari and Rakku. This stops
+the endpoints without changing Simon's assistant or deleting its Google auth.
+Retain proxy identity state for rollback. Removing saved identities or tailnet
+registrations is separate from stopping the services. Once no endpoint remains,
+Simon can remove `tag:claw-tools` from the console ACL. Roll back a failed host
+switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
 
 ## Credentials
 
@@ -80,6 +133,7 @@ Use a clean checkout of `cairn`, and `ssh -F /dev/null` for every host. Never ru
 `nix flake check`. Run the focused checks sequentially:
 
 ```sh
+nix build .#checks.x86_64-linux.claw-tools --no-link --max-jobs 1 --cores 1
 nix build .#checks.x86_64-linux.openclaw --no-link --max-jobs 1 --cores 1
 nix build .#checks.x86_64-linux.home-exit-node --no-link --max-jobs 1 --cores 1
 nix build .#checks.x86_64-linux.ai-gateway --no-link --max-jobs 1 --cores 1

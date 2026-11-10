@@ -14,6 +14,7 @@ in
       "cliproxyapi"
       "logbook"
       "tailnet-names"
+      "claw-tools"
       "decision-gateway"
       "ai-gateway-staging"
       "ai-gateway"

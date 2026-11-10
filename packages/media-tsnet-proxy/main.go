@@ -198,6 +198,7 @@ func main() {
 	oauthID := flag.String("oauth-id-file", "", "OAuth client ID file")
 	oauthSecret := flag.String("oauth-secret-file", "", "OAuth secret file")
 	tags := flag.String("tags", "tag:mountainous", "Comma-separated enrollment tags")
+	mcpTools := flag.String("mcp-tools", "", "Enable restricted stateless MCP endpoint with these comma-separated tool names")
 	flag.Parse()
 	backendURL, err := url.Parse(*backend)
 	if err != nil || backendURL.Host == "" || backendURL.User != nil ||
@@ -244,7 +245,21 @@ func main() {
 	if err != nil {
 		log.Fatal("service listener failed; identity state retained")
 	}
-	server := &http.Server{Handler: proxyHandler(backendURL), ReadHeaderTimeout: 15 * time.Second}
+	var handler http.Handler = proxyHandler(backendURL)
+	if *mcpTools != "" {
+		if backendURL.Scheme != "http" || backendURL.Hostname() != "127.0.0.1" {
+			log.Fatal("MCP upstream must use IPv4 loopback HTTP")
+		}
+		local, err := srv.LocalClient()
+		if err != nil {
+			log.Fatal("tailnet identity client unavailable")
+		}
+		handler = mcpHandler(backendURL, strings.Split(*mcpTools, ","), func(r *http.Request) bool {
+			peer, err := local.WhoIs(r.Context(), r.RemoteAddr)
+			return err == nil && peer != nil && peer.Node != nil
+		})
+	}
+	server := &http.Server{Handler: handler, ReadHeaderTimeout: 15 * time.Second}
 	go func() {
 		<-ctx.Done()
 		shutdownContext, cancel := context.WithTimeout(context.Background(), 15*time.Second)
