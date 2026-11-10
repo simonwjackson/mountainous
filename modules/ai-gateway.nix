@@ -134,8 +134,16 @@ in
                   name = "openclaw@yari";
                   secret = "ai-gateway-key-openclaw-yari";
                   credential = "openclaw-yari";
-                  dialects = [ "chat_completions" "responses" "models" ];
-                  models = [ "claude-opus-5-5" "gpt-6.1-sol" "gemini-3.8-flash-high" ];
+                  dialects = [
+                    "chat_completions"
+                    "responses"
+                    "models"
+                  ];
+                  models = [
+                    "claude-opus-5-5"
+                    "gpt-6.1-sol"
+                    "gemini-3.8-flash-high"
+                  ];
                   monthly_cap_usd = 1;
                   requests_per_minute = 300;
                 }

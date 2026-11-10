@@ -12,6 +12,10 @@
       url = "github:openclaw/nix-openclaw/412fc9f978072eac48c4dfe8cc77181e077696a6";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    openclaw-basic-react-src = {
+      url = "https://registry.npmjs.org/@modelcontextprotocol/server-basic-react/-/server-basic-react-2.0.4.tgz";
+      flake = false;
+    };
     openclaw-node-arm64 = {
       url = "https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-arm64.tar.xz";
       flake = false;

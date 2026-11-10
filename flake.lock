@@ -1307,6 +1307,19 @@
         "type": "github"
       }
     },
+    "openclaw-basic-react-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 499162500,
+        "narHash": "sha256-Bkrv/KZ6JvrZTCMb66aVIPgXHx4mOY2za5/wlbMMmB4=",
+        "type": "tarball",
+        "url": "https://registry.npmjs.org/@modelcontextprotocol/server-basic-react/-/server-basic-react-2.0.4.tgz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://registry.npmjs.org/@modelcontextprotocol/server-basic-react/-/server-basic-react-2.0.4.tgz"
+      }
+    },
     "openclaw-node-arm64": {
       "flake": false,
       "locked": {
@@ -1700,6 +1713,7 @@
         "nixpkgs-media": "nixpkgs-media",
         "nixpkgs-rakku": "nixpkgs-rakku",
         "nixpkgs-sunshine": "nixpkgs-sunshine",
+        "openclaw-basic-react-src": "openclaw-basic-react-src",
         "openclaw-node-arm64": "openclaw-node-arm64",
         "ossicle": "ossicle",
         "pace": "pace",
