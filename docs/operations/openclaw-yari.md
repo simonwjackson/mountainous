@@ -89,6 +89,15 @@ nix eval --raw .#nixosConfigurations.rakku.config.system.build.toplevel.drvPath
 Build Yari on Yari, including `checks.aarch64-linux.openclaw-config`. Build
 Unzen and Rakku on Unzen. Rakku must never build. `nixos-rebuild switch` with
 `--build-host` and `--target-host` can copy evaluated derivations to these hosts.
+For subsequent deploys from Zao (Unzen must already be approved):
+
+```sh
+export NIX_SSHOPTS='-F /dev/null'
+nixos-rebuild switch --flake .#unzen --build-host root@unzen --target-host root@unzen
+nixos-rebuild switch --flake .#rakku --build-host root@unzen --target-host root@rakku
+nixos-rebuild switch --flake .#yari --build-host root@yari --target-host root@yari
+```
+
 Alternatively, copy with `nix copy --derivation --to ssh-ng://root@HOST DRV`,
 then use a copied Nix-shebang script on that host to build `DRV^*`, set its
 system profile, and run `bin/switch-to-configuration switch`. Keep build/deploy
@@ -138,3 +147,23 @@ Remove the Claw node and `tag:claw` policy from Tailscale admin. Retain a backup
 of `/permafrost/var/lib/nixos-containers/openclaw` until Simon approves deleting
 its conversations and overlay identity. Removing that state is a separate,
 irreversible data-deletion decision, not part of a routine rollback.
+
+## Deployment evidence (2026-11-10)
+
+- Running generations: Unzen 54, Rakku 127, Yari 10.
+- OpenClaw-user egress and Unzen: `38.175.187.81`; Yari: `129.146.97.70`.
+- With the exit selection cleared, and separately with the container overlay
+  daemon stopped, a previously successful public HTTPS probe with DNS bypassed
+  timed out. Restoring the overlay restored the home IP. Rakku:22 and assistant
+  HTTPS both timed out from Claw. Claw's node has only `tag:claw`.
+- Front door: unauthenticated models returned 401; authenticated models returned
+  exactly the three granted models. A short Opus completion and a Control UI
+  chat succeeded. Existing HA, Z-Wave and assistant processes did not restart.
+- The official React clock rendered in a double iframe whose outer URL uses
+  `:8443/mcp-app-sandbox`. The model incorrectly claimed it could not display
+  the app, but the browser did display it; trust the rendered view, not that text.
+- Security audit: 0 critical, 1 expected MCP Apps warning, 1 information entry.
+  After chat and MCP use: 3,090 MiB host memory used, 20,873 MiB available;
+  gateway cgroup 1,938,919,424 bytes, peak 2,131,668,992 bytes, limit 4 GiB,
+  zero service restarts. Screenshots: `/tmp/claw/control-chat.png` and
+  `/tmp/claw/mcp-app.png` on Zao; probes and health logs are beside them.
