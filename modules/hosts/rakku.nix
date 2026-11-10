@@ -289,6 +289,10 @@ in
               github = true;
               # Training in the Assistant: Logbook on loopback and the Coach skill.
               logbook = true;
+              remoteApps.torrents = {
+                title = "Torrents";
+                url = "https://torrents-mcp.hummingbird-lake.ts.net/mcp";
+              };
               remoteApps.forgerie = {
                 title = "Forgerie";
                 url = "http://zao.hummingbird-lake.ts.net:3190/mcp";

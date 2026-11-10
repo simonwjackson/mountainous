@@ -2,6 +2,12 @@
 { flake, pkgs }:
 let
   inherit (pkgs) lib;
+  configured = flake.nixosConfigurations.rakku.config.mountainous.features.pi-assistant.mcpServers;
+  torrents = {
+    id = "torrents";
+    title = "Torrents";
+    url = "https://torrents-mcp.hummingbird-lake.ts.net/mcp";
+  };
   offline = {
     title = "Offline module";
     url = "http://127.0.0.1:1/mcp";
@@ -34,6 +40,10 @@ let
     }
   );
 in
+assert builtins.elem torrents configured.simon;
+assert lib.all (
+  name: name == "simon" || lib.all (server: server.id != "torrents") configured.${name}
+) (builtins.attrNames configured);
 pkgs.runCommand "pi-assistant-remote-apps"
   {
     nativeBuildInputs = [

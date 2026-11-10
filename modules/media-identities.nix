@@ -36,6 +36,7 @@
         && (name != "scryer" || (applications.library != "arr" && applications.scryerTailnet))
         && (name != "nzbget" || config.mountainous.features.media-applications.usenet != "nzbfast")
       ) apps;
+      torrentsHere = lib.attrByPath [ "mountainous" "features" "torrents" "enable" ] false config;
       vpnApps = [
         "nzbfast"
         "nzbget"
@@ -49,6 +50,7 @@
         prowlarr = "indexers";
         nzbget = "usenet";
         transmission = "torrents";
+        torrents = "torrents-mcp";
       };
       ports = {
         scryer = 8080;
@@ -58,6 +60,7 @@
         nzbget = 6789;
         nzbfast = 6790;
         transmission = 9091;
+        torrents = 3190;
       };
       proxy = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.media-tsnet-proxy;
     in
@@ -120,12 +123,20 @@
                   "network-online.target"
                   "${name}.service"
                 ];
-                requires = lib.optional (name == "scryer") "scryer.service";
+                requires = lib.optional (builtins.elem name [
+                  "scryer"
+                  "torrents"
+                ]) "${name}.service";
                 unitConfig = {
-                  ConditionPathExists = "/var/lib/media-migration/ready/${name}";
-                  # ARR identities must already exist. The Scryer identity is
-                  # new: the explicit opt-in permits its first OAuth enrollment.
-                  ConditionFileNotEmpty = lib.mkIf (name != "scryer") "${state}/tailscaled.state";
+                  ConditionPathExists = lib.mkIf (name != "torrents") "/var/lib/media-migration/ready/${name}";
+                  # Preserved identities must exist. New Scryer and Torrents
+                  # modules explicitly opt in to first OAuth enrollment.
+                  ConditionFileNotEmpty = lib.mkIf (
+                    !builtins.elem name [
+                      "scryer"
+                      "torrents"
+                    ]
+                  ) "${state}/tailscaled.state";
                 };
                 serviceConfig = {
                   User = "media-proxy";
@@ -161,7 +172,7 @@
                   ];
                 };
               }
-            ) here
+            ) (here ++ lib.optional torrentsHere "torrents")
           );
         })
       ];

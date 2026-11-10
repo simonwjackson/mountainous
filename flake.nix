@@ -41,6 +41,15 @@
     synth.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/synth?ref=service-app-rakku";
     pace.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/pace?ref=service-app-rakku";
 
+    torrents.url = "git+ssh://git@github.com/simonwjackson/torrents?ref=main";
+
+    # The fleet and Sunshine pins still carry Transmission 4.1.3. Upgrade only
+    # this package, without moving either host or Sunshine's package set.
+    nixpkgs-unstable = {
+      url = "github:NixOS/nixpkgs/nixos-unstable";
+      flake = false;
+    };
+
     pi.url = "github:lukasl-dev/pi.nix";
     # Pi extensions, each loaded with -e by the pi wrapper (modules/pi.nix).
     pi-durable-processes = {

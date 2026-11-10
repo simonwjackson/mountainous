@@ -300,6 +300,21 @@
         "type": "github"
       }
     },
+    "crane_2": {
+      "locked": {
+        "lastModified": 1793836618,
+        "narHash": "sha256-TREenflwEjxOSq292FYwbc3kEm7TDRtXCZRNWEdjBmg=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "79fd63528501446749c09f08cad486a58c7d173e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
     "deploy-rs": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -920,6 +935,23 @@
         "type": "github"
       }
     },
+    "nixpkgs-unstable": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793876309,
+        "narHash": "sha256-Wojg9lIH/hDH91iDVH2/EPw8oDSpxjxhXONbU1yf4Zg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f9a75f41be3a74eab55d3a7679d34ad6cc0da977",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-x86_64-darwin": {
       "locked": {
         "lastModified": 1789155820,
@@ -1049,6 +1081,22 @@
       }
     },
     "nixpkgs_17": {
+      "locked": {
+        "lastModified": 1793876309,
+        "narHash": "sha256-Wojg9lIH/hDH91iDVH2/EPw8oDSpxjxhXONbU1yf4Zg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f9a75f41be3a74eab55d3a7679d34ad6cc0da977",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_18": {
       "locked": {
         "lastModified": 1787736819,
         "narHash": "sha256-cV5xEJJK3BvhU8rEd4mC9UsmDi5qscv/kzGPhBRC5WA=",
@@ -1562,6 +1610,7 @@
         "nixpkgs-media": "nixpkgs-media",
         "nixpkgs-rakku": "nixpkgs-rakku",
         "nixpkgs-sunshine": "nixpkgs-sunshine",
+        "nixpkgs-unstable": "nixpkgs-unstable",
         "ossicle": "ossicle",
         "pace": "pace",
         "pi": "pi",
@@ -1578,6 +1627,7 @@
         "sops-nix": "sops-nix",
         "storia": "storia",
         "synth": "synth",
+        "torrents": "torrents",
         "vela": "vela",
         "w95fa-src": "w95fa-src_2",
         "youtube": "youtube"
@@ -2032,6 +2082,26 @@
         "type": "github"
       }
     },
+    "torrents": {
+      "inputs": {
+        "crane": "crane_2",
+        "nixpkgs": "nixpkgs_17"
+      },
+      "locked": {
+        "lastModified": 1794098080,
+        "narHash": "sha256-Jvpamqic2k9b6X/7/X6D1jeO6O6UKNlHVDGbmQmwC3w=",
+        "ref": "main",
+        "rev": "8760f6c3c3eb3bc4d987bbe5421ffd74990828d9",
+        "revCount": 7,
+        "type": "git",
+        "url": "ssh://git@github.com/simonwjackson/torrents"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/simonwjackson/torrents"
+      }
+    },
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
@@ -2237,7 +2307,7 @@
     "youtube": {
       "inputs": {
         "flake-utils": "flake-utils_5",
-        "nixpkgs": "nixpkgs_17",
+        "nixpkgs": "nixpkgs_18",
         "yattee-server": "yattee-server"
       },
       "locked": {
