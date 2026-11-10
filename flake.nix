@@ -7,6 +7,16 @@
   };
 
   inputs = {
+    # Release packaging and its locked npm closure; ARM uses our runtime below.
+    nix-openclaw = {
+      url = "github:openclaw/nix-openclaw/412fc9f978072eac48c4dfe8cc77181e077696a6";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    openclaw-node-arm64 = {
+      url = "https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-arm64.tar.xz";
+      flake = false;
+    };
+
     # Non-flake release files: no OAuth or Google calls during a build.
     gogcli-x86_64-linux-src = {
       url = "file+https://github.com/openclaw/gogcli/releases/download/v0.11.0/gogcli_0.11.0_linux_amd64.tar.gz";

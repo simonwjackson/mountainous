@@ -87,6 +87,7 @@
       "tailnet-names"
       "valhalla"
       "traccar"
+      "home-exit-node"
     ];
 
     module =

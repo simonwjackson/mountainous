@@ -20,6 +20,7 @@
       "permafrost"
       "oracle-vm"
       "builder"
+      "openclaw"
     ];
     module = {
       # The Oracle boot volume. The id is the volume's WWN, which stays the

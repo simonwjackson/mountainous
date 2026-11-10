@@ -32,7 +32,7 @@ assert "cors" not in json.dumps(settings).lower()
 a = settings["gateway_keys"][0]
 if production:
     pi_hosts = json.loads(sys.argv[4])
-    assert len(settings["gateway_keys"]) == 5 + len(pi_hosts)
+    assert len(settings["gateway_keys"]) == 6 + len(pi_hosts)
     assert a["name"] == "assistant@rakku"
     assert a["models"] == [
         "claude-opus-5-5",
@@ -41,9 +41,9 @@ if production:
         "gpt-5.6-luna",
         "jev",
     ]
-    assert a["dialects"] == ["codex", "models", "responses", "systemone"]
+    assert a["dialects"] == ["codex", "chat_completions", "models", "responses", "systemone"]
     assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (5, 600)
-    voice = settings["gateway_keys"][1]
+    voice = next(k for k in settings["gateway_keys"] if k["name"] == "voice@zao")
     assert voice == {
         "name": "voice@zao",
         "key_file": f"{credential_dir}/voice-zao",
@@ -54,6 +54,14 @@ if production:
     }
     keys = {key["name"]: key for key in settings["gateway_keys"]}
     assert len(keys) == len(settings["gateway_keys"])
+    assert keys["openclaw@yari"] == {
+        "name": "openclaw@yari",
+        "key_file": f"{credential_dir}/openclaw-yari",
+        "dialects": ["chat_completions", "responses", "models"],
+        "models": ["claude-opus-5-5", "gpt-6.1-sol", "gemini-3.8-flash-high"],
+        "monthly_cap_usd": 1,
+        "requests_per_minute": 300,
+    }
     for host in ["zao", *pi_hosts]:
         assert keys[f"pi@{host}"] == {
             "name": f"pi@{host}",
