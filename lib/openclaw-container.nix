@@ -25,6 +25,7 @@ let
       export FRONT_DOOR_API_KEY OPENCLAW_GATEWAY_TOKEN
       export OPENCLAW_STATE_DIR=/var/lib/openclaw
       export OPENCLAW_CONFIG_PATH=/etc/openclaw/openclaw.json
+      cd /var/lib/openclaw
       exec runuser -u openclaw -- openclaw "$@"
     '';
   };

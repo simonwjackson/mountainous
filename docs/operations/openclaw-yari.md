@@ -150,7 +150,7 @@ irreversible data-deletion decision, not part of a routine rollback.
 
 ## Deployment evidence (2026-11-10)
 
-- Running generations: Unzen 54, Rakku 127, Yari 10.
+- Initial verified generations: Unzen 54, Rakku 127, Yari 10.
 - OpenClaw-user egress and Unzen: `38.175.187.81`; Yari: `129.146.97.70`.
 - With the exit selection cleared, and separately with the container overlay
   daemon stopped, a previously successful public HTTPS probe with DNS bypassed
@@ -165,5 +165,8 @@ irreversible data-deletion decision, not part of a routine rollback.
 - Security audit: 0 critical, 1 expected MCP Apps warning, 1 information entry.
   After chat and MCP use: 3,090 MiB host memory used, 20,873 MiB available;
   gateway cgroup 1,938,919,424 bytes, peak 2,131,668,992 bytes, limit 4 GiB,
-  zero service restarts. Screenshots: `/tmp/claw/control-chat.png` and
+  zero service restarts. The optional `--deep` audit adds a probe warning:
+  `missing scope: operator.read`. The CLI deep probe could not read
+  gateway status; do not weaken gateway auth to silence it. Browser device pairing,
+  authenticated chat and normal audit were verified separately. Screenshots: `/tmp/claw/control-chat.png` and
   `/tmp/claw/mcp-app.png` on Zao; probes and health logs are beside them.
