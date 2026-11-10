@@ -84,6 +84,9 @@
           assert gateway.config.agents.defaults.model.primary == "front-door/claude-opus-5-5";
           assert gateway.config.mcp.apps.enabled;
           assert gateway.config.mcp.apps.sandboxOrigin == "https://claw.hummingbird-lake.ts.net:8443";
+          assert lib.hasInfix "--advertise-tags=tag:claw" c.systemd.services.claw-tailnet.script;
+          assert c.systemd.services.claw-tailnet.serviceConfig.User == "tailscale";
+          assert !gateway.config.plugins.enabled;
           assert lib.hasInfix "--exit-node=100.120.204.5" c.systemd.services.claw-tailnet.script;
           assert lib.hasInfix "--exit-node-allow-lan-access=false" c.systemd.services.claw-tailnet.script;
           assert

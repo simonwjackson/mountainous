@@ -11,6 +11,7 @@ let
     inherit pkgs inputs;
     node = package.runtimeNode;
   };
+  bootstrapDns = pkgs.writeText "claw-overlay-resolv.conf" "nameserver 1.1.1.1\nnameserver 8.8.8.8\n";
   exitNode = "100.120.204.5"; # Unzen's stable tailnet address, not a LAN route.
   origin = "https://claw.hummingbird-lake.ts.net";
   launch = pkgs.writeShellScript "openclaw-start" ''
@@ -118,7 +119,10 @@ in
         };
         # No channel, marketplace, or bundled skill is admitted in this trial.
         skills.allowBundled = [ ];
-        plugins.allow = [ ];
+        plugins = {
+          enabled = false;
+          allow = [ ];
+        };
         discovery.mdns.mode = "off";
         browser.enabled = false;
         tools = {
@@ -160,6 +164,7 @@ in
         "CAP_NET_RAW"
       ];
       NoNewPrivileges = true;
+      BindReadOnlyPaths = [ "${bootstrapDns}:/etc/resolv.conf" ];
     };
     claw-tailnet = {
       description = "Join the isolated Claw node and select only the home exit node";
@@ -184,7 +189,7 @@ in
         state=$(printf '%s' "$status" | jq -r .BackendState)
         case "$state" in
           NeedsLogin|NoState)
-            tailscale up --auth-key="$(cat /run/host-credentials/oauth-secret)?ephemeral=false&preauthorized=true" \
+            tailscale up --auth-key="$(cat "$CREDENTIALS_DIRECTORY/oauth-secret")?ephemeral=false&preauthorized=true" \
               --hostname=claw --advertise-tags=tag:claw --ssh=false \
               --accept-dns=false --accept-routes=false --exit-node=${exitNode} \
               --exit-node-allow-lan-access=false
@@ -198,6 +203,10 @@ in
         tailscale serve --bg --https=8443 http://127.0.0.1:18790
       '';
       serviceConfig = {
+        User = "tailscale";
+        Group = "tailscale";
+        LoadCredential = [ "oauth-secret:/run/host-credentials/oauth-secret" ];
+        BindReadOnlyPaths = [ "${bootstrapDns}:/etc/resolv.conf" ];
         Type = "oneshot";
         RemainAfterExit = true;
         Restart = "on-failure";
