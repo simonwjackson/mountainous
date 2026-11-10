@@ -51,7 +51,7 @@ Keep treating the service as hostile and keep its boundaries in place.
 
 ## Read-only calendar and maps
 
-Rakku retains Simon's existing loopback-only apps and their credentials. Its
+Rakku retains Simon's existing loopback-only apps and credential plumbing. Its
 usual assistant still uses the complete Google MCP API on port 3171 and maps
 on 3172. OpenClaw cannot reach those ports or the assistant endpoint.
 
@@ -249,20 +249,70 @@ irreversible data-deletion decision, not part of a routine rollback.
   lists. The gateway is active. Security audit: **0 critical, 1 expected MCP
   Apps warning, 1 information**. Rakku `100.88.212.117:22` still timed out from
   the OpenClaw user after deployment.
-- **Blocked at enrollment:** the fleet OAuth token succeeds (HTTP 200), but
-  creating a key with only `tag:claw-tools` returns HTTP 400:
-  `requested tags [tag:claw-tools] are invalid or not permitted`. The console
-  policy had not been saved. Neither node is registered, so endpoint listings,
-  live denials and real calendar/maps answers are not yet verified. No ACL was
-  relaxed and no broader tag was substituted.
-- Both units already retry automatically every 30 seconds. Once Simon saves
-  the tag owner and destination rules, registration needs no code change.
-  Immediate retry if needed: `sudo systemctl restart tsnet-proxy-claw-calendar
-  tsnet-proxy-claw-maps` on Rakku. Then verify each node has only
-  `tag:claw-tools`, run the container endpoint probes, and ask OpenClaw for
-  calendar busy blocks and a real route. Test coordinates from Wikipedia's
-  coordinate API: Denver Union Station `(39.75305556, -105)` to Colorado State
-  Capitol `(39.7392321, -104.9848677)`; these are not invented locations.
-- Local evidence and copied probe scripts: `/tmp/claw-tools-evidence/`,
-  `/tmp/claw-tools-probe` and `/tmp/claw-yari-health` on Zao (scripts also on
-  Yari). Do not record calendar event titles, mail, or credential values here.
+- The console policy was then saved. Both nodes registered with only
+  `tag:claw-tools`: calendar `100.117.142.98`, maps `100.107.76.69`. From the
+  **OpenClaw user** in the container, initialize succeeded; tools/list returned
+  exactly `calendar_busy` / `travel_time`; mail_list and an unlisted name each
+  received JSON-RPC `-32601` on both endpoints. Resource reads also received
+  `-32601`. Rakku:22 still timed out after those checks. Initial certificate
+  issuance exceeded the first 20-second probe; subsequent verified TLS calls
+  succeeded without bypassing certificate validation.
+- OpenClaw session `maps-check` called the real
+  `mcp:claw-maps:claw-maps__travel_time` through `dispatch_action`, with a
+  successful tool result. Answer: **4 minutes, 2.202 km driving**, Denver Union
+  Station `(39.75305556, -105)` to Colorado State Capitol
+  `(39.7392321, -104.9848677)`. Both coordinates came from Wikipedia's coordinate
+  API, not invented places. This is a Valhalla baseline, not live traffic.
+- **Calendar remains blocked by missing Google authorization, not the tailnet.**
+  OpenClaw session `calendar-check` called the real calendar tool and received
+  `not_authorised: Google is not connected.` No busy blocks were invented.
+  The Google app's persisted gogcli config has no credential/token files, and
+  its pre-change journal already had not_authorised poll failures. The earlier
+  Google/maps runbook also states real sign-in was never done. Simon's own
+  assistant did not previously have working Google authorization either.
+- Keyring credentials, API credentials and permissions are separate: the sops
+  keyring password exists, but that alone does not authorize a Google account.
+  `gog` 0.11.0 **requires your own Google Cloud Desktop OAuth client JSON**
+  (`client_id` and `client_secret`); it does not supply a shared client.
+  Verified against the installed 0.11.0 `auth credentials set --help`,
+  `auth add --help`, and the upstream
+  [v0.11.0 README](https://github.com/openclaw/gogcli/blob/v0.11.0/README.md#1-get-oauth2-credentials).
+- A prepared one-run browser wizard is installed on Rakku at
+  `/var/tmp/claw-google-auth/start` (launcher) and
+  `/var/tmp/claw-google-auth/wizard` (unmodified wizard library plus stages).
+  **No OAuth step has been run.** Simon runs:
+
+  ```sh
+  ssh -F /dev/null -t simonwjackson@rakku sudo /var/tmp/claw-google-auth/start
+  ```
+
+  The launcher runs the wizard as `pi-simon`, with HOME set to the Google app
+  and WorkingDirectory set to its persisted `.config/gogcli`. Systemd loads
+  the same `gog-keyring-password` credential as the app. The browser stages
+  enable Calendar API, configure consent/test user, capture Desktop client
+  ID/secret, then use `gog auth add --services calendar --readonly --remote`
+  steps 1 and 2. Secrets and the full callback URL use hidden input. It asks
+  readiness before starting the short-lived authorization URL. No Gmail or
+  calendar write scope is requested. External apps left in Testing can have
+  seven-day refresh-token expiry; the wizard does not publish the app.
+
+  After browser completion, the launcher restarts only the Google app,
+  compares real calendar_busy blocks from loopback and claw-calendar, prints
+  only Denver start/end times, and runs `assistant ask` through Simon's normal
+  local CLI/RPC. With one stored account, gog auto-selects it, so no
+  GOG_ACCOUNT config change is needed. If more accounts are added, select the
+  account through mountainous's `apps.google.environment.GOG_ACCOUNT`, not an
+  unmanaged systemd override. The existing Gmail poll remains unauthorized
+  until Gmail is separately connected; it does not prevent calendar reads.
+- Wizard checks: bash syntax passed; shellcheck passed excluding the standard
+  unchanged library's unused RED variable warning; Python syntax passed;
+  verification helper JSON/SSE/error behavior passed against a real local HTTP
+  test endpoint. Rakku's `start --check` passed without starting OAuth. The
+  interactive browser flow and post-sign-in real-data checks are prepared but
+  **not yet run**. Wizard files are ephemeral; actual OAuth state is persisted.
+- Final Rakku service start times still match the baseline. Yari's gateway is
+  active with zero automatic restarts and still has only the expected audit
+  warning. Local evidence: `/tmp/claw-tools-evidence/` on Zao. Copied scripts
+  `/tmp/claw-tools-probe`, `/tmp/claw-yari-health` and `/tmp/claw-session-trace`
+  on Yari support repeating network and actual-tool-call checks. No raw mail,
+  event titles or credential values are recorded in this runbook.
