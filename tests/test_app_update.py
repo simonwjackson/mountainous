@@ -193,6 +193,149 @@ class AppUpdateTests(unittest.TestCase):
             with self.subTest(denied=denied), self.assertRaises(ValueError):
                 native.command(denied, "/nix/bin")
 
+    def test_arm_cli_dry_run_deployment_and_build_failure_receipts(self):
+        for mode in ("check-only", "deploy", "native-failure"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                repo = root / "repository"
+                repo.mkdir()
+                locked = {
+                    "root": "root",
+                    "nodes": {
+                        "root": {"inputs": {"nix-openclaw": "upstream"}},
+                        "upstream": {
+                            "original": {"type": "github", "owner": "a", "repo": "b"},
+                            "locked": {"lastModified": 1},
+                        },
+                    },
+                }
+                (repo / "flake.lock").write_text(json.dumps(locked))
+                for args in (
+                    ["init", "-q"],
+                    ["add", "."],
+                    [
+                        "-c",
+                        "user.name=Test",
+                        "-c",
+                        "user.email=test@example.invalid",
+                        "commit",
+                        "-qm",
+                        "fixture",
+                    ],
+                ):
+                    subprocess.run(
+                        ["git", *args], cwd=repo, check=True, capture_output=True
+                    )
+                config = {
+                    "stateDirectory": str(root),
+                    "apps": {
+                        "openclaw": {
+                            "input": "nix-openclaw",
+                            "hosts": ["yari"],
+                            "checks": ["openclaw", "openclaw-config"],
+                        }
+                    },
+                    "hosts": {"yari": "aarch64-linux"},
+                    "nativeBuilders": {
+                        "aarch64-linux": {
+                            "privateKey": "/private/builder",
+                            "alias": "yari",
+                            "hostName": "yari.example",
+                            "knownHosts": "/known-hosts",
+                        }
+                    },
+                }
+                config_path = root / "config.json"
+                config_path.write_text(json.dumps(config))
+                executable = root / "transport"
+                executable.write_text("""#!/usr/bin/env python3
+import json, os, sys
+name = os.path.basename(sys.argv[0])
+args = sys.argv[1:]
+with open(os.environ['COMMAND_LOG'], 'a') as log:
+    log.write(json.dumps([name, *args]) + '\\n')
+if name == 'ssh':
+    if os.environ['BEHAVIOR'] == 'native-failure': sys.exit(1)
+    print('/nix/store/' + 'b' * 32 + '-candidate')
+elif name == 'nix':
+    if args[:2] == ['flake', 'metadata']:
+        print(json.dumps({'locked': {'rev':'new', 'lastModified':2}, 'url':'github:a/b/new'}))
+    elif args[0] == 'eval':
+        if '--expr' in args: print('0')
+        elif args[1].endswith('.version'): print('1.0')
+        elif args[1].endswith('.drvPath'): print('/nix/store/' + 'a' * 32 + '-candidate.drv')
+""")
+                executable.chmod(0o755)
+                for name in ("nix", "ssh", "deploy"):
+                    (root / name).symlink_to(executable)
+                log = root / "commands.jsonl"
+                env = os.environ | {
+                    "PATH": str(root) + os.pathsep + os.environ["PATH"],
+                    "COMMAND_LOG": str(log),
+                    "BEHAVIOR": mode,
+                }
+                command = [
+                    "python3",
+                    str(Path(updater.__file__)),
+                    "--config",
+                    str(config_path),
+                    "--app",
+                    "openclaw",
+                ]
+                if mode == "check-only":
+                    command.append("--check-only")
+                result = subprocess.run(
+                    command, env=env, text=True, capture_output=True
+                )
+                self.assertEqual(
+                    result.returncode,
+                    1 if mode == "native-failure" else 0,
+                    result.stdout + result.stderr,
+                )
+                receipt = json.loads(
+                    next((root / "receipts").glob("*.json")).read_text()
+                )
+                self.assertFalse(receipt["system_deployment"])
+                self.assertEqual(
+                    receipt["status"],
+                    {
+                        "check-only": "checks-passed",
+                        "deploy": "deployed",
+                        "native-failure": "partial-failure",
+                    }[mode],
+                )
+                commands = [json.loads(line) for line in log.read_text().splitlines()]
+                signed = [c for c in commands if c[:3] == ["nix", "store", "sign"]]
+                deployed = [c for c in commands if c[0] == "deploy"]
+                self.assertEqual(bool(signed), mode == "deploy")
+                self.assertEqual(bool(deployed), mode == "deploy")
+                self.assertEqual(
+                    (root / "accepted-openclaw.json").exists(), mode == "deploy"
+                )
+                if mode != "native-failure":
+                    checked = [
+                        c[2]
+                        for c in commands
+                        if c[:2] == ["nix", "eval"] and c[2].endswith(".drvPath")
+                    ]
+                    self.assertEqual(
+                        checked[:4],
+                        [
+                            ".#checks.aarch64-linux." + name + ".drvPath"
+                            for name in (
+                                "app-openclaw",
+                                "openclaw",
+                                "openclaw-config",
+                                "deploy-schema",
+                            )
+                        ],
+                    )
+                if deployed:
+                    self.assertIn("--checksigs", deployed[0])
+                    self.assertIn("--skip-checks", deployed[0])
+                    self.assertIn("--auto-rollback", deployed[0])
+                    self.assertIn("--magic-rollback", deployed[0])
+
     def test_receipt_is_private_and_atomic(self):
         import os
 
