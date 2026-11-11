@@ -17,6 +17,8 @@ tailscaled.
 
 Session tools use `tools.sessions.visibility = "agent"` and `tools.agentToAgent.enabled = false`: each agent can access only its own sessions, including same-agent sub-agents.
 
+Both agents share the research skill in `lib/openclaw-skills/research/SKILL.md`, with at most 8 children per parent and a 900-second timeout per researcher or auditor spawn.
+
 ## Placement and boundaries
 
 | Service | Placement | State / address |

@@ -335,6 +335,10 @@
           assert
             lib.length gateway.config.skills.load.extraDirs == 1
             && lib.pathExists "${lib.head gateway.config.skills.load.extraDirs}/scryer/SKILL.md";
+          assert lib.all (
+            dir: lib.pathExists "${dir}/research/SKILL.md"
+          ) gateway.config.skills.load.extraDirs;
+          assert (gateway.config.agents.defaults.subagents.maxChildrenPerAgent or null) == 8;
           assert !gateway.config.tools.codeMode.enabled && gateway.config.tools.fs.workspaceOnly;
           assert host.systemd.services."container@openclaw".serviceConfig.MemoryMax == "8G";
           assert !gateway.config.tools.elevated.enabled;

@@ -227,6 +227,7 @@ in
           ownership = "explicit";
           defaults = {
             thinkingDefault = "medium";
+            subagents.maxChildrenPerAgent = 8;
             mediaModels.image = {
               primary = "openai/gemini-3.1-flash-image";
               fallbacks = [ "openai/gpt-image-2" ];
@@ -361,7 +362,7 @@ in
           "diagram-maker"
         ];
         skills.entries.clawhub.enabled = false;
-        # Shared by both agents: the prepared Scryer skill (lib/openclaw-skills/scryer).
+        # Shared by both agents: the hand-kept skills in lib/openclaw-skills.
         skills.load.extraDirs = [ "${./openclaw-skills}" ];
         # Only the plugins needed by the approved browser, memory, images and web tools.
         plugins = {
