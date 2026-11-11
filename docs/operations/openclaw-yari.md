@@ -556,8 +556,8 @@ container's own journal, and the gateway's `gateway.log`.
 | Stop | Limits, gateway / host | Gateway | Container stop | Result |
 | --- | --- | --- | --- | --- |
 | 22 container stops and 28 gateway stops, 10 Nov 20:56 to 11 Nov 18:02 | 90 s / 90 s | `completed cleanly` in 0.15 to 0.55 s | 2.2 to 4.2 s | Normal |
-| 18:23:14, after a research run | 90 s / 90 s | `shutdown deadline reached` at 84.8 s, killed by its watchdog at 87.3 s | Host limit expired at 90.18 s | SIGKILL, stale mount, one failed start, switch exit 4. Ready at 18:25:31 |
-| 19:07:53, 25 minutes after a research run | 90 s / 90 s | `shutdown deadline reached` at 84.8 s, killed at 87.4 s | 89.75 s | Switch exit 0, with 0.25 s to spare |
+| 18:23:14, after a research run | 90 s / 90 s | `shutdown deadline reached` after its 84.8 s budget, killed by its watchdog 87.3 s into the stop | Host limit expired at 90.18 s | SIGKILL, stale mount, one failed start, switch exit 4. Ready at 18:25:31 |
+| 19:07:53, 25 minutes after a research run | 90 s / 90 s | `shutdown deadline reached` after its 84.8 s budget, killed 87.4 s into the stop | 89.75 s | Switch exit 0, with 0.25 s to spare |
 | 20:49:35 | 35 s / 180 s | `completed cleanly in 383ms` | 3.07 s | Normal |
 | 21:33:17 | 35 s / 180 s | `completed cleanly in 217ms` | 2.92 s | Normal |
 | 22:13:39 | 35 s / 180 s | `completed cleanly in 241ms`, with 8 remote MCP sessions open | 6.17 s | Normal |
@@ -579,7 +579,7 @@ TimeoutStopUSec=35000ms`. On generation 35, `systemctl show` prints
 comes from OpenClaw's code and the systemd limit. No live stop has exercised it.
 It is also not known if `KillMode=mixed` removes the hang. Since `2b895b74`,
 idle session MCP runtimes close after 10 minutes, so the gateway that stopped at
-22:13:13, 26 minutes after its last sub-agent run, had no remote MCP session
+22:13:13, 28 minutes after its last sub-agent run, had no remote MCP session
 open.
 
 The weekly updater restarts only the gateway, through `openclaw-profile-control
