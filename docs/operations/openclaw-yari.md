@@ -117,8 +117,9 @@ credentials, mounts, or additional permissions are needed. Both servers use
 In a **new** Control UI session, ask “help me split a $5,000 monthly budget”
 and “show me system stats”. The budget example uses business categories and
 synthetic history/benchmarks, not personal finance data. Its initial budget is
-$100,000; set the card's budget field to $5,000, then move an allocation slider.
-The monitor polls its app-only `poll-system-stats` tool. It reads the container's
+$100,000; the visible budget dropdown offers only $50k/$100k/$250k/$500k.
+Move an allocation slider to try the card. The monitor attempts to poll its
+app-only `poll-system-stats` tool, but see the verified limitation below. It reads the container's
 available OS metrics, including `/proc/meminfo`, not a remote machine; these
 values need not equal the gateway's 4 GiB cgroup limit. The existing sandbox and
 network restrictions remain unchanged.
@@ -131,6 +132,39 @@ build the ARM config check and system on Yari, land on `cairn`, then deploy Yari
 No tailnet registration or saved service state needs removal. Existing chat
 cards may no longer reconnect after removal. A Yari generation rollback restores
 the former server configuration without deleting conversations.
+
+### Browser verification (2026-11-10 Denver)
+
+- Implementation `b96f2570` landed on `cairn`. Yari generation **15**:
+  `/nix/store/6jkmbk87iim28529as6kxk80iw9rp9lg-nixos-system-yari-26.11.20260923.4975466`.
+  Final packages and system were built on Yari with remote builders disabled.
+  Container and gateway are active; deployed config validation passed.
+- Focused `checks.x86_64-linux.openclaw` passed, after first failing without the
+  new server configuration. ARM `openclaw-config` passed. All three packaged
+  servers passed offline stdio initialization, tool calls, and HTML resource
+  reads. Budget data and repeated monitor stats were checked. Nix formatting,
+  Ruff lint/format, whitespace and flake-input checks passed.
+- Used a newly paired real Chromium browser and new conversation
+  `agent:main:dashboard:d12568e1-d298-44ac-8562-61c4b1590dad`, not the main chat.
+  “help me split a $5,000 monthly budget” initially produced only a text table.
+  An explicit follow-up requesting the official budget app rendered the card.
+  Dragging Marketing from **25% to 44%** updated the chart, dollar allocation
+  from **$25k to $44k**, and total from **$100k to $119k** with an over-budget
+  warning. The model incorrectly suggested typing a custom budget into the
+  preset-only dropdown; no upstream UI changes were made.
+- “show me system stats” rendered the System Monitor card with **claw**, Linux
+  arm64 and four Neoverse-N1 cores, but **live refresh failed**. Repeated app
+  polls received JSON-RPC **-32603**, **“The session's current tool policy does
+  not allow this operation.”** The card displays **Error**, blank CPU history,
+  memory and uptime. The offline server polling test passes; the live browser
+  failure is at OpenClaw's app-call policy boundary. No policy or permission
+  changes were made to bypass it. This trial is not a working live monitor.
+- Screenshots on Zao: `/tmp/claw/demo-budget.png` (after slider interaction),
+  `/tmp/claw/demo-monitor.png` (after repeated failed refreshes). Exact browser
+  errors: `/tmp/claw/demo-monitor-errors.json`. Screenshots also contain the
+  model's surrounding conversation text. No messages were sent to the main
+  conversation. Heartbeat, morning brief, persona, calendar/maps and Rakku
+  configuration were not changed.
 
 ## Daily morning brief
 
