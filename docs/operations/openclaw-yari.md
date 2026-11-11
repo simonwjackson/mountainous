@@ -615,3 +615,52 @@ a failed switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
 - Roll back: `nixos-rebuild switch --rollback` on Rakku (to generation 132) and
   reinstall the previous application profile generation with `nix-env --profile
   /nix/var/nix/profiles/per-user/pi-assistant/application --rollback`.
+
+## Laure's agent (2026-11-11 UTC)
+
+`lib/openclaw-container.nix` declares two agents under `agents.entries` with
+`agents.ownership = "explicit"`. OpenClaw 2026.11.3 rejects the legacy
+`default = true` marker in a multi-agent roster, so the config pins what that
+marker meant for `main`: its workspace, `agents.defaults.systemAgent`,
+`agents.defaults.sessionStore` and `talk.agentId`, as `openclaw doctor --fix`
+would. Both agents set `heartbeat.every = "30m"`: once any agent has a
+heartbeat block only those agents run one, and a multi-agent roster without
+blocks runs none. MCP servers stay global; each agent's `tools.deny` removes
+whole servers by their `<server>__*` names:
+
+| Agent | Workspace | Denied servers | Remaining MCP tools |
+| --- | --- | --- | --- |
+| `main` | `/var/lib/openclaw/workspace` | `claw-family-calendar` | calendar_busy, travel_time, three demo apps |
+| `laure` | `/var/lib/openclaw/workspace-laure` | `claw-calendar`, `basic-react`, `budget-allocator`, `system-monitor` | travel_time, family_calendar_events |
+
+Laure's workspace does not exist until her agent's first run. OpenClaw then
+seeds the starter files, including BOOTSTRAP.md, and her setup interview runs
+in that first conversation. Do not run her agent before she does.
+
+After a config change, `tools.effective` reports MCP tools only after an agent
+run rediscovers the catalog (notice `mcp-stale-catalog`). Check a session that
+has run since the restart.
+
+Evidence:
+
+- Mountainous `6a21ffea` on `cairn`. Yari generation **16**:
+  `/nix/store/4pxywyv9sfiwfhg20j3jlks2q9np4k6n-nixos-system-yari-26.11.20260923.4975466`,
+  built on Yari with remote builders off. The real `openclaw config validate`
+  (ARM `openclaw-config` check) passed. Focused `openclaw` check passed.
+  The switch restarted only `container@openclaw`.
+- `agents list`: `laure` (no identity yet, not default) and `main` (flakey,
+  default). Cron: `heartbeat-main` kept its ID; `heartbeat-laure` was added;
+  `morning-brief` (df3d8216) unchanged.
+- One short run of `main` in new session `agent:main:explicit:laure-setup-check`
+  replied OK without tools. That session's effective tools equal the
+  pre-change list for `agent:main:main` exactly (15 tools); the Family
+  calendar tool is absent. From the OpenClaw user, `claw-family-calendar`
+  tools/list returned only `family_calendar_events`.
+- Laure's effective tools are checked after her first run (step 5).
+- Security audit: 0 critical, 2 warnings, 1 info. New warning
+  `security.trust_model.cross_agent_session_access_default`: session tools can
+  address other agents' sessions. Only `session_status` is allowed to either
+  agent. Not changed.
+- Roll back: `nixos-rebuild switch --rollback` on Yari (generation 15). The
+  `heartbeat-laure` job and any Laure workspace then remain as state; remove the
+  job with `cron rm` if Laure's agent is retired.
