@@ -317,6 +317,7 @@ in
         # The front-door grant has no embeddings dialect. Keep memory local/FTS.
         memory.search.provider = "none";
         mcp = {
+          sessionIdleTtlMs = 600000;
           servers = {
             basic-react = {
               command = "${demo}/bin/mcp-server-basic-react";

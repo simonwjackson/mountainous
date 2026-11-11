@@ -269,6 +269,7 @@
               "basic-react"
               "budget-allocator"
             ];
+          assert (gateway.config.mcp.sessionIdleTtlMs or null) == 600000;
           assert gateway.config.mcp.apps.enabled;
           assert gateway.config.mcp.apps.sandboxOrigin == "https://claw.hummingbird-lake.ts.net:8443";
           assert lib.hasInfix "--advertise-tags=tag:claw" c.systemd.services.claw-tailnet.script;

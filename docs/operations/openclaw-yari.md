@@ -20,6 +20,7 @@ Session tools use `tools.sessions.visibility = "agent"` and `tools.agentToAgent.
 Both agents share the research skill in `lib/openclaw-skills/research/SKILL.md`, with at most 8 children per parent and a 900-second timeout per researcher or auditor spawn.
 
 The gateway has `TasksMax=2048`; the former 256-task limit exhausted under session MCP workers and caused `EAGAIN` on 2026-11-11.
+Session MCP runtimes use `mcp.sessionIdleTtlMs=600000` to release idle stdio servers and their supervisors after 10 minutes, on the next minute sweep.
 
 ## Placement and boundaries
 
