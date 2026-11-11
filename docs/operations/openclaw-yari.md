@@ -158,6 +158,43 @@ This does not delete Simon's conversation or other jobs. For a temporary pause,
 `cron disable JOB_ID` works until the next reconciliation; a durable pause sets
 `enabled = false` in the declaration and deploys it.
 
+## Morning brief deployment evidence (2026-11-10 Denver)
+
+- Implementation: `24c27a90`, with full-field reconciliation fix `5c530c50`,
+  landed on `cairn`. Yari generation **14**:
+  `/nix/store/jhpqj619na4dx2xl4zc7whmxi091nkx5-nixos-system-yari-26.11.20260923.4975466`.
+  No host reboot. The container gateway and reconciliation unit are active.
+- Job ID: `df3d8216-a284-4086-a127-3890019d5cdb`. Exactly one declaration exists,
+  enabled, isolated, `0 7 * * *`, `America/Denver`, stagger 0. Next run:
+  2026-11-11 07:00 Denver / 14:00 UTC. The delivery preview says
+  `announce -> creating conversation`, with no external channel route.
+- Manual run at **17:52:44 Denver**, finished in **18.602 seconds**:
+  `status: ok`, `completionStatus: succeeded`, `deliveryStatus: delivered`.
+  The recorded tool call used `calendar_busy {day:"2026-11-10"}`. No maps call.
+  The brief reported **0 busy events today**, **1 calendar-free window,
+  08:00–22:00 (14 hours)**, and an open-calendar day. It asked **0 questions**.
+  It also noted the **1 next-day event, 12:00–14:00**, incorrectly returned by
+  the known calendar boundary bug. The prompt contains no bug workaround.
+  Re-run after the separate calendar fix to verify a clean brief.
+- `chat.history` for **`agent:main:main`** returned the exact brief as an
+  assistant message, model `automation-result`, tagged with this job ID.
+  This verifies durable main-session delivery, not just a run-history summary.
+- Live drift test: disabled the job and changed its description, execution
+  target, schedule and prompt. Restarting the oneshot restored all five,
+  retained the same ID, and left exactly one job. This exposed the upstream
+  partial-declaration behavior; `cron.update` fixed it.
+- Restarted **`container@openclaw`**, then rechecked the same ID, definition,
+  one recorded manual run, and active gateway/reconciliation units. Startup
+  connection races recovered through the unit's configured retry.
+- Checks passed: focused `checks.x86_64-linux.openclaw`, Yari toplevel
+  evaluation, ARM `openclaw-config` build on Yari, full Yari system build,
+  Nix formatting, whitespace validation and `scripts/check-flake-inputs.sh`.
+  `writeShellApplication` also checked the reconciliation shell script during
+  the system build. No aggregate flake check ran.
+- Roll back the system with `nixos-rebuild switch --rollback` on Yari. Jobs are
+  persistent service state: rollback does not remove this job. To stop it too,
+  disable/remove its persisted job after the older unit no longer recreates it.
+
 ## Credentials
 
 `ai-gateway-key-openclaw-yari` is a random 32-byte hex key with matching encrypted
