@@ -2,31 +2,35 @@
 # patches and Nix-mode wrapper, with a security-fixed ARM Node runtime.
 { pkgs, inputs }:
 let
-  node = pkgs.stdenvNoCC.mkDerivation {
-    pname = "nodejs-openclaw";
-    version = "24.22.1";
-    src = inputs.openclaw-node-arm64;
-    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
-    buildInputs = [ pkgs.stdenv.cc.cc.lib ];
-    patchelfFlags = [ "--no-sort" ];
-    dontBuild = true;
-    dontStrip = true;
-    installPhase = ''
-      mkdir -p $out
-      cp -r bin include lib share $out/
-      PATH="$out/bin:$PATH" patchShebangs $out/lib/node_modules/npm/bin
-    '';
-    doInstallCheck = true;
-    installCheckPhase = ''
-      test "$($out/bin/node --version)" = v24.22.1
-      $out/bin/npm --version
-    '';
-    passthru = {
-      inherit (pkgs.nodejs_24) python;
-      npm = node;
-    };
-    meta.platforms = [ "aarch64-linux" ];
-  };
+  node =
+    if !pkgs.stdenv.hostPlatform.isAarch64 then
+      pkgs.nodejs_24
+    else
+      pkgs.stdenvNoCC.mkDerivation {
+        pname = "nodejs-openclaw";
+        version = "24.22.1";
+        src = inputs.openclaw-node-arm64;
+        nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+        buildInputs = [ pkgs.stdenv.cc.cc.lib ];
+        patchelfFlags = [ "--no-sort" ];
+        dontBuild = true;
+        dontStrip = true;
+        installPhase = ''
+          mkdir -p $out
+          cp -r bin include lib share $out/
+          PATH="$out/bin:$PATH" patchShebangs $out/lib/node_modules/npm/bin
+        '';
+        doInstallCheck = true;
+        installCheckPhase = ''
+          test "$($out/bin/node --version)" = v24.22.1
+          $out/bin/npm --version
+        '';
+        passthru = {
+          inherit (pkgs.nodejs_24) python;
+          npm = node;
+        };
+        meta.platforms = [ "aarch64-linux" ];
+      };
   scope = pkgs.lib.makeScope pkgs.newScope (_: {
     nodejs_24 = node;
   });

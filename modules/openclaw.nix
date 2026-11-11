@@ -1,12 +1,94 @@
 { inputs, self, ... }:
 {
-  nixos.modules.openclaw =
+  mountainous.appProfiles.openclaw = {
+    hosts = [ "yari" ];
+    package =
+      system:
+      import ../lib/openclaw-package.nix {
+        pkgs = inputs.nixpkgs.legacyPackages.${system};
+        inherit inputs;
+      };
+    activation = _: ''
+      set -euo pipefail
+      control=$(readlink -e /run/current-system/sw/bin/openclaw-profile-control)
+      /run/wrappers/bin/sudo -n "$control" restart-and-check
+    '';
+  };
+  nixos.modules.base =
     { config, lib, ... }:
+    {
+      mountainous.appUpdates.openclaw = lib.mkIf (config.networking.hostName == "unzen") {
+        input = "nix-openclaw";
+        hosts = [ "yari" ];
+        schedule = "Sun *-*-* 02:15:00 America/Denver";
+        gateFile = "/var/lib/app-updater/enabled-openclaw";
+        sourceBranch = "cairn";
+        # Finish or abort by 06:15, before the 07:00 morning brief.
+        timeout = "4h";
+        checks = [
+          "openclaw"
+          "openclaw-config"
+        ];
+      };
+    };
+  nixos.modules.openclaw =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      profilePath = config.mountainous.appProfiles.openclaw.profilePath;
+      controller = pkgs.writeShellApplication {
+        name = "openclaw-profile-control";
+        runtimeInputs = [
+          pkgs.nixos-container
+          pkgs.systemd
+          pkgs.coreutils
+        ];
+        text = ''
+          if [[ $# != 1 || "$1" != restart-and-check ]]; then exit 2; fi
+          systemctl is-active --quiet container@openclaw.service
+          nixos-container run openclaw -- systemctl restart openclaw-gateway.service
+          ready() {
+            nixos-container run openclaw -- systemctl is-active --quiet openclaw-gateway.service &&
+            nixos-container run openclaw -- ${pkgs.curl}/bin/curl -fsS --max-time 5 http://127.0.0.1:18789/healthz |
+              ${pkgs.jq}/bin/jq -e '.ok == true' >/dev/null &&
+            [[ "$(nixos-container run openclaw -- ${pkgs.curl}/bin/curl -sS --max-time 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:18789/)" == 200 ]]
+          }
+          deadline=$((SECONDS + 120))
+          until ready; do
+            if (( SECONDS >= deadline )); then echo 'OpenClaw profile failed health gate' >&2; exit 1; fi
+            sleep 2
+          done
+          incarnation=$(nixos-container run openclaw -- systemctl show openclaw-gateway -p MainPID -p InvocationID -p NRestarts)
+          for ((i = 0; i < 5; i++)); do
+            sleep 1
+            ready
+            [[ "$(nixos-container run openclaw -- systemctl show openclaw-gateway -p MainPID -p InvocationID -p NRestarts)" == "$incarnation" ]]
+          done
+        '';
+      };
+    in
     {
       options.mountainous.features.openclaw.enable = lib.mkEnableOption "isolated OpenClaw trial" // {
         default = true;
       };
       config = lib.mkIf config.mountainous.features.openclaw.enable {
+        environment.systemPackages = [ controller ];
+        security.sudo.extraRules = [
+          {
+            users = [ "app-deploy" ];
+            runAs = "root";
+            commands = [
+              {
+                command = "${controller}/bin/openclaw-profile-control restart-and-check";
+                options = [ "NOPASSWD" ];
+              }
+            ];
+          }
+        ];
         sops.secrets = {
           ai-gateway-key-openclaw-yari = {
             sopsFile = ../secrets/hosts/yari.yaml;
@@ -26,6 +108,12 @@
           hostAddress = "10.231.0.1";
           localAddress = "10.231.0.2";
           bindMounts = {
+            # Bind the directory, not the symlink target: deploy-rs atomically
+            # replaces links here while the container remains running.
+            "/nix/var/nix/profiles/apps" = {
+              hostPath = "/nix/var/nix/profiles/apps";
+              isReadOnly = true;
+            };
             "/run/host-credentials/front-door" = {
               hostPath = config.sops.secrets.ai-gateway-key-openclaw-yari.path;
               isReadOnly = true;
@@ -39,7 +127,7 @@
               isReadOnly = true;
             };
           };
-          config = import ../lib/openclaw-container.nix { inherit inputs; };
+          config = import ../lib/openclaw-container.nix { inherit inputs profilePath; };
         };
         networking.nat = {
           enable = true;
@@ -77,6 +165,16 @@
     {
       checks = {
         openclaw =
+          assert
+            self.deploy.nodes.yari.profiles.openclaw.profilePath == "/nix/var/nix/profiles/apps/openclaw";
+          assert !(self.deploy.nodes.rakku.profiles ? openclaw);
+          assert host.mountainous.appProfiles.openclaw.enable;
+          assert container.bindMounts."/nix/var/nix/profiles/apps".isReadOnly;
+          assert
+            self.nixosConfigurations.unzen.config.mountainous.appUpdates.openclaw.checks == [
+              "openclaw"
+              "openclaw-config"
+            ];
           assert import ../tests/openclaw-morning-brief.nix {
             inherit lib;
             container = c;
@@ -266,6 +364,7 @@
       }
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isAarch64 {
         openclaw-config = pkgs.runCommand "openclaw-config" { } ''
+          grep -F "/nix/var/nix/profiles/apps/openclaw/bin/openclaw gateway" ${gateway.execStart}
           export HOME=$TMPDIR
           export OPENCLAW_STATE_DIR=$TMPDIR/state
           export OPENCLAW_CONFIG_PATH=${c.environment.etc."openclaw/openclaw.json".source}

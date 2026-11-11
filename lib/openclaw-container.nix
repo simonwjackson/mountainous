@@ -1,4 +1,7 @@
-{ inputs }:
+{
+  inputs,
+  profilePath ? "/nix/var/nix/profiles/apps/openclaw",
+}:
 {
   config,
   lib,
@@ -42,7 +45,6 @@ let
     name = "openclaw-admin";
     runtimeInputs = [
       pkgs.util-linux
-      package
     ];
     text = ''
       FRONT_DOOR_API_KEY="$(cat /run/host-credentials/front-door)"
@@ -52,7 +54,7 @@ let
       export OPENCLAW_STATE_DIR=/var/lib/openclaw
       export OPENCLAW_CONFIG_PATH=/etc/openclaw/openclaw.json
       cd /var/lib/openclaw
-      exec runuser -u openclaw -- openclaw "$@"
+      exec runuser -u openclaw -- ${profilePath}/bin/openclaw "$@"
     '';
   };
   morningBrief = pkgs.writeText "openclaw-morning-brief.json" (
@@ -90,7 +92,7 @@ let
     FRONT_DOOR_API_KEY="$(cat "$CREDENTIALS_DIRECTORY/front-door")"
     OPENCLAW_GATEWAY_PASSWORD="$(cat "$CREDENTIALS_DIRECTORY/gateway-token")"
     export FRONT_DOOR_API_KEY OPENCLAW_GATEWAY_PASSWORD
-    exec ${package}/bin/openclaw gateway --port 18789
+    exec ${profilePath}/bin/openclaw gateway --port 18789
   '';
 in
 {

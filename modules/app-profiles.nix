@@ -21,6 +21,15 @@ in
             type = lib.types.unspecified;
             description = "system -> application derivation (with version)";
           };
+          hosts = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = lib.attrNames hosts;
+          };
+          activation = lib.mkOption {
+            type = lib.types.functionTo lib.types.str;
+            default = _: ":";
+            description = "system -> activation hook, also run when rolling back.";
+          };
           hostModule = lib.mkOption {
             type = lib.types.deferredModule;
             default = { };
@@ -40,6 +49,9 @@ in
       }:
       let
         access = config.mountainous.appDeployment;
+        nativeBuild = pkgs.writeShellScript "app-native-build" ''
+          exec ${pkgs.python3}/bin/python3 ${../scripts/app-native-build.py} ${config.nix.package}/bin
+        '';
         apps = lib.filterAttrs (_: app: app.enable) config.mountainous.appProfiles;
       in
       {
@@ -91,7 +103,9 @@ in
           {
             # Explicit entries compose with host service-app profiles. A whole-map
             # option default disappears as soon as another app is declared.
-            mountainous.appProfiles = lib.mapAttrs (_: _: { }) registry;
+            mountainous.appProfiles = lib.mapAttrs (_: app: {
+              enable = lib.mkDefault (lib.elem config.networking.hostName app.hosts);
+            }) registry;
             # Dedicated public halves supplied after Unzen key generation.
             # Private halves remain in /var/lib/app-updater on Unzen.
             mountainous.appDeployment = {
@@ -132,6 +146,11 @@ in
           (lib.mkIf (config.networking.hostName == "fuji" && access.enable) {
             users.users.simon.openssh.authorizedKeys.keys = [
               "restrict,command=\"${config.nix.package}/bin/nix-daemon --stdio\" ${access.builderPublicKey}"
+            ];
+          })
+          (lib.mkIf (config.networking.hostName == "yari" && access.enable) {
+            users.users.simon.openssh.authorizedKeys.keys = [
+              ''restrict,command="${nativeBuild}" ${access.builderPublicKey}''
             ];
           })
           (lib.optionalAttrs (options.environment ? persistence) {
@@ -184,10 +203,10 @@ in
         lib.mapAttrs (app: _: {
           profilePath = "/nix/var/nix/profiles/apps/${app}";
           # deploy-rs owns the atomic profile link and rollback; no secondary profile.
-          path = inputs.deploy-rs.lib.${host.system}.activate.custom (registry.${app}.package
-            host.system
-          ) ":";
-        }) registry
+          path = inputs.deploy-rs.lib.${host.system}.activate.custom (registry.${app}.package host.system) (
+            registry.${app}.activation host.system
+          );
+        }) (lib.filterAttrs (_: app: lib.elem name app.hosts) registry)
         // config.mountainous.serviceAppDeployProfiles.${name};
     }) hosts;
 

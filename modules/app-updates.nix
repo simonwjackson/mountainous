@@ -13,6 +13,21 @@ let
         input = lib.mkOption { type = lib.types.str; };
         schedule = lib.mkOption { type = lib.types.str; };
         hosts = lib.mkOption { type = lib.types.listOf lib.types.str; };
+        timeout = lib.mkOption {
+          type = lib.types.str;
+          default = "8h";
+          description = "Maximum time for the complete update job.";
+        };
+        sourceBranch = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "Refresh a clean updater checkout to this branch before selecting a candidate.";
+        };
+        checks = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "Additional focused checks, built sequentially on each target architecture.";
+        };
         gateFile = lib.mkOption {
           type = lib.types.str;
           default = "${state}/enabled";
@@ -62,6 +77,12 @@ in
             hostName = "fuji.hummingbird-lake.ts.net";
             privateKey = "${state}/ssh/builder_ed25519";
           };
+          nativeBuilders.aarch64-linux = {
+            knownHosts = "${../deploy/known_hosts}";
+            alias = "yari";
+            hostName = "yari.hummingbird-lake.ts.net";
+            privateKey = "${state}/ssh/builder_ed25519";
+          };
           hosts = lib.mapAttrs (_: host: host.system) hosts;
         }
       );
@@ -109,7 +130,7 @@ in
                 StateDirectoryMode = "0700";
                 WorkingDirectory = "${state}/repository";
                 ExecStart = "${updater}/bin/app-update --config ${updateConfig} --app ${name}";
-                TimeoutStartSec = "8h";
+                TimeoutStartSec = app.timeout;
                 Nice = 10;
                 CPUQuota = "400%";
                 MemoryMax = "8G";
