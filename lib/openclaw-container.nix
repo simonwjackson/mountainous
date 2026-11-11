@@ -39,10 +39,23 @@ let
       pkgs.jq
     ];
     text = ''
-      # declarationKey is an atomic upsert, so retries keep the same job and history.
-      openclaw-admin gateway call cron.add --json --timeout 30000 \
-        --params "$(cat ${morningBrief})" |
-        jq -e '(.job // .) | .id != null' >/dev/null
+      call_gateway() {
+        local result
+        if ! result=$(openclaw-admin gateway call "$1" --json --timeout 30000 --params "$2"); then
+          printf '%s\n' "$result" >&2
+          return 1
+        fi
+        printf '%s\n' "$result"
+      }
+      # declarationKey atomically retains the job ID and history across retries.
+      result=$(call_gateway cron.add "$(cat ${morningBrief})")
+      id=$(jq -er '(.job // .).id' <<< "$result")
+      # 2026.11.3 declarations only converge schedule/payload/delivery/enablement.
+      # Patch the other authored fields too, rather than preserving UI drift.
+      patch=$(jq -n --arg id "$id" --slurpfile job ${morningBrief} \
+        '{id: $id, patch: ($job[0] | del(.declarationKey))}')
+      result=$(call_gateway cron.update "$patch")
+      jq -e --arg id "$id" '(.job // .).id == $id' <<< "$result" >/dev/null
     '';
   };
   origin = "https://claw.hummingbird-lake.ts.net";

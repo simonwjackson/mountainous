@@ -122,9 +122,11 @@ the declared definition, including enablement.
 
 OpenClaw persists jobs in gateway SQLite state, not the read-only application
 config. The container's `openclaw-morning-brief.service` oneshot uses the root-only
-admin wrapper and `gateway call cron.add` to reconcile declaration key
-`mountainous:morning-brief`. This is an atomic upsert: repeated starts keep the
-job ID and history, replace its authored definition, and do not duplicate it.
+admin wrapper and `gateway call cron.add` to upsert declaration key
+`mountainous:morning-brief`, then `cron.update` to converge all authored fields.
+OpenClaw 2026.11.3's declaration API alone preserves description and session
+routing edits; the second call restores those too. Repeated starts keep the
+job ID and history and do not duplicate it. If either call fails, the unit retries.
 It starts after the gateway, retries startup failures, and restarts with the
 gateway. It does not run the brief during reconciliation.
 
