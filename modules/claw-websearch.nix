@@ -1,8 +1,8 @@
 { self, ... }:
 {
   nixos.modules.claw-websearch =
-    { config, ... }:
-    {
+    { config, lib, ... }:
+    lib.mkIf config.mountainous.features.ai-gateway.enable {
       mountainous.tailnetNames.claw-websearch = {
         description = "Model-native web search MCP for both OpenClaw agents";
         backend = "http://127.0.0.1:8430/v1/responses";
