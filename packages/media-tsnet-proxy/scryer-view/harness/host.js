@@ -10,7 +10,8 @@
 //   nofull=1    a host without a full view
 //   still=1     freeze spinners (for repeatable screenshots)
 //   openclaw=1  size the inline frame as OpenClaw 2026.11.3 does: start at 160 px,
-//               report that height as containerDimensions.height, grow to what the card reports (max 1200)
+//               report that height as containerDimensions.height, grow to what the card reports (max 1200),
+//               and leave a granted full screen at the 150 px iframe default (its full-screen fault)
 import { AppBridge, PostMessageTransport } from "@modelcontextprotocol/ext-apps/app-bridge";
 import { createFake } from "./fake-scryer.mjs";
 import drawings from "./drawings.json";
@@ -55,6 +56,7 @@ bridge.onupdatemodelcontext = async ({ content }) => { seen.textContent = conten
 bridge.onrequestdisplaymode = async ({ mode: m }) => {
   mode = m === "fullscreen" ? "fullscreen" : "inline";
   layout();
+  if (q.get("openclaw")) frame.style.setProperty("height", mode === "fullscreen" ? "150px" : "160px", "important");
   requestAnimationFrame(() => bridge.sendHostContextChange(context()));
   return { mode };
 };

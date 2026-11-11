@@ -16,6 +16,8 @@ import {
 const root = document.getElementById("root");
 /** Hydration is re-read this often, for at most this long, while the card is open. */
 const POLL_MS = 5000, POLL_FOR_MS = 120_000;
+/** A granted full screen shorter than this is a host fault; the card expands in place instead. */
+const FULLSCREEN_MIN_HEIGHT = 320;
 
 const s = {
   mode: "inline", modes: [], fixedHeight: undefined, dims: undefined, locale: undefined,
@@ -194,7 +196,18 @@ async function openTitle(titleId, name) {
 async function openFull() {
   if (s.mode === "fullscreen" || s.mode === "expanded") return;
   if (s.modes.includes("fullscreen")) {
-    try { const r = await app.requestDisplayMode({ mode: "fullscreen" }); if (r?.mode === "fullscreen") { s.mode = "fullscreen"; applyContext({}); render(); return; } } catch { /* fall back below */ }
+    try {
+      const r = await app.requestDisplayMode({ mode: "fullscreen" });
+      if (r?.mode === "fullscreen") {
+        s.mode = "fullscreen"; applyContext({}); render();
+        // OpenClaw 2026.11.3 grants full screen but can leave the frame at the 150 px
+        // iframe default. Give the host two frames, then check it is a real full screen;
+        // if not, return to inline and grow in place, so the episodes stay reachable.
+        await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+        if (innerHeight >= FULLSCREEN_MIN_HEIGHT) return;
+        try { await app.requestDisplayMode({ mode: "inline" }); } catch { /* expand anyway */ }
+      }
+    } catch { /* fall back below */ }
   }
   s.mode = "expanded"; render();
 }
@@ -315,7 +328,7 @@ function searchHtml(p) {
     return `<section class="card">${head}<p class="empty">Scryer found no movie, series or anime with that name. Try the original title or a year.</p></section>`;
   const tiles = d.results.slice(0, p.shown).map((c) => tile(c, twins.has(c.key))).join("");
   const more = p.more ? `<footer class="foot"><button class="btn" data-act="full">Show all ${d.results.length} results</button></footer>` : "";
-  return `<section class="card ${p.kind}" data-cols="${p.columns}">${head}${blockedNote()}<div class="tiles scroll-${p.scroll}" data-scroll="list">${tiles}</div>${more}</section>`;
+  return `<section class="card ${p.kind}" data-cols="${p.columns}">${head}${blockedNote()}<div class="tiles scroll-${p.scroll}" data-scroll="list">${tiles}</div>${more}${lessFoot()}</section>`;
 }
 
 // ---------- title card ----------
@@ -417,9 +430,12 @@ function titleHtml(p) {
   return `<section class="card title ${p.kind} scroll-${p.scroll}" aria-busy="${t.hydration === "pending"}">
     ${back}${head}${blockedNote()}${hydrationNote(t)}${scopeLine(d)}
     ${page ? overview(t.overview, 3) : ""}
-    <div class="title-body" data-scroll="list">${list}</div>${foot}
+    <div class="title-body" data-scroll="list">${list}</div>${foot}${lessFoot()}
   </section>`;
 }
+
+/** Grown in place (a host without a working full screen): the way back to the short card. */
+const lessFoot = () => (s.mode === "expanded" ? `<footer class="foot"><button class="btn" data-act="close" data-key="less">Show less</button></footer>` : "");
 
 // ---------- waiting, loading, errors ----------
 function loadingHtml() {
