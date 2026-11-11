@@ -21,15 +21,18 @@ DAY = "2026-11-10"
 
 
 @contextlib.contextmanager
-def endpoint(body, *, sse=False):
+def endpoint(body, *, sse=False, expected_request=None):
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):
             request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-            assert request["method"] == "tools/call"
-            assert request["params"] == {
-                "name": "calendar_busy",
-                "arguments": {"day": DAY},
-            }
+            if expected_request is not None:
+                assert request == expected_request
+            else:
+                assert request["method"] == "tools/call"
+                assert request["params"] == {
+                    "name": "calendar_busy",
+                    "arguments": {"day": DAY},
+                }
             self.send_response(200)
             self.end_headers()
             payload = json.dumps(body)
@@ -111,6 +114,50 @@ class CalendarVerification(unittest.TestCase):
         ) as url:
             with self.assertRaises(AssertionError):
                 launcher.rpc(url, DAY)
+
+
+class AssistantRpcContracts(unittest.TestCase):
+    def test_no_argument_rpcs_send_null_not_an_empty_object(self):
+        expected = {
+            "_tag": "Request",
+            "id": "1",
+            "tag": "GetConversation",
+            "payload": None,
+            "headers": [],
+        }
+        result = {"sessionId": "fixture", "state": {"kind": "Idle"}}
+        with endpoint(
+            {
+                "_tag": "Exit",
+                "requestId": "1",
+                "exit": {"_tag": "Success", "value": result},
+            },
+            expected_request=expected,
+        ) as url:
+            self.assertEqual(launcher.assistant_rpc("GetConversation", url=url), result)
+
+    def test_rpc_failure_is_not_calendar_success(self):
+        expected = {
+            "_tag": "Request",
+            "id": "1",
+            "tag": "GetTranscript",
+            "payload": {"sessionId": "fixture"},
+            "headers": [],
+        }
+        with endpoint(
+            {
+                "_tag": "Exit",
+                "requestId": "1",
+                "exit": {"_tag": "Failure", "cause": []},
+            },
+            expected_request=expected,
+        ) as url:
+            with self.assertRaisesRegex(
+                RuntimeError, "Assistant RPC GetTranscript failed"
+            ):
+                launcher.assistant_rpc(
+                    "GetTranscript", {"sessionId": "fixture"}, url=url
+                )
 
 
 class ConsentContracts(unittest.TestCase):
