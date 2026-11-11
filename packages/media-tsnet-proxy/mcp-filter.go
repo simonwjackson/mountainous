@@ -71,33 +71,8 @@ func mcpHandler(backend *url.URL, tools []string, tailnetClient func(*http.Reque
 	target := *backend
 	target.Path, target.RawPath, target.RawQuery, target.Fragment = "/mcp", "", "", ""
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !tailnetClient(r) {
-			http.Error(w, "tailnet client required", http.StatusForbidden)
-			return
-		}
-		if r.URL.Path != "/mcp" || r.URL.RawQuery != "" || r.Method != http.MethodPost {
-			rpcError(w, nil, -32601, "MCP POST /mcp required")
-			return
-		}
-		var request mcpRequest
-		data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, mcpMaxBody))
-		if err != nil || json.Unmarshal(data, &request) != nil || request.JSONRPC != "2.0" {
-			rpcError(w, nil, -32600, "invalid MCP request")
-			return
-		}
-		if request.Method == "notifications/initialized" && len(request.ID) == 0 {
-			w.WriteHeader(http.StatusAccepted)
-			return
-		}
-		var id any
-		if json.Unmarshal(request.ID, &id) != nil || id == nil {
-			rpcError(w, nil, -32600, "request ID required")
-			return
-		}
-		switch id.(type) {
-		case string, float64:
-		default:
-			rpcError(w, nil, -32600, "invalid request ID")
+		request, ok := readMCPRequest(w, r, tailnetClient)
+		if !ok {
 			return
 		}
 		switch request.Method {
@@ -193,4 +168,37 @@ func mcpHandler(backend *url.URL, tools []string, tailnetClient func(*http.Reque
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(output)
 	})
+}
+
+func readMCPRequest(w http.ResponseWriter, r *http.Request, tailnetClient func(*http.Request) bool) (mcpRequest, bool) {
+	var request mcpRequest
+	if !tailnetClient(r) {
+		http.Error(w, "tailnet client required", http.StatusForbidden)
+		return request, false
+	}
+	if r.URL.Path != "/mcp" || r.URL.RawQuery != "" || r.Method != http.MethodPost {
+		rpcError(w, nil, -32601, "MCP POST /mcp required")
+		return request, false
+	}
+	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, mcpMaxBody))
+	if err != nil || json.Unmarshal(data, &request) != nil || request.JSONRPC != "2.0" {
+		rpcError(w, nil, -32600, "invalid MCP request")
+		return request, false
+	}
+	if request.Method == "notifications/initialized" && len(request.ID) == 0 {
+		w.WriteHeader(http.StatusAccepted)
+		return request, false
+	}
+	var id any
+	if json.Unmarshal(request.ID, &id) != nil || id == nil {
+		rpcError(w, nil, -32600, "request ID required")
+		return request, false
+	}
+	switch id.(type) {
+	case string, float64:
+	default:
+		rpcError(w, nil, -32600, "invalid request ID")
+		return request, false
+	}
+	return request, true
 }

@@ -20,6 +20,7 @@ in
       "logbook"
       "tailnet-names"
       "claw-tools"
+      "claw-scryer"
       "decision-gateway"
       "ai-gateway-staging"
       "ai-gateway"

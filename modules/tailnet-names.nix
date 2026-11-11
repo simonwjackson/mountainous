@@ -117,6 +117,11 @@
                 default = tailscale.tags;
                 description = "Enrollment tags for this service identity.";
               };
+              scryerPasswordFile = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Enable the native full-admin Scryer MCP endpoint with this LoadCredential password file. Backend is the fixed HTTPS GraphQL URL.";
+              };
               mcpTools = lib.mkOption {
                 type = lib.types.nullOr (lib.types.nonEmptyListOf (lib.types.strMatching "[a-zA-Z0-9_-]+"));
                 default = null;
@@ -130,12 +135,17 @@
       };
 
       config = lib.mkIf (names != { }) {
-        assertions = [
-          {
-            assertion = tailscale.oauthClientIdFile != null && tailscale.oauthSecretFile != null;
-            message = "Tailnet names join with the fleet OAuth client, which is not configured.";
-          }
-        ];
+        assertions =
+          lib.mapAttrsToList (name: cfg: {
+            assertion = cfg.mcpTools == null || cfg.scryerPasswordFile == null;
+            message = "${name}: Scryer and filtered MCP modes are mutually exclusive.";
+          }) names
+          ++ [
+            {
+              assertion = tailscale.oauthClientIdFile != null && tailscale.oauthSecretFile != null;
+              message = "Tailnet names join with the fleet OAuth client, which is not configured.";
+            }
+          ];
 
         users.users.tsnet-proxy = {
           isSystemUser = true;
@@ -161,7 +171,8 @@
               LoadCredential = [
                 "oauth-id:${tailscale.oauthClientIdFile}"
                 "oauth-secret:${tailscale.oauthSecretFile}"
-              ];
+              ]
+              ++ lib.optional (cfg.scryerPasswordFile != null) "scryer-admin-password:${cfg.scryerPasswordFile}";
               ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p ${state name}";
               ExecStart =
                 "${proxy}/bin/tsnet-proxy -hostname ${name} -state ${state name}"
@@ -170,7 +181,10 @@
                 + " -tags ${lib.escapeShellArg (lib.concatStringsSep "," cfg.tags)}"
                 + lib.optionalString (
                   cfg.mcpTools != null
-                ) " -mcp-tools ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpTools)}";
+                ) " -mcp-tools ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpTools)}"
+                + lib.optionalString (
+                  cfg.scryerPasswordFile != null
+                ) " -scryer-password-file %d/scryer-admin-password";
               Restart = "always";
               RestartSec = "30s";
               NoNewPrivileges = true;

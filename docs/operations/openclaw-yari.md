@@ -474,3 +474,63 @@ irreversible data-deletion decision, not part of a routine rollback.
   `/tmp/claw-tools-probe`, `/tmp/claw-yari-health` and `/tmp/claw-session-trace`
   on Yari support repeating network and actual-tool-call checks. No raw mail,
   event titles or credential values are recorded in this runbook.
+
+## Full-admin Scryer endpoint (prepared, not connected to OpenClaw)
+
+`https://claw-scryer.hummingbird-lake.ts.net/mcp` runs on Rakku and exposes
+exactly one tool: `scryer_graphql {query: string, variables?: object}`. It has no
+resources, prompts, uploads or backup downloads. Its separate tsnet identity
+uses only `tag:claw-tools`, the existing fleet OAuth client, HTTPS 443, and
+WhoIs verification of the actual peer. It has no LAN listener or Funnel.
+Existing calendar/maps policies and Simon's own assistant remain unchanged.
+
+**Simon explicitly chose full admin, with no GraphQL operation filter.** This
+is not a read-only endpoint. A permitted client can change settings and access,
+remove media or backups, restore state, and read secret fields. Tailnet ACLs
+limit reachability, not GraphQL privilege. A compromised OpenClaw agent or
+prompt injection can exercise all of those powers. The skill's confirmation
+rules are instructions, not an authorization boundary. Do not describe this
+endpoint as sandboxed or read-only.
+
+`modules/claw-scryer.nix` declares placement. `modules/tailnet-names.nix` passes
+`scryer-admin-password` through systemd LoadCredential. The password is not in
+the Nix store, environment or unit text. `packages/media-tsnet-proxy/scryer.go`
+implements the native MCP adapter in the existing proxy package. It logs in as
+`admin` with `persistSession: false`, keeps the token only in process memory,
+and renews within five minutes of expiry. It retries once only after HTTP 401;
+it does not retry timeouts or other errors. Login responses are never returned.
+An upstream reply that contains this admin password is withheld. Other valid
+GraphQL JSON is returned unchanged, including both `data` and `errors`.
+HTTP failures such as 460 are tool errors with `kind`, `status`, and the upstream
+JSON `body`; login errors retain status but omit the body. Clients must read
+state before retrying a mutation after a transport error.
+
+Requests and upstream replies are bounded to 4 MiB. Each upstream HTTP request
+has a 30-second timeout; the complete tool call has a 60-second deadline.
+Redirects are disabled. Unknown tools, resources and other MCP methods fail
+closed. `checks.x86_64-linux.claw-scryer` tests the real HTTP boundary and a
+local Scryer fixture: login, reuse, renewal, 401 retry, partial GraphQL errors,
+460/503, invalid replies, credential reflection, concurrent reuse and denied
+requests. Run that check plus `claw-tools`, `tailnet-names`, and Rakku toplevel
+evaluation. Build the package/system on Unzen, copy via Zao as root to Rakku,
+and switch Rakku. Never build on Rakku or run an aggregate flake check.
+
+The prepared skill is `lib/openclaw-skills/scryer/SKILL.md`. It is **not wired
+into OpenClaw**. To connect later, declare a streamable-HTTP MCP server named
+`claw-scryer` at the URL above, with `toolFilter.include = [ "scryer_graphql" ]`.
+Make that server/tool available to both Simon's main agent and Laure's agent
+through their respective tool policies. Install the prepared skill into both
+agents' declared skill/workspace paths. Do not copy the local `scripts/gql` or
+credentials into the container. Validate the resulting config, deploy Yari,
+and test each agent with read-only queries in new sessions. These are follow-up
+steps; this endpoint deployment changes no OpenClaw config, container or Yari
+configuration. No live Scryer mutation is needed for verification.
+
+To stop/remove just Scryer, remove Rakku's `claw-scryer` layer, evaluate and
+build Rakku on Unzen, and deploy Rakku. Retire `modules/claw-scryer.nix` and its
+check when unused. If clients were connected later, remove their server/skill
+references separately. Keep `/var/lib/tsnet-proxy-claw-scryer` under Rakku's
+persistence volume for rollback; removing the unit does not delete its identity
+or Scryer data. Deleting saved state or the tailnet registration is a separate
+action. Do not remove `tag:claw-tools`: calendar and maps still use it. Roll back
+a failed switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.

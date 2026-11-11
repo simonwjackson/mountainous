@@ -199,6 +199,7 @@ func main() {
 	oauthSecret := flag.String("oauth-secret-file", "", "OAuth secret file")
 	tags := flag.String("tags", "tag:mountainous", "Comma-separated enrollment tags")
 	mcpTools := flag.String("mcp-tools", "", "Enable restricted stateless MCP endpoint with these comma-separated tool names")
+	scryerPassword := flag.String("scryer-password-file", "", "Serve full-admin Scryer MCP using this credential file and the backend GraphQL URL")
 	flag.Parse()
 	backendURL, err := url.Parse(*backend)
 	if err != nil || backendURL.Host == "" || backendURL.User != nil ||
@@ -246,20 +247,40 @@ func main() {
 		log.Fatal("service listener failed; identity state retained")
 	}
 	var handler http.Handler = proxyHandler(backendURL)
-	if *mcpTools != "" {
-		if backendURL.Scheme != "http" || backendURL.Hostname() != "127.0.0.1" {
+	if *mcpTools != "" || *scryerPassword != "" {
+		if *mcpTools != "" && *scryerPassword != "" {
+			log.Fatal("conflicting MCP modes")
+		}
+		if *mcpTools != "" && (backendURL.Scheme != "http" || backendURL.Hostname() != "127.0.0.1") {
 			log.Fatal("MCP upstream must use IPv4 loopback HTTP")
 		}
 		local, err := srv.LocalClient()
 		if err != nil {
 			log.Fatal("tailnet identity client unavailable")
 		}
-		handler = mcpHandler(backendURL, strings.Split(*mcpTools, ","), func(r *http.Request) bool {
+		verifyPeer := func(r *http.Request) bool {
 			peer, err := local.WhoIs(r.Context(), r.RemoteAddr)
 			return err == nil && peer != nil && peer.Node != nil
-		})
+		}
+		if *scryerPassword != "" {
+			if backendURL.Scheme != "https" || backendURL.RawQuery != "" || backendURL.Fragment != "" {
+				log.Fatal("Scryer requires a fixed HTTPS URL")
+			}
+			password, err := os.ReadFile(*scryerPassword)
+			if err != nil || len(password) == 0 {
+				log.Fatal("Scryer credential unavailable")
+			}
+			handler = scryerHandler(newScryerClient(backendURL.String(), strings.TrimSuffix(string(password), "\n")), verifyPeer)
+		} else {
+			handler = mcpHandler(backendURL, strings.Split(*mcpTools, ","), verifyPeer)
+		}
 	}
 	server := &http.Server{Handler: handler, ReadHeaderTimeout: 15 * time.Second}
+	if *scryerPassword != "" {
+		server.ReadTimeout = 30 * time.Second
+		server.WriteTimeout = 75 * time.Second
+		server.IdleTimeout = 60 * time.Second
+	}
 	go func() {
 		<-ctx.Done()
 		shutdownContext, cancel := context.WithTimeout(context.Background(), 15*time.Second)
