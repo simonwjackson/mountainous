@@ -34,6 +34,12 @@
       # (services.korriProduct.kernel.series). The NUC needs no board kernel.
       boot.kernelPackages = pkgs.linuxPackages_7_2;
 
+      # intel_pstate offers only performance and powersave, not Korri's
+      # default schedutil, so korri-limits refused to start (korri-os/korri#414).
+      # On this driver powersave scales with load. Remove when Korri picks
+      # a governor the hardware offers.
+      services.korri.clockGovernor.cpuGovernor = "powersave";
+
       # Let the later Jellyfin client use VA-API without root or a local seat.
       users.users.simon.extraGroups = [ "render" ];
 
