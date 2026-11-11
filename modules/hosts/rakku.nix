@@ -316,6 +316,7 @@ in
                 port = 3171;
                 readOnlyTools = [
                   "calendar_busy"
+                  "family_calendar_events"
                   "mail_list"
                   "mail_read"
                   "mail_proposals"
@@ -326,6 +327,9 @@ in
                   decide-api-key = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
                   mechanical-api-key = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
                 };
+                # "Family" (Simon is owner). family_calendar_events reads only this
+                # calendar, for Laure's OpenClaw agent through claw-family-calendar.
+                environment.GOOGLE_FAMILY_CALENDAR_ID = "46g7he3srihobgru1lmoegsar8@group.calendar.google.com";
               };
               apps.maps = {
                 title = "Maps";

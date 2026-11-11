@@ -27,6 +27,10 @@ in
       checks.claw-tools =
         assert endpoints.claw-calendar.tools == [ "calendar_busy" ];
         assert endpoints.claw-maps.tools == [ "travel_time" ];
+        assert endpoints.claw-family-calendar.tools == [ "family_calendar_events" ];
+        assert
+          rakku.systemd.services.assistant-app-simon-google.environment.GOOGLE_FAMILY_CALENDAR_ID
+          == "46g7he3srihobgru1lmoegsar8@group.calendar.google.com";
         assert lib.all (
           name:
           let
