@@ -1,11 +1,11 @@
-# Oracle Cloud Ampere A1 VM (aarch64): the Forgerie host, and the fleet's
+# Oracle Cloud Ampere A1 VM (aarch64): the OpenClaw host, and the fleet's
 # second aarch64 builder.
 #
 # The disk layout is the permafrost layer (modules/permafrost.nix), installed
 # on 2026-10-12 with `nix run .#install`. Change it with `nixos-rebuild`. See
 # docs/plans/yari-forgerie-host.md.
 {
-  # aarch64 builder, at idle priority behind Forgerie. No /dev/kvm.
+  # aarch64 builder, at idle priority behind OpenClaw. No /dev/kvm.
   fleet.builders.yari = {
     system = "aarch64-linux";
     cpus = 4;
@@ -27,8 +27,8 @@
       # same in the RAM installer and the installed system.
       mountainous.permafrost.device = "/dev/disk/by-id/scsi-3600746698fac4cdbbc994001bebb9e91";
 
-      # Forgerie sessions come first. Builds use the CPU and disk only when
-      # Forgerie leaves them idle.
+      # OpenClaw comes first. Builds use the CPU and disk only when
+      # OpenClaw leaves them idle.
       nix.daemonCPUSchedPolicy = "idle";
       nix.daemonIOSchedClass = "idle";
 

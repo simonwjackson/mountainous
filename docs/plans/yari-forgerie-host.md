@@ -1,8 +1,15 @@
 # Yari as a Forgerie host: disk layout, impermanence, and reinstall plan
 
-## Status and scope
+## Dropped — 2026-11-10
 
-**Installed 2026-10-12. Yari runs the permafrost system. Phase 5 (Forgerie) remains.** Yari becomes a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. Since 2026-10-13 it is also the fleet's second aarch64 builder (the `builder` layer). Its nix-daemon runs at idle CPU and I/O priority, so builds use only what Forgerie leaves free.
+The Forgerie move is dropped. Forgerie stays on Zao and will not move to Yari.
+Yari is the OpenClaw host and an aarch64 builder. The completed disk layout
+and persistence work remain in use. The Forgerie steps and open decisions
+below are historical, not pending work.
+
+## Historical status and scope
+
+**Installed 2026-10-12. Forgerie phase dropped 2026-11-10.** The former plan was for Yari to become a dedicated Forgerie host. It runs the Forgerie UI and many concurrent sessions. Since 2026-10-13 it is also the fleet's second aarch64 builder (the `builder` layer). Its nix-daemon runs at idle CPU and I/O priority, so builds use only what Forgerie leaves free.
 
 This plan replaces Yari's XFS root with btrfs, wipes the system root at every boot, and keeps state in one persistent area called permafrost. The reinstall wipes Yari's only disk. The operator's part of the install must not grow.
 
@@ -109,7 +116,7 @@ The agent runs every step. The operator approves step 4.
 | 3. Rehearse kexec only: `MOUNTAINOUS_INSTALL_PHASES=kexec nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Done 2026-10-12. The installer came back on Tailscale as `yari` with the same node key, address and SSH host key, and left the disk unmounted. A reboot returned Yari to XFS with no failed units. |
 | 4. Install: `nix run .#install -- yari root@yari.hummingbird-lake.ts.net` | Done 2026-10-12. The first attempt hung inside `kexec -e` before disko ran (see Known risks). An OCI reset brought back the old system, and the second attempt completed. |
 | 5. Reboot twice. Verify the same Tailscale address, SSH with the same host key, decrypted sops secrets, and no failed units. | Done. Both boots: tmpfs root, same Tailscale node key and `100.65.213.32`, same host key, sops secrets present, zero failed units, zram on. Files in `/etc` and `/root` were gone after reboot; `/home` kept its file. |
-| 6. Declare Forgerie on Yari and copy live sessions from Zao | Pending (phase 5) |
+| 6. Declare Forgerie on Yari and copy live sessions from Zao | Dropped 2026-11-10 |
 
 If the installer in step 3 does not come back, reset the instance with `oci compute instance action --action RESET --profile yari`. Yari then boots its old system from disk. If step 5 fails, connect through the serial console and select the earlier boot entry or fix in place. There is no rollback to the XFS system after step 4.
 

@@ -16,6 +16,7 @@ in
       "server"
       "home-automation"
       "home-network-services"
+      "home-exit-node"
       "cliproxyapi"
       "logbook"
       "tailnet-names"

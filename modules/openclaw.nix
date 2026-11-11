@@ -50,6 +50,7 @@
         environment.persistence."/permafrost".directories = [ "/var/lib/nixos-containers/openclaw" ];
         systemd.services."container@openclaw" = {
           after = [ "sops-install-secrets.service" ];
+          serviceConfig.MemoryMax = "8G";
           unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/openclaw" ];
         };
         assertions = [
@@ -87,10 +88,11 @@
           assert
             gateway.config.gateway.auth.mode == "trusted-proxy" && !gateway.config.gateway.auth.allowTailscale;
           assert gateway.config.gateway.auth.trustedProxy.userHeader == "tailscale-user-login";
-          assert gateway.config.gateway.auth.trustedProxy.allowUsers == [
-            "simon.jackson@gmail.com"
-            "chancerellelaure@gmail.com"
-          ];
+          assert
+            gateway.config.gateway.auth.trustedProxy.allowUsers == [
+              "simon.jackson@gmail.com"
+              "chancerellelaure@gmail.com"
+            ];
           assert gateway.config.gateway.roles.default == "pending";
           assert gateway.config.gateway.roles.definitions.pending.scopes == [ ];
           assert gateway.config.gateway.roles.definitions.simon.agents == [ "main" ];
@@ -100,16 +102,18 @@
           );
           assert lib.elem "/run/tailscale" unit.InaccessiblePaths;
           assert lib.hasInfix "--https=443 http://127.0.0.1:18788" c.systemd.services.claw-tailnet.script;
-          assert lib.hasInfix "-tag tag:mountainous -login simon.jackson@gmail.com" c.systemd.services.claw-identity-proxy.serviceConfig.ExecStart;
+          assert lib.hasInfix "-tag tag:mountainous -login simon.jackson@gmail.com"
+            c.systemd.services.claw-identity-proxy.serviceConfig.ExecStart;
           assert c.systemd.services.claw-identity-proxy.serviceConfig.DynamicUser;
           assert
             gateway.config.models.providers.front-door.baseUrl == "https://ai.hummingbird-lake.ts.net/v1";
           assert gateway.config.agents.defaults.model.primary == "front-door/claude-opus-5-5";
           # Two agents; both keep a heartbeat (any per-agent block disables the rest).
-          assert lib.attrNames gateway.config.agents.entries == [
-            "laure"
-            "main"
-          ];
+          assert
+            lib.attrNames gateway.config.agents.entries == [
+              "laure"
+              "main"
+            ];
           assert gateway.config.agents.ownership == "explicit";
           assert gateway.config.agents.defaults.systemAgent.agentId == "main";
           assert gateway.config.agents.entries.main.workspace == gateway.config.agents.defaults.workspace;
@@ -122,9 +126,10 @@
               "budget-allocator__*"
               "system-monitor__*"
             ];
-          assert gateway.config.mcp.servers.claw-family-calendar.toolFilter.include == [
-            "family_calendar_events"
-          ];
+          assert
+            gateway.config.mcp.servers.claw-family-calendar.toolFilter.include == [
+              "family_calendar_events"
+            ];
           assert lib.all
             (
               name:
@@ -138,16 +143,56 @@
             [
               "basic-react"
               "budget-allocator"
-              "system-monitor"
             ];
           assert gateway.config.mcp.apps.enabled;
           assert gateway.config.mcp.apps.sandboxOrigin == "https://claw.hummingbird-lake.ts.net:8443";
           assert lib.hasInfix "--advertise-tags=tag:claw" c.systemd.services.claw-tailnet.script;
           assert c.systemd.services.claw-tailnet.serviceConfig.User == "tailscale";
-          assert !gateway.config.plugins.enabled;
+          assert gateway.config.plugins.enabled;
+          assert
+            gateway.config.plugins.allow == [
+              "browser"
+              "memory-core"
+              "openai"
+              "web-readability"
+            ];
+          assert gateway.config.tools.profile == "full";
+          assert gateway.config.tools.deny == [ "group:runtime" ];
+          assert
+            gateway.config.tools.allow == [
+              "ask_user"
+              "group:memory"
+              "group:fs"
+              "group:web"
+              "cron"
+              "heartbeat_respond"
+              "progress_card"
+              "group:sessions"
+              "agents_list"
+              "browser"
+              "view_image"
+              "image_generate"
+              "bundle-mcp"
+            ];
+          assert !gateway.config.tools.codeMode.enabled && gateway.config.tools.fs.workspaceOnly;
+          assert host.systemd.services."container@openclaw".serviceConfig.MemoryMax == "8G";
+          assert !gateway.config.tools.elevated.enabled;
+          assert gateway.config.browser.enabled && gateway.config.browser.headless;
+          assert gateway.config.agents.defaults.thinkingDefault == "medium";
+          assert lib.all (
+            m:
+            m.reasoning
+            &&
+              m.input == [
+                "text"
+                "image"
+              ]
+          ) gateway.config.models.providers.front-door.models;
+          assert gateway.config.agents.defaults.mediaModels.image.primary == "openai/gemini-3.1-flash-image";
+          assert !(gateway.config.mcp.servers ? system-monitor);
           assert c.environment.etc."openclaw/openclaw.json".mode == "0600";
           assert lib.elem "/nix/var/nix/daemon-socket" unit.InaccessiblePaths;
-          assert lib.hasInfix "--exit-node=100.120.204.5" c.systemd.services.claw-tailnet.script;
+          assert lib.hasInfix "--exit-node=100.88.212.117" c.systemd.services.claw-tailnet.script;
           assert lib.hasInfix "--exit-node-allow-lan-access=false" c.systemd.services.claw-tailnet.script;
           assert
             lib.hasInfix "policy drop;" firewall && lib.hasInfix "oifname \"tailscale0\" accept" firewall;
@@ -156,8 +201,13 @@
           assert c.systemd.services.tailscaled.serviceConfig.User == "tailscale";
           assert
             unit.ProtectSystem == "strict" && unit.ProtectHome && unit.NoNewPrivileges && unit.PrivateTmp;
-          assert unit.ReadWritePaths == [ "/var/lib/openclaw" ] && unit.MemoryMax == "4G";
-          assert gateway.config.skills.allowBundled == [ ] && gateway.config.plugins.allow == [ ];
+          assert unit.ReadWritePaths == [ "/var/lib/openclaw" ] && unit.MemoryMax == "8G";
+          assert
+            gateway.config.skills.allowBundled == [
+              "weather"
+              "visualize"
+              "diagram-maker"
+            ];
           assert !(gateway.config ? channels);
           assert host.networking.firewall.allowedTCPPorts == [ ];
           assert
@@ -165,14 +215,17 @@
               "claude-opus-5-5"
               "gpt-6.1-sol"
               "gemini-3.8-flash-high"
+              "gemini-3.1-flash-image"
+              "gpt-image-2"
             ];
           assert
             key.dialects == [
               "chat_completions"
               "responses"
               "models"
+              "images"
             ];
-          assert key.monthly_cap_usd == 1 && key.requests_per_minute == 300;
+          assert key.monthly_cap_usd == 1000000000 && key.requests_per_minute == 300;
           pkgs.runCommand "openclaw-isolation" {
             # Builds the identity proxy for this system and runs its tests.
             proxy = import ../lib/claw-identity-proxy.nix { inherit pkgs; };

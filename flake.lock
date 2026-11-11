@@ -1346,19 +1346,6 @@
         "url": "https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-arm64.tar.xz"
       }
     },
-    "openclaw-system-monitor-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 499162500,
-        "narHash": "sha256-RAs11UYL6SBsDerfGQRslu6eEYmcXsYUlCxULLajCdo=",
-        "type": "tarball",
-        "url": "https://registry.npmjs.org/@modelcontextprotocol/server-system-monitor/-/server-system-monitor-2.0.4.tgz"
-      },
-      "original": {
-        "type": "tarball",
-        "url": "https://registry.npmjs.org/@modelcontextprotocol/server-system-monitor/-/server-system-monitor-2.0.4.tgz"
-      }
-    },
     "ossicle": {
       "inputs": {
         "flake-utils": "flake-utils_4",
@@ -1742,7 +1729,6 @@
         "openclaw-basic-react-src": "openclaw-basic-react-src",
         "openclaw-budget-allocator-src": "openclaw-budget-allocator-src",
         "openclaw-node-arm64": "openclaw-node-arm64",
-        "openclaw-system-monitor-src": "openclaw-system-monitor-src",
         "ossicle": "ossicle",
         "pace": "pace",
         "pi": "pi",

@@ -1,4 +1,4 @@
-# Only Unzen's main network provides home egress. media-vpn stays in its netns.
+# Rakku provides home egress. The container remains fail closed if it loses this route.
 { self, ... }:
 {
   nixos.modules.home-exit-node =
@@ -24,8 +24,8 @@
       };
       assertions = [
         {
-          assertion = config.networking.hostName == "unzen";
-          message = "The home exit node placement is Unzen, never a cloud host.";
+          assertion = config.networking.hostName == "rakku";
+          message = "The home exit node placement is Rakku, never a cloud host.";
         }
       ];
     };
@@ -34,8 +34,9 @@
     {
       checks.home-exit-node =
         let
-          c = self.nixosConfigurations.unzen.config;
+          c = self.nixosConfigurations.rakku.config;
         in
+        assert !(self.nixosConfigurations.unzen.config.systemd.services ? tailscale-home-exit);
         assert c.services.tailscale.useRoutingFeatures == "both";
         assert
           c.systemd.services.tailscale-home-exit.serviceConfig.ExecStart

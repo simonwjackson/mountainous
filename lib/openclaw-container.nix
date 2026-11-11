@@ -27,11 +27,10 @@ let
       )
       {
         budget-allocator = "get-budget-data";
-        system-monitor = "get-system-info";
       };
   identityProxy = import ./claw-identity-proxy.nix { inherit pkgs; };
   bootstrapDns = pkgs.writeText "claw-overlay-resolv.conf" "nameserver 1.1.1.1\nnameserver 8.8.8.8\n";
-  exitNode = "100.120.204.5"; # Unzen's stable tailnet address, not a LAN route.
+  exitNode = "100.88.212.117"; # Rakku's stable tailnet address, not a LAN route.
   admin = pkgs.writeShellApplication {
     name = "openclaw-admin";
     runtimeInputs = [
@@ -218,6 +217,11 @@ in
           # retired `default = true` marker meant (as `openclaw doctor --fix`).
           ownership = "explicit";
           defaults = {
+            thinkingDefault = "medium";
+            mediaModels.image = {
+              primary = "openai/gemini-3.1-flash-image";
+              fallbacks = [ "openai/gpt-image-2" ];
+            };
             model.primary = "front-door/claude-opus-5-5";
             workspace = "/var/lib/openclaw/workspace";
             systemAgent.agentId = "main";
@@ -261,7 +265,11 @@ in
                 (id: {
                   inherit id;
                   name = id;
-                  input = [ "text" ];
+                  input = [
+                    "text"
+                    "image"
+                  ];
+                  reasoning = true;
                 })
                 [
                   "claude-opus-5-5"
@@ -270,6 +278,24 @@ in
                 ];
           };
         };
+        # Use the Images dialect, not Gemini's native API, at the same front door.
+        models.providers.openai = {
+          baseUrl = "https://ai.hummingbird-lake.ts.net/v1";
+          apiKey = "\${FRONT_DOOR_API_KEY}";
+          api = "openai-completions";
+          models =
+            map
+              (id: {
+                inherit id;
+                name = id;
+              })
+              [
+                "gemini-3.1-flash-image"
+                "gpt-image-2"
+              ];
+        };
+        # The front-door grant has no embeddings dialect. Keep memory local/FTS.
+        memory.search.provider = "none";
         mcp = {
           servers = {
             basic-react = {
@@ -292,17 +318,51 @@ in
             sandboxOrigin = "${origin}:8443";
           };
         };
-        # No channel, marketplace, or bundled skill is admitted in this trial.
-        skills.allowBundled = [ ];
+        skills.allowBundled = [
+          "weather"
+          "visualize"
+          "diagram-maker"
+        ];
+        skills.entries.clawhub.enabled = false;
+        # Only the plugins needed by the approved browser, memory, images and web tools.
         plugins = {
-          enabled = false;
-          allow = [ ];
+          enabled = true;
+          allow = [
+            "browser"
+            "memory-core"
+            "openai"
+            "web-readability"
+          ];
         };
         discovery.mdns.mode = "off";
-        browser.enabled = false;
+        browser = {
+          enabled = true;
+          headless = true;
+          defaultProfile = "openclaw";
+          executablePath = "${pkgs.chromium}/bin/chromium";
+          # The front door is the only private origin image generation needs.
+          ssrfPolicy.allowedHostnames = [ "ai.hummingbird-lake.ts.net" ];
+        };
         tools = {
-          profile = "minimal";
-          alsoAllow = [ "bundle-mcp" ];
+          profile = "full";
+          allow = [
+            "ask_user"
+            "group:memory"
+            "group:fs"
+            "group:web"
+            "cron"
+            "heartbeat_respond"
+            "progress_card"
+            "group:sessions"
+            "agents_list"
+            "browser"
+            "view_image"
+            "image_generate"
+            "bundle-mcp"
+          ];
+          deny = [ "group:runtime" ];
+          codeMode.enabled = false;
+          fs.workspaceOnly = true;
           elevated.enabled = false;
         };
         update.checkOnStart = false;
@@ -476,7 +536,7 @@ in
         StateDirectory = "openclaw";
         StateDirectoryMode = "0700";
         ReadWritePaths = [ "/var/lib/openclaw" ];
-        MemoryMax = "4G";
+        MemoryMax = "8G";
         TasksMax = 256;
       };
     };

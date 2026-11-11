@@ -138,13 +138,17 @@ in
                     "chat_completions"
                     "responses"
                     "models"
+                    "images"
                   ];
                   models = [
                     "claude-opus-5-5"
                     "gpt-6.1-sol"
                     "gemini-3.8-flash-high"
+                    "gemini-3.1-flash-image"
+                    "gpt-image-2"
                   ];
-                  monthly_cap_usd = 1;
+                  # The remote account owns the spend cap; do not cap OpenClaw here.
+                  monthly_cap_usd = 1000000000;
                   requests_per_minute = 300;
                 }
                 {

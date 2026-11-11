@@ -21,15 +21,15 @@ tailscaled.
 | --- | --- | --- |
 | OpenClaw | Yari, `containers.openclaw` (nspawn) | `/var/lib/nixos-containers/openclaw` persisted under `/permafrost` |
 | Claw overlay | Container's own tailscaled, `tag:claw` | `/var/lib/tailscale` inside the container |
-| Home exit node | Unzen's main network, not its media VPN namespace | `100.120.204.5` |
+| Home exit node | Rakku | `100.88.212.117` |
 | Model front door | Existing ai-gateway on Rakku | `https://ai.hummingbird-lake.ts.net/v1` |
 | Control UI | Container loopback 18789, Tailscale Serve 443 | `https://claw.hummingbird-lake.ts.net` |
 | MCP Apps sandbox | Container loopback 18790, Serve 8443 | `https://claw.hummingbird-lake.ts.net:8443` |
 
 OpenClaw is untrusted execution. Its dedicated user has no capabilities, strict
-filesystem protection, private temporary files, a 4 GiB memory cap, and write
+filesystem protection, private temporary files, an 8 GiB gateway and container memory cap, and write
 access only to its state directory. The container has its own private network
-and TUN device. Yari itself keeps Oracle egress for builds and Forgerie.
+and TUN device. Yari itself keeps Oracle egress for builds. Forgerie stays on Zao.
 
 An inet nftables OUTPUT policy permits only loopback, tailscale0, and the
 separate trusted tailscaled UID. All other IPv4 and IPv6 output is dropped.
@@ -44,7 +44,7 @@ direct internet access to bootstrap the encrypted overlay.
 
 The tailnet policy must auto-approve exit nodes for `tag:mountainous` and let
 that tag mint `tag:claw`. Claw must **not** receive `tag:mountainous`. Its ACL
-permits only `autogroup:internet:*` and `100.108.77.86:443` (ai-front-door).
+permits `autogroup:internet:*`, `tag:mountainous:443`, and the front door.
 It also permits `tag:claw-tools:443`. The fleet OAuth client, owned by
 `tag:mountainous`, may mint `tag:claw-tools`; its tagOwners are
 `autogroup:admin` and `tag:mountainous`. Members can reach Claw's 443 and 8443. This policy lives in Tailscale's admin
@@ -55,8 +55,8 @@ wrapper. nix-openclaw has no aarch64-linux flake package, so
 `lib/openclaw-package.nix` supplies the pinned Node 24.22.1 ARM runtime.
 All external release files are flake inputs. The official MCP React clock demo
 2.0.4 is a pinned, self-contained release, tested offline over stdio. No runtime
-npm installation is needed. No marketplace skills, messaging channels, browser automation, or elevated
-tools are configured. Calendar and maps use the restricted remote endpoints below.
+npm installation is needed. No marketplace skills, messaging channels or elevated tools are configured.
+The managed headless Chromium browser runs inside the same egress boundary. Calendar and maps use the restricted remote endpoints below.
 
 Security review on 2026-11-10 read all 722 published OpenClaw advisories using
 GitHub's cursor pagination. The highest published fixed version was 2026.9.3.
@@ -131,11 +131,11 @@ switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
 ## Official interactive demos
 
 The container also runs the official `@modelcontextprotocol/server-budget-allocator`
-and `@modelcontextprotocol/server-system-monitor`, both **2.0.4**, matching the
-React clock release. Their exact npm tarballs and content hashes are flake inputs.
+**2.0.4**, matching the React clock release. The system-monitor demo was
+removed on 2026-11-10; its verification below is historical. Their exact npm tarballs and content hashes are flake inputs.
 `lib/openclaw-demo.nix` packages the self-contained JavaScript and HTML with the
 same ARM Node runtime as the clock. No npm installation, outside service,
-credentials, mounts, or additional permissions are needed. Both servers use
+credentials, mounts, or additional permissions are needed. The servers use
 `--stdio` in declarative `mcp.servers`; neither opens an HTTP listener.
 
 In a **new** Control UI session, ask “help me split a $5,000 monthly budget”
@@ -195,10 +195,13 @@ the former server configuration without deleting conversations.
 `morning-brief` runs at **07:00 America/Denver**, every day (`0 7 * * *`,
 zero stagger, including DST). Each run is isolated and uses the normal default
 model and full workspace persona (flakey). It reads today's `calendar_busy` and
-returns one short message: busy blocks, calendar-free windows of at least 45
-minutes within 08:00–22:00, one plain line about the day, and at most one question.
-Empty calendars and failed reads are distinct. It has no task picks, mail,
-health or training content. Maps may only use coordinates in event locations.
+returns one short day plan: a plain why line, calendar busy blocks, real travel
+between known coordinates, relevant memory, weather for a known location and
+calendar-free windows of at least 45 minutes within 08:00–22:00. It uses the
+03:00–03:00 Denver day and skips a duplicate plan found in memory. It says once
+that Atlas picks/Today, Logbook recovery and training, wind_down_state, groceries
+and overnight Mail are unavailable. It assumes an ordinary day, never invents
+tasks or recovery data, and makes no substitute dashboard or external writes.
 
 The declaration is `lib/openclaw-morning-brief.nix`; its prompt is
 `lib/openclaw-morning-brief.md`. Change the cron expression or zone in the former,
@@ -289,11 +292,13 @@ readable only by its host and Simon's master key. Yari cannot decrypt Rakku's
 other secrets. Rotate both copies together with `sops set` and the converted
 master identity (`scripts/secrets` documents conversion). Never print values.
 
-The grant `openclaw@yari` permits only chat_completions, responses and models,
-with claude-opus-5-5 (default), gpt-6.1-sol and gemini-3.8-flash-high. Its cap is
-USD 1/month and its rate is 300 requests/minute. The gateway's existing prepaid
+The grant `openclaw@yari` permits chat_completions, responses, models and images,
+with claude-opus-5-5 (default), gpt-6.1-sol, gemini-3.8-flash-high,
+gemini-3.1-flash-image and gpt-image-2. Its required cap field is
+USD 1,000,000,000/month (effectively unlimited); the remote account owns the cap.
+Its rate stays 300 requests/minute. The gateway's existing prepaid
 provider exemption still applies; these three models use subscription routes.
-No Jev, images or speech grant exists.
+No Jev, systemone or speech grant exists.
 
 The separate `openclaw-gateway-token` exists only in Yari's encrypted host file.
 Systemd passes both secrets through LoadCredential and the launcher exports
@@ -338,9 +343,9 @@ then use a copied Nix-shebang script on that host to build `DRV^*`, set its
 system profile, and run `bin/switch-to-configuration switch`. Keep build/deploy
 scripts local, copy them and run them; do not embed multi-step SSH commands.
 
-Deploy Unzen first. Confirm Unzen is advertised and approved (ExitNodeOption
-true in another node's `tailscale status --json`). Deploy Rakku's grant, then
-Yari. Root SSH works on these hosts; the simon account on Yari and Unzen needs
+Deploy Rakku first. Confirm Rakku is advertised and approved (ExitNodeOption
+true in another node's `tailscale status --json`). Deploy Yari to select Rakku, then deploy Unzen and explicitly clear its saved
+exit advertisement with `tailscale set --advertise-exit-node=false`. Root SSH works on these hosts; the simon account on Yari and Unzen needs
 a sudo password. Do not reboot Rakku. Confirm Home Assistant, Z-Wave,
 ai-gateway and all three pi-assistant units remain active after switching.
 
@@ -349,14 +354,14 @@ ai-gateway and all three pi-assistant units remain active after switching.
 Use `nixos-container run openclaw -- ...` or `machinectl shell` on Yari. Run
 network probes as the OpenClaw user, not the trusted tailscaled UID. Check:
 
-- Unzen and container `curl -4 https://ifconfig.me` return the same home IP;
+- Rakku and container `curl -4 https://ifconfig.me` return the same home IP;
   Yari's own probe still returns Oracle's IP.
 - After stopping the container's tailscaled, an OpenClaw-user curl with a
   known public destination (`--resolve` to avoid a DNS-only failure) fails.
   Restore tailscaled and its `claw-tailnet` unit immediately.
 - `/v1/models` returns 401 without a key, and succeeds with the OpenClaw key.
   Make one short completion using the default model.
-- TCP to Rakku:22 and HTTPS to assistant.hummingbird-lake.ts.net fail.
+- TCP to Rakku:22 fails. HTTPS to tag:mountainous services is now allowed.
 - From Zao, load the Control UI, pair it, send a short chat, and capture a
   screenshot. Call the basic-react clock tool to inspect its MCP App.
 - Run `openclaw security audit`, record its warnings and `free -m` on Yari.
@@ -369,7 +374,7 @@ not the source of truth; edit this flake and deploy instead.
 
 For a failed switch, run `nixos-rebuild switch --rollback` on that host. Do not
 reboot Rakku. A previous Yari generation stops the new container; a previous
-Rakku generation revokes its grant. A previous Unzen generation removes the
+Rakku generation revokes its grant. A previous Rakku generation removes the
 unit but the Tailscale advertisement is a saved preference: explicitly run
 `tailscale set --advertise-exit-node=false` when rolling it back. Do not clear
 Tailscale state or service state during rollback.
@@ -377,7 +382,7 @@ Tailscale state or service state during rollback.
 To remove the trial completely: remove Yari's `openclaw` layer and its two
 secret entries, remove the grant from ai-gateway and the encrypted copies,
 build and deploy Yari and Rakku, then remove the unused flake inputs and code.
-Disable Unzen's exit advertisement before removing its layer and deploy Unzen.
+Disable Rakku's exit advertisement before removing its layer and deploy Rakku.
 Remove the Claw node and `tag:claw` policy from Tailscale admin. Retain a backup
 of `/permafrost/var/lib/nixos-containers/openclaw` until Simon approves deleting
 its conversations and overlay identity. Removing that state is a separate,
@@ -630,7 +635,7 @@ whole servers by their `<server>__*` names:
 
 | Agent | Workspace | Denied servers | Remaining MCP tools |
 | --- | --- | --- | --- |
-| `main` | `/var/lib/openclaw/workspace` | `claw-family-calendar` | calendar_busy, travel_time, three demo apps |
+| `main` | `/var/lib/openclaw/workspace` | `claw-family-calendar` | calendar_busy, travel_time, two demo apps |
 | `laure` | `/var/lib/openclaw/workspace-laure` | `claw-calendar`, `basic-react`, `budget-allocator`, `system-monitor` | travel_time, family_calendar_events |
 
 Laure's workspace does not exist until her agent's first run. OpenClaw then
@@ -664,3 +669,77 @@ Evidence:
 - Roll back: `nixos-rebuild switch --rollback` on Yari (generation 15). The
   `heartbeat-laure` job and any Laure workspace then remain as state; remove the
   job with `cron rm` if Laure's agent is retired.
+
+
+## Trial decisions — 2026-11-10 Denver
+
+- Both agents use `tools.profile = "full"`, an explicit allowlist for the
+  requested capabilities and `deny = [ "group:runtime" ]`. Code Mode and
+  elevated execution stay off. Workspace file tools use `fs.workspaceOnly`.
+  Per-agent MCP deny lists and both 30-minute heartbeats stay unchanged.
+- Bundled skills are exactly weather, visualize and diagram-maker. ClawHub is
+  disabled. Settings remain the Nix-owned, read-only file.
+- Simon approved specific plugin exceptions for the requested capabilities:
+  browser (managed browser), memory-core (memory search), openai (Images API),
+  web-readability (web fetch). All are bundled **2026.11.3** from the pinned
+  nix-openclaw package; `plugins.allow` contains only these four IDs. No
+  marketplace, search plugin, Brave credential, channel, session-share or
+  visitor capability is added.
+- All three chat models declare text/image input and reasoning, with thinking
+  default medium. Real chat-completions requests with `reasoning_effort=medium`
+  returned HTTP 200 for all three. This proves acceptance, not the provider's
+  internal reasoning behavior. Native context/output limits were not verified;
+  no contextWindow or maxTokens override is set.
+- Images use `agents.defaults.mediaModels.image`, with
+  `openai/gemini-3.1-flash-image` primary and `openai/gpt-image-2` fallback. The
+  openai provider points at the same front door's `/v1/images` dialect. Only
+  the front-door hostname is admitted for private image HTTP requests.
+- Memory uses the bundled SQLite/FTS engine (`memory.search.provider=none`),
+  not embeddings: the grant has no embeddings dialect. Saves remain workspace
+  Markdown. Cost: lexical recall does not provide semantic vector matching.
+- The shell-free policy does not remove the risks of browser automation,
+  writable workspace instructions, cron or cross-agent session tools. The
+  existing per-person roles are unchanged. Do not mistake these tool choices
+  for isolation between mutually untrusted users.
+
+### Native web search: unavailable in OpenClaw on this route
+
+Simon's latest decision is front-door/model-native search only: no Brave,
+Parallel, outside search service, search plugin or new search credential.
+A real `/v1/responses` request through `openclaw@yari`, model `gpt-6.1-sol`,
+with `tools=[{type:"web_search"}]` completed HTTP 200, with **2 web_search_call
+items and 1 citation annotation**. Thus the gateway and CLIProxyAPI forward
+native search successfully; no grant change is needed.
+
+OpenClaw 2026.11.3 itself refuses this native-search route. Installed docs
+`tools/web.md` (Native OpenAI web search) and the actual
+`dist/native-web-search-policy-Cfd1Zg5f.mjs` require **all three**: provider ID
+`openai`, API `openai-responses`, and absent/official OpenAI API base URL.
+A custom front-door URL fails the last requirement even if the provider is
+renamed. Per-model extra_body passthrough is documented only for completions;
+there is no supported native-search opt-in for a Responses proxy. Merely
+switching `front-door.api` does not enable search. Keep the existing working
+chat adapter. `web_fetch` and managed-browser navigation remain available,
+but are not claimed as native `web_search`. No upstream patch or new service
+was added outside Simon's decisions.
+
+### Weekly update: proposal only
+
+The fleet's `app-updates.nix` and `app-profiles.nix` deliberately deploy
+independent signed application profiles as `app-deploy`, not system closures.
+`service-apps.nix` follows that same contract. `scripts/app-update.py`
+explicitly refuses non-x86 builds ("Native target build transport is not
+provisioned"). OpenClaw is an aarch64 nspawn configuration built into Yari's
+system, with a custom ARM package wrapper and exact-revision flake URL.
+None of these patterns can update it with a narrow profile entry.
+
+Do not install a timer that appears to update this system but cannot. A future
+system-update mechanism would need a weekly Yari-native job with a clean
+checkout rebased on current origin/cairn, an explicit update of the pinned
+nix-openclaw revision, sequential focused openclaw and ARM openclaw-config
+checks, then a Yari system build. It must pin one tested SHA, refuse deployment
+if cairn moved, fast-forward the lock commit and deploy only the tested system
+with rollback/health receipts. It also needs Git write credentials and system
+activation authority, which the current profile deployer intentionally lacks.
+That is a new mechanism, not a serviceApps option. No update automation was
+built or enabled; manual pinned updates remain the current procedure.
