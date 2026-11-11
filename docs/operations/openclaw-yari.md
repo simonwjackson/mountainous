@@ -686,6 +686,27 @@ checking the previous generation's contents. This re-enables the old admin
 endpoint and is a security regression; use only to recover service. Do not
 reboot or remove any Scryer, OpenClaw or tsnet state.
 
+### Account endpoints deployment evidence (2026-11-11 UTC)
+
+- Commit `b0b6f323` on `cairn`. Rakku generation **140**
+  (`vzfy3dp1…-nixos-system-rakku`), switched with `nixos-rebuild --target-host`;
+  the closure diff was only the three tsnet unit changes. Yari generation
+  **24** (`fvlmsysl…-nixos-system-yari`), built on Yari with builders off; the
+  closure diff had no package changes. The app profile stayed at generation 1;
+  `openclaw-profile-control restart-and-check` passed afterwards.
+- Both new nodes enrolled with `tag:claw-tools`. The first TLS handshakes
+  timed out while certificates were issued, then passed.
+- From Zao and from the container's openclaw user, `{me{username}}` returned
+  `simon` and `laure`. `libraries(permission: MANAGE_TITLES)`: simon gets
+  Simon, Laure and Family Movies/Series and Anime; laure gets Laure and Family
+  Movies/Series and Anime. The old `claw-scryer` name timed out (no listener).
+  `scryer_search "Dune"` returned 16 results on each endpoint.
+- A new `main` session (`agent:main:explicit:scryer-accounts-check-8c076a39`)
+  called `claw-scryer-simon__scryer_search`; its effective tools hold only
+  `claw-scryer-simon__*`. Laure's agent was checked by config only (deny
+  `claw-scryer-simon__*`), so her first run stays hers.
+- No title was added live. Add routing is covered by Go tests and view tests.
+
 The evidence below records historical admin deployments; it does not describe
 the current account wiring.
 
