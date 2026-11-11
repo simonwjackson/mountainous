@@ -340,8 +340,10 @@ in
           headless = true;
           defaultProfile = "openclaw";
           executablePath = "${pkgs.chromium}/bin/chromium";
-          # The front door is the only private origin image generation needs.
-          ssrfPolicy.allowedHostnames = [ "ai.hummingbird-lake.ts.net" ];
+          # 2026.11.3's Images adapter only honors this shared opt-in, not
+          # allowedHostnames or providers.openai.request.allowPrivateNetwork.
+          # Tailnet ACLs and the fail-closed container firewall remain the boundary.
+          ssrfPolicy.dangerouslyAllowPrivateNetwork = true;
         };
         tools = {
           profile = "full";

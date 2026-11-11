@@ -178,6 +178,7 @@
           assert host.systemd.services."container@openclaw".serviceConfig.MemoryMax == "8G";
           assert !gateway.config.tools.elevated.enabled;
           assert gateway.config.browser.enabled && gateway.config.browser.headless;
+          assert gateway.config.browser.ssrfPolicy.dangerouslyAllowPrivateNetwork;
           assert gateway.config.agents.defaults.thinkingDefault == "medium";
           assert lib.all (
             m:

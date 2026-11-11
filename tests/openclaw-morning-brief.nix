@@ -26,7 +26,10 @@ assert lib.hasInfix "actual coordinates present" job.payload.message;
 assert lib.hasInfix "Do not pick tasks" job.payload.message;
 assert lib.hasInfix "No health" job.payload.message;
 assert lib.hasInfix "03:00 to 03:00" job.payload.message;
-assert lib.hasInfix "web_search" job.payload.message;
+assert lib.hasInfix "web_fetch" job.payload.message;
+assert lib.hasInfix
+  "Home is Denver, 39.739, -104.985 (America/Denver); use it for weather unless an event says otherwise."
+  job.payload.message;
 assert lib.hasInfix "relevant memory" job.payload.message;
 assert lib.hasInfix "wind_down_state" job.payload.message;
 assert lib.hasInfix "assuming an ordinary day" job.payload.message;

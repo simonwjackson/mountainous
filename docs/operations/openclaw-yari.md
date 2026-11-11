@@ -196,7 +196,8 @@ the former server configuration without deleting conversations.
 zero stagger, including DST). Each run is isolated and uses the normal default
 model and full workspace persona (flakey). It reads today's `calendar_busy` and
 returns one short day plan: a plain why line, calendar busy blocks, real travel
-between known coordinates, relevant memory, weather for a known location and
+between known coordinates, relevant memory, Denver home weather (39.739, -104.985, America/Denver,
+unless an event says otherwise) and
 calendar-free windows of at least 45 minutes within 08:00–22:00. It uses the
 03:00–03:00 Denver day and skips a duplicate plan found in memory. It says once
 that Atlas picks/Today, Logbook recovery and training, wind_down_state, groceries
@@ -692,8 +693,12 @@ Evidence:
   no contextWindow or maxTokens override is set.
 - Images use `agents.defaults.mediaModels.image`, with
   `openai/gemini-3.1-flash-image` primary and `openai/gpt-image-2` fallback. The
-  openai provider points at the same front door's `/v1/images` dialect. Only
-  the front-door hostname is admitted for private image HTTP requests.
+  openai provider points at the same front door's `/v1/images` dialect. The installed
+  Images adapter ignores allowedHostnames and overrides the provider request's
+  allowPrivateNetwork. It requires the documented shared
+  `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork=true` opt-in for this
+  tailnet URL. Cost: this also admits private browser destinations; the
+  unchanged container OUTPUT policy and tailnet ACL remain the network boundary.
 - Memory uses the bundled SQLite/FTS engine (`memory.search.provider=none`),
   not embeddings: the grant has no embeddings dialect. Saves remain workspace
   Markdown. Cost: lexical recall does not provide semantic vector matching.
