@@ -295,8 +295,9 @@ Anime always routes to Anime. The app resolves only libraries returned with
 never a fallback to the default Family library. Cards show the library name
 and offer Add for me / Add for family. Existing titles are not moved.
 
-Jellyfin: `simonwjackson`, `laure` and `family`, each limited to the
-libraries in its row plus Family and Anime. The new Jellyfin passwords are
+Jellyfin: `simonwjackson` sees only Simon Movies and Simon TV (his
+choice, 2026-11-11); `laure` sees her own libraries plus Family and Anime;
+`family` sees Family and Anime. The new Jellyfin passwords are
 `jellyfin-password-laure` and `jellyfin-password-family` in
 `secrets/hosts/unzen.yaml`.
 
