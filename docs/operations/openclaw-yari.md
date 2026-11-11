@@ -195,6 +195,70 @@ conversation state. A failed host switch can use
 `nixos-rebuild switch --rollback`; do not reboot Rakku. The reused gateway
 key remains required by OpenClaw and must not be removed with this endpoint.
 
+### Web search deployment and verification (2026-11-11 UTC)
+
+- Implementation **`98311bc3`**, runbook **`90a51de9`**, gateway-disable
+  regression fix **`a19fb38a`**, all landed on `cairn`. The extra gateway
+  check first found that the search rotation hook declared a secret even when
+  the gateway was disabled; the fix makes this placement follow gateway
+  enablement. The production endpoint and grant do not change with that fix.
+- This run deployed Rakku generation **137**, built on **Unzen** and copied
+  through **Zao** to root on Rakku:
+  `/nix/store/5d1kb6c732z4s207axipy4splfcs3p1w-nixos-system-rakku-26.11.20260923.4975466`.
+  A later concurrent Scryer deployment advanced Rakku to **138**
+  (`xam6hxw79y3s4gcva57kiwmsz6lcy15b`); search was rechecked afterward.
+  No build ran on Rakku and no host rebooted. Before activation, a switch lock
+  and process check confirmed no other switch was running.
+- Yari's update worker deployed the MCP config with generation **23**:
+  `/nix/store/in6jmak1fm9v4i8k8mc5cwnx42rvczvi-nixos-system-yari-26.11.20260923.4975466`.
+  This run also built that system and the ARM config check on Yari after a
+  fresh rebase. **This run made no Yari switch**, as instructed while the
+  update worker owned activation. No second activation was needed.
+- `claw-websearch` is online at **100.82.48.71**, with exactly
+  **`tag:claw-tools`**. TLS-verified requests from the **OpenClaw user**
+  initialized, listed only `web_search`, rejected an unknown tool/resource
+  and invalid result count, then returned a live NixOS answer with **2 citation
+  sources**. The first certificate handshake failed during initial issuance;
+  the next probe passed without disabling TLS checks.
+- New conversation
+  **`agent:main:explicit:websearch-verification-8100eac4-7f02-4e0c-a15f-6f6c21673d05`**,
+  not the main conversation, asked for the latest stable NixOS release.
+  Its actual SQLite transcript records
+  `dispatch_action` → **`mcp:claw-websearch:claw-websearch__web_search`**, a
+  successful result with **3 citation sources**, and **3 `web_fetch` calls**.
+  The final answer reports NixOS **26.05 “Yarara”** and cites the official
+  release announcement, release schedule and Discourse announcement URLs.
+  Run **519a7d19-2744-407c-b507-531fa0825714** completed in **38.011 seconds**,
+  with **0 tool failures**. The answer also explicitly rejected one search
+  claim it could not confirm in the fetched download-page text. This proves
+  the real tool path, not just a model's claim that it searched.
+- After the Rakku deployment and again after Yari's worker switch, all five
+  claw-tools endpoints listed their intended tools. Scryer retained all five
+  of its tools. Laure's entry and both heartbeat definitions remained.
+  Both agent policies permit search. **Laure's agent was not run** just for
+  verification. Home Assistant, Z-Wave, ai-gateway, all three pi-assistant
+  units, Google and maps stayed active with their original start times.
+  The search unit has **0 automatic restarts**; a root-only comparison found
+  the key in neither its journal, unit, environment nor command line.
+- Passed: focused **claw-websearch**, **claw-tools**, **openclaw**,
+  **tailnet-names**, **claw-scryer**, **ai-gateway**; Rakku/Yari toplevel
+  evaluations; ARM **openclaw-config**; the Unzen package/system build
+  (**23 package tests**); search HTTP tests under the Go race detector;
+  Go vet/gofmt, Nix formatting and whitespace checks. Tests cover JSON/SSE
+  citations, no citations, error, timeout, invalid/oversized response, reflected
+  key and denied calls. No aggregate flake check ran.
+- Security audit changed from **1 critical / 4 warnings / 1 info** to
+  **1 critical / 3 warnings / 1 info**, with **no new check IDs**. The prior
+  agent-session isolation fix removed the cross-agent-session warning when
+  generation 23 deployed; this was not a search change. Trusted-proxy auth
+  remains critical; MCP Apps, private-network opt-in and trusted loopback
+  remain warnings. No settings were weakened to silence them.
+- Evidence on Zao: `/tmp/claw-websearch-transcript-evidence.json`,
+  `/tmp/claw-websearch-conversation-result.json`, before/after audit JSON,
+  probe output, build/switch logs and host health files under
+  `/tmp/claw-websearch-*`. These checks preceded the update worker's separate
+  OpenClaw package update. That worker owns its post-update health check.
+
 ## Official interactive demos
 
 The container also runs the official `@modelcontextprotocol/server-budget-allocator`
