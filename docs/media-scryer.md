@@ -296,7 +296,9 @@ never a fallback to the default Family library. Cards show the library name
 and offer Add for me / Add for family. Existing titles are not moved.
 
 Jellyfin: `simonwjackson` and `laure` each see only their own Movies and TV
-(their choice, 2026-11-11); `family` sees Family and Anime. The new Jellyfin passwords are
+(their choice, 2026-11-11); `family` sees only Family Movies and TV. No
+Jellyfin account shows the Anime library: anime added in Scryer is not visible
+until an account is given access to it. The new Jellyfin passwords are
 `jellyfin-password-laure` and `jellyfin-password-family` in
 `secrets/hosts/unzen.yaml`.
 
