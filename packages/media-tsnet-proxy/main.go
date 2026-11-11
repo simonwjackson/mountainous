@@ -200,6 +200,8 @@ func main() {
 	tags := flag.String("tags", "tag:mountainous", "Comma-separated enrollment tags")
 	mcpTools := flag.String("mcp-tools", "", "Enable restricted stateless MCP endpoint with these comma-separated tool names")
 	scryerPassword := flag.String("scryer-password-file", "", "Serve full-admin Scryer MCP using this credential file and the backend GraphQL URL")
+	webSearchKey := flag.String("websearch-key-file", "", "Serve model-native web search MCP using this gateway credential and the backend Responses URL")
+	webSearchModel := flag.String("websearch-model", "gpt-6.1-sol", "Fixed model for native web search")
 	flag.Parse()
 	backendURL, err := url.Parse(*backend)
 	if err != nil || backendURL.Host == "" || backendURL.User != nil ||
@@ -247,8 +249,14 @@ func main() {
 		log.Fatal("service listener failed; identity state retained")
 	}
 	var handler http.Handler = proxyHandler(backendURL)
-	if *mcpTools != "" || *scryerPassword != "" {
-		if *mcpTools != "" && *scryerPassword != "" {
+	if *mcpTools != "" || *scryerPassword != "" || *webSearchKey != "" {
+		modes := 0
+		for _, mode := range []string{*mcpTools, *scryerPassword, *webSearchKey} {
+			if mode != "" {
+				modes++
+			}
+		}
+		if modes != 1 {
 			log.Fatal("conflicting MCP modes")
 		}
 		if *mcpTools != "" && (backendURL.Scheme != "http" || backendURL.Hostname() != "127.0.0.1") {
@@ -262,7 +270,16 @@ func main() {
 			peer, err := local.WhoIs(r.Context(), r.RemoteAddr)
 			return err == nil && peer != nil && peer.Node != nil
 		}
-		if *scryerPassword != "" {
+		if *webSearchKey != "" {
+			if backendURL.Scheme != "http" || backendURL.Host != "127.0.0.1:8430" || backendURL.Path != "/v1/responses" || backendURL.RawQuery != "" || backendURL.Fragment != "" || *webSearchModel == "" {
+				log.Fatal("web search requires the fixed loopback front-door Responses URL and a model")
+			}
+			key, err := credential(*webSearchKey)
+			if err != nil || key == "" {
+				log.Fatal("web search credential unavailable")
+			}
+			handler = webSearchHandler(newWebSearchClient(backendURL.String(), key, *webSearchModel), verifyPeer)
+		} else if *scryerPassword != "" {
 			if backendURL.Scheme != "https" || backendURL.RawQuery != "" || backendURL.Fragment != "" {
 				log.Fatal("Scryer requires a fixed HTTPS URL")
 			}
@@ -276,7 +293,7 @@ func main() {
 		}
 	}
 	server := &http.Server{Handler: handler, ReadHeaderTimeout: 15 * time.Second}
-	if *scryerPassword != "" {
+	if *scryerPassword != "" || *webSearchKey != "" {
 		server.ReadTimeout = 30 * time.Second
 		server.WriteTimeout = 75 * time.Second
 		server.IdleTimeout = 60 * time.Second

@@ -190,6 +190,14 @@
               "scryer_add"
               "scryer_monitor"
             ];
+          assert gateway.config.mcp.servers.claw-websearch.transport == "streamable-http";
+          assert
+            gateway.config.mcp.servers.claw-websearch.url
+            == "https://claw-websearch.hummingbird-lake.ts.net/mcp";
+          assert gateway.config.mcp.servers.claw-websearch.toolFilter.include == [ "web_search" ];
+          assert lib.all (a: !(lib.any (d: lib.hasPrefix "claw-websearch" d) (a.tools.deny or [ ]))) (
+            lib.attrValues gateway.config.agents.entries
+          );
           # No approval mode is set: OpenClaw prompts for scryer_graphql from a card.
           assert !(gateway.config.mcp.servers.claw-scryer ? codex);
           assert lib.all (a: !(lib.any (d: lib.hasPrefix "claw-scryer" d) (a.tools.deny or [ ]))) (

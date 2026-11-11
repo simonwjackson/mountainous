@@ -320,6 +320,11 @@ in
             toolFilter.include = endpoint.tools;
           }) (import ./claw-tools.nix)
           // {
+            claw-websearch = {
+              transport = "streamable-http";
+              url = "https://claw-websearch.hummingbird-lake.ts.net/mcp";
+              toolFilter.include = [ "web_search" ];
+            };
             # Full-admin Scryer (see docs/operations/openclaw-yari.md) and its MCP App.
             # The four app tools are also allowed by exact name in tools.allow below,
             # because OpenClaw checks a card's own tool calls by projected name.

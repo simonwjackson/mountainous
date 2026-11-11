@@ -122,6 +122,16 @@
                 default = null;
                 description = "Enable the native full-admin Scryer MCP endpoint with this LoadCredential password file. Backend is the fixed HTTPS GraphQL URL.";
               };
+              webSearchKeyFile = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Enable native web search MCP with this gateway LoadCredential key. Backend is the loopback front-door Responses URL.";
+              };
+              webSearchModel = lib.mkOption {
+                type = lib.types.str;
+                default = "gpt-6.1-sol";
+                description = "Fixed granted model for native web search.";
+              };
               mcpTools = lib.mkOption {
                 type = lib.types.nullOr (lib.types.nonEmptyListOf (lib.types.strMatching "[a-zA-Z0-9_-]+"));
                 default = null;
@@ -137,8 +147,15 @@
       config = lib.mkIf (names != { }) {
         assertions =
           lib.mapAttrsToList (name: cfg: {
-            assertion = cfg.mcpTools == null || cfg.scryerPasswordFile == null;
-            message = "${name}: Scryer and filtered MCP modes are mutually exclusive.";
+            assertion =
+              lib.length (
+                lib.filter (v: v != null) [
+                  cfg.mcpTools
+                  cfg.scryerPasswordFile
+                  cfg.webSearchKeyFile
+                ]
+              ) <= 1;
+            message = "${name}: Native and filtered MCP modes are mutually exclusive.";
           }) names
           ++ [
             {
@@ -172,7 +189,8 @@
                 "oauth-id:${tailscale.oauthClientIdFile}"
                 "oauth-secret:${tailscale.oauthSecretFile}"
               ]
-              ++ lib.optional (cfg.scryerPasswordFile != null) "scryer-admin-password:${cfg.scryerPasswordFile}";
+              ++ lib.optional (cfg.scryerPasswordFile != null) "scryer-admin-password:${cfg.scryerPasswordFile}"
+              ++ lib.optional (cfg.webSearchKeyFile != null) "websearch-key:${cfg.webSearchKeyFile}";
               ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p ${state name}";
               ExecStart =
                 "${proxy}/bin/tsnet-proxy -hostname ${name} -state ${state name}"
@@ -184,7 +202,10 @@
                 ) " -mcp-tools ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpTools)}"
                 + lib.optionalString (
                   cfg.scryerPasswordFile != null
-                ) " -scryer-password-file %d/scryer-admin-password";
+                ) " -scryer-password-file %d/scryer-admin-password"
+                + lib.optionalString (
+                  cfg.webSearchKeyFile != null
+                ) " -websearch-key-file %d/websearch-key -websearch-model ${lib.escapeShellArg cfg.webSearchModel}";
               Restart = "always";
               RestartSec = "30s";
               NoNewPrivileges = true;
