@@ -534,3 +534,35 @@ persistence volume for rollback; removing the unit does not delete its identity
 or Scryer data. Deleting saved state or the tailnet registration is a separate
 action. Do not remove `tag:claw-tools`: calendar and maps still use it. Roll back
 a failed switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
+
+### Scryer deployment evidence (2026-11-10 Denver)
+
+- Implementation **`a57894843a9f1efc56def91315ccf7365b0767da`**, landed on
+  `cairn`. Rakku generation **132**:
+  `/nix/store/sw8zvxy2x8a50synbnk01s1b0rix53if-nixos-system-rakku-26.11.20260923.4975466`.
+  Built on Unzen from the locally evaluated derivation, then copied through Zao
+  to `root@rakku` with `--no-check-sigs` for these locally built outputs. No
+  build ran on Rakku. No reboot. No OpenClaw config, container, feature module
+  or Yari change.
+- The node is online at **100.96.57.101**, with exactly **`tag:claw-tools`**.
+  From Zao, the TLS-verified MCP client initialized, listed exactly **1 tool**,
+  `scryer_graphql`, and received **1 query root**, **1 Dune title** (limit 3),
+  and **0 GraphQL errors**. It printed counts, not titles or IDs. Resource
+  listing/reads and an unknown tool each returned **-32601**. Two complete
+  probes passed. The first TLS handshake timed out during initial certificate
+  issuance; the next attempt passed without disabling TLS checks. Tool calls
+  used only a read-only query; authentication used the normal admin login.
+- Home Assistant, Z-Wave, ai-gateway, all three pi-assistant units, Google and
+  maps remained active, with all **8 application start times unchanged**.
+  Calendar, maps and the new Scryer proxies are active. Existing tsnet proxies
+  restarted because their shared binary changed. The Scryer unit has **0
+  automatic restarts**. A root-only check after the live requests found the
+  password in neither its journal nor its unit text.
+- Passed: focused `claw-scryer`, `claw-tools` and `tailnet-names` Nix checks;
+  Rakku toplevel evaluation; Nix formatting; Go formatting and vet; the combined
+  HTTP boundary tests under Go's race detector; and all **14 package tests**
+  during the Unzen package/system build. No aggregate flake check ran.
+- Evidence and the read-only client are on Zao at `/tmp/claw-scryer-probe`,
+  `/tmp/claw-scryer-verification.json`, `/tmp/claw-scryer-before.json`,
+  `/tmp/claw-scryer-after.json`, and `/tmp/claw-scryer-package-log`.
+  The prepared skill remains unwired at `lib/openclaw-skills/scryer/SKILL.md`.
