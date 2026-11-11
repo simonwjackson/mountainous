@@ -21,15 +21,19 @@ and other destructive actions are not in the view.
 ```
 scryer_search  -> { view: "search", query, results: [{ key, name, kind: movie|series|anime, year, endYear?, ongoing,
                     network?, seasons?, runtimeMinutes?, overview?, poster?: https URL | null,
-                    library?: { titleId, monitored, monitorType, hydration: ready|pending|failed, onDisk?: { have, total } } }] }
+                    library?: { titleId, monitored, monitorType?, hydration: ready|pending|failed, onDisk?: { have, total } } }] }
 scryer_title, scryer_add, scryer_monitor
                -> { view: "title", title: { id, name, kind, year, endYear?, ongoing, network?, overview?, poster?,
-                    monitored, monitorType, hydration }, seasons: [{ number, episodes: [{ id, number, name?,
+                    monitored, monitorType?, hydration }, seasons: [{ number, episodes: [{ id, number, name?,
                     airDate?: YYYY-MM-DD, monitored, onDisk, file?: { quality, sizeBytes } }] }],
                     movie?: { onDisk, file? }, done?: { action } }
 scryer_add     <- { key, monitorType: NONE|ALL_EPISODES|FUTURE_EPISODES|MISSING_AND_FUTURE_EPISODES }
 scryer_monitor <- { titleId, monitorType }  |  { titleId, seasonNumber, monitored }  |  { titleId, episodeIds, monitored }
 ```
+
+`monitorType` is null when Scryer has none recorded (common); the view then
+words the scope from the monitored flags. Posters are absolute https URLs on
+Scryer's own origin, which the resource declares in its CSP.
 
 ## Files
 
@@ -59,4 +63,6 @@ Harness parameters: `drawing` (a key of `harness/drawings.json`), `mode`
 (`inline` or `fullscreen`), `theme`, `delay=<ms>` and `fail=<tool>` for the
 view's own calls, `hydrate=stuck`, `blocked=1` (the host refuses the view's
 calls, as OpenClaw's session policy did), `hold=1`, `error=1`, `press=<css>`
-(click after load, `|` between several), `nofull=1`, `still=1`.
+(click after load, `|` between several), `nofull=1`, `still=1`, and
+`openclaw=1` (frame sizing as OpenClaw 2026.11.3 does it, including its
+150 px full-screen fault).

@@ -569,11 +569,13 @@ irreversible data-deletion decision, not part of a routine rollback.
   on Yari support repeating network and actual-tool-call checks. No raw mail,
   event titles or credential values are recorded in this runbook.
 
-## Full-admin Scryer endpoint (prepared, not connected to OpenClaw)
+## Full-admin Scryer endpoint and its MCP App (connected to both agents)
 
 `https://claw-scryer.hummingbird-lake.ts.net/mcp` runs on Rakku and exposes
-exactly one tool: `scryer_graphql {query: string, variables?: object}`. It has no
-resources, prompts, uploads or backup downloads. Its separate tsnet identity
+five tools and one resource. `scryer_graphql {query: string, variables?: object}`
+is the full-admin tool and is unchanged. The four MCP App tools and the view are
+described in "Scryer MCP App" below. The endpoint has no prompts, uploads or
+backup downloads. Its separate tsnet identity
 uses only `tag:claw-tools`, the existing fleet OAuth client, HTTPS 443, and
 WhoIs verification of the actual peer. It has no LAN listener or Funnel.
 Existing calendar/maps policies and Simon's own assistant remain unchanged.
@@ -601,29 +603,28 @@ state before retrying a mutation after a transport error.
 
 Requests and upstream replies are bounded to 4 MiB. Each upstream HTTP request
 has a 30-second timeout; the complete tool call has a 60-second deadline.
-Redirects are disabled. Unknown tools, resources and other MCP methods fail
-closed. `checks.x86_64-linux.claw-scryer` tests the real HTTP boundary and a
+Redirects are disabled. Unknown tools, other resource URIs and other MCP methods
+fail closed. `checks.x86_64-linux.claw-scryer` tests the real HTTP boundary and a
 local Scryer fixture: login, reuse, renewal, 401 retry, partial GraphQL errors,
 460/503, invalid replies, credential reflection, concurrent reuse and denied
-requests. Run that check plus `claw-tools`, `tailnet-names`, and Rakku toplevel
+requests. It also runs the MCP App tests (`scryer_app_test.go`) and the check
+that the embedded page matches its sources. Run that check plus `claw-tools`, `tailnet-names`, and Rakku toplevel
 evaluation. Build the package/system on Unzen, copy via Zao as root to Rakku,
 and switch Rakku. Never build on Rakku or run an aggregate flake check.
 
-The prepared skill is `lib/openclaw-skills/scryer/SKILL.md`. It is **not wired
-into OpenClaw**. To connect later, declare a streamable-HTTP MCP server named
-`claw-scryer` at the URL above, with `toolFilter.include = [ "scryer_graphql" ]`.
-Make that server/tool available to both Simon's main agent and Laure's agent
-through their respective tool policies. Install the prepared skill into both
-agents' declared skill/workspace paths. Do not copy the local `scripts/gql` or
-credentials into the container. Validate the resulting config, deploy Yari,
-and test each agent with read-only queries in new sessions. These are follow-up
-steps; this endpoint deployment changes no OpenClaw config, container or Yari
-configuration. No live Scryer mutation is needed for verification.
+OpenClaw connects to it as the streamable-HTTP server `claw-scryer`
+(`lib/openclaw-container.nix`), with `toolFilter.include` set to all five tools.
+Both agents get it: neither agent's `tools.deny` names `claw-scryer`. The
+prepared skill `lib/openclaw-skills/scryer/SKILL.md` is installed for both
+agents through `skills.load.extraDirs`. The local `scripts/gql` and its
+credentials are not in the container.
 
-To stop/remove just Scryer, remove Rakku's `claw-scryer` layer, evaluate and
-build Rakku on Unzen, and deploy Rakku. Retire `modules/claw-scryer.nix` and its
-check when unused. If clients were connected later, remove their server/skill
-references separately. Keep `/var/lib/tsnet-proxy-claw-scryer` under Rakku's
+To stop/remove just Scryer, first remove the `claw-scryer` server, the four
+`claw-scryer__…` entries in `tools.allow` and the `skills.load.extraDirs` entry
+from `lib/openclaw-container.nix`, with the matching asserts in
+`modules/openclaw.nix`, and deploy Yari. Then remove Rakku's `claw-scryer`
+layer, evaluate and build Rakku on Unzen, and deploy Rakku. Retire
+`modules/claw-scryer.nix` and its check when unused. Keep `/var/lib/tsnet-proxy-claw-scryer` under Rakku's
 persistence volume for rollback; removing the unit does not delete its identity
 or Scryer data. Deleting saved state or the tailnet registration is a separate
 action. Do not remove `tag:claw-tools`: calendar and maps still use it. Roll back
@@ -659,7 +660,118 @@ a failed switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
 - Evidence and the read-only client are on Zao at `/tmp/claw-scryer-probe`,
   `/tmp/claw-scryer-verification.json`, `/tmp/claw-scryer-before.json`,
   `/tmp/claw-scryer-after.json`, and `/tmp/claw-scryer-package-log`.
-  The prepared skill remains unwired at `lib/openclaw-skills/scryer/SKILL.md`.
+  At that time the prepared skill was not yet wired into OpenClaw.
+
+## Scryer MCP App (2026-11-11 UTC)
+
+One MCP App view, `ui://scryer/media.html` (`text/html;profile=mcp-app`), is
+served by `claw-scryer` and draws two card shapes:
+
+- **Search tiles** after `scryer_search {query}`: each result with its poster
+  (or the kind in pixel art), kind, year, network or runtime, library badges,
+  and **Add** / **Monitor**. A series asks which episodes first: all, future,
+  missing and future, or chosen seasons.
+- **Title card** after `scryer_title {titleId}`: one mark per episode for each
+  season (on disk, wanted, upcoming, not monitored), the whole-show scope, and
+  **Monitor** / **Unmonitor** per season. Per-episode switches are in the full
+  view.
+
+| Tool | Visible to | Scryer operations |
+| --- | --- | --- |
+| `scryer_search` | model and card | `searchMetadataMulti`, `titlesByExternalIds` |
+| `scryer_title` | model and card | `title` |
+| `scryer_add` | card only | `titlesByExternalIds` (never adds twice), `addTitle`, `title` |
+| `scryer_monitor` | card only | `setCollectionMonitored` (season), `setEpisodeMonitored` (episodes of the same title only), `updateTitle` + `setTitleMonitored` (whole-show scope), then `title` |
+
+Every write ends with a fresh read of the title, and the card draws only that
+read. After a failure, the card reads again (the title, or the search for an
+add). There are no delete, file, restore or settings buttons; those stay in
+chat with the skill's confirmation rules. Code: `packages/media-tsnet-proxy/scryer_app.go`
+(tools) and `packages/media-tsnet-proxy/scryer-view/` (view, committed built page,
+harness with a fake endpoint, `README.md` with the data contract).
+
+What makes the buttons work in OpenClaw 2026.11.3:
+
+- **Session tool policy.** OpenClaw checks a card's own tool call by its
+  projected name, without plugin metadata, so `bundle-mcp` in `tools.allow`
+  does not cover it. This is why the System Monitor card failed with -32603.
+  `tools.allow` therefore lists exactly `claw-scryer__scryer_search`,
+  `claw-scryer__scryer_title`, `claw-scryer__scryer_add` and
+  `claw-scryer__scryer_monitor`. Nothing else is added.
+- **Approval.** No approval mode is set for `claw-scryer`. OpenClaw then decides
+  from tool annotations. The four app tools carry honest hints (reads
+  read-only; add and monitor not destructive, idempotent, closed-world), so they
+  run without a prompt. `scryer_graphql` has no hints, so a card calling it
+  would still be prompted.
+- **Posters.** Scryer returns proxied poster paths (`/images/media/…`). The
+  endpoint makes them absolute on `https://scryer.hummingbird-lake.ts.net`,
+  which needs no login, and declares that origin in the view's CSP
+  (`resourceDomains`). They load in the viewer's own browser, so the viewer
+  must reach that tailnet name. A poster that fails to load falls back to the
+  pixel kind.
+
+Known limits:
+
+- OpenClaw starts an inline card at 160 px and grows it to the reported height,
+  up to 1200 px. Longer cards scroll inside the frame.
+- **OpenClaw's full screen is broken for MCP Apps in 2026.11.3.** It grants
+  full screen, but `<mcp-app-view>` gets an inline `display: block`, which
+  defeats its flex layout, so the frame stays at the 150 px iframe default.
+  Clearing that style in the browser fixed it in testing. The view detects a
+  granted full screen under 320 px, returns to inline and grows in place, with
+  **Show less**. When OpenClaw fixes this, full screen works with no change here.
+- The first card in a brand-new conversation once showed "MCP App unavailable:
+  Session … was not found". A reload rendered it. Buttons on a card drawn
+  before a Yari restart can fail with "bundle-mcp server claw-scryer is not
+  connected" until the next model turn reconnects the server.
+- Many titles have no `monitorType` in Scryer. The card then words the scope
+  from the flags ("All episodes monitored", "Some episodes monitored").
+- Search results carry no network or end year before a title is added, so
+  same-named titles are told apart by year, kind, status and runtime.
+- The model does not see the card. The view sends `updateModelContext`;
+  OpenClaw shows it as "App context" on the composer.
+
+### Scryer MCP App deployment evidence (2026-11-11 UTC)
+
+- Commits on `cairn`: `98c28e06` (view), `2d5704ed` (tools),
+  `65fc597f` (OpenClaw wiring, skill, annotations), `5ac73bbf` and `ca8f80c3`
+  (inline growth and the full-screen fallback).
+- Rakku generations **135** (`7a97d9b3`, tools), **136** (`cd5s3i7p`,
+  annotations) and **138** (`xam6hxw7`, view fixes; also carries another
+  session's websearch commits, which that session deployed as 137). Each was
+  built on Unzen, copied through Zao as root, and switched. Only
+  `media-tsnet-proxy` changed in the closures; all tsnet proxies restarted for a
+  few seconds. Home Assistant, ai-gateway and the three pi-assistant units kept
+  their start times. No reboot.
+- Yari generation **21** (`8kmvm9j9`), built on Yari with remote builders
+  disabled. The container restarted once. A later session's generation 23 still
+  contains the claw-scryer server, the four allow entries and the skill folder.
+- Passed: Go vet and tests (race detector included), the `claw-scryer`,
+  `claw-tools` and x86 `openclaw` checks, ARM `openclaw-config` (real CLI
+  validation), Rakku and Yari toplevel evaluation, Nix formatting, the view's
+  11 Node tests, and a 114-frame review deck of the view against the fake
+  endpoint. No aggregate flake check ran.
+- From Zao (read-only): 5 tools with the expected visibility, the resource with
+  its CSP, unknown resource -32602 and unknown tool -32601. A live search
+  returned 12 results, 11 with posters, all from the Scryer origin. A live title
+  read returned 13 seasons and 163 episodes.
+- OpenClaw: `mcp doctor` reported `claw-scryer: ok`; `skills list` showed
+  `scryer` ready for `main` and `laure`. In a new Draft conversation of `main`,
+  not the Main Session, the search and title cards rendered with posters, and
+  the inline cards grew to their content (747 px for 16 Dune results). The
+  full-screen fallback expanded the card in place with Back to results.
+- One live write, chosen to be harmless and reversible: Curb Your Enthusiasm
+  S3E1 was monitored. The card's switch set it to not monitored. Scryer's read
+  agreed (120 → 119 monitored, nothing else changed), and the card showed the
+  re-read. The switch then restored it, and a GraphQL read confirmed
+  monitored again (120). The test browser was paired for the test and removed
+  afterwards.
+- Laure's agent was checked by configuration and `skills list` only; no
+  conversation ran in her agent.
+- Roll back: on Rakku, `nixos-rebuild switch --rollback` (or switch to
+  generation 134 for the endpoint before the app). On Yari, roll back to
+  generation 20 only after checking what later generations added; another
+  session deployed 22 and 23 on top.
 
 ## Family calendar deployment evidence (2026-11-11 UTC)
 
