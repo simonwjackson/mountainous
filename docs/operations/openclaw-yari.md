@@ -479,6 +479,13 @@ then use a copied Nix-shebang script on that host to build `DRV^*`, set its
 system profile, and run `bin/switch-to-configuration switch`. Keep build/deploy
 scripts local, copy them and run them; do not embed multi-step SSH commands.
 
+Switch right after the build. If a switch must wait, check two things before it
+runs. `readlink -f /run/current-system` on the host must still print the system
+that the build replaced, and `origin/cairn` must not have moved. Another session
+can switch the host during the wait, and a system built before that switch
+undoes it. On 2026-11-11 Yari generation 34 replaced generation 33 with an
+older build for 17 minutes for this reason.
+
 Deploy Rakku first. Confirm Rakku is advertised and approved (ExitNodeOption
 true in another node's `tailscale status --json`). Deploy Yari to select Rakku, then deploy Unzen and explicitly clear its saved
 exit advertisement with `tailscale set --advertise-exit-node=false`. Root SSH works on these hosts; the simon account on Yari and Unzen needs
@@ -535,6 +542,69 @@ returns exit 4. systemd then restarts the unit, and that start succeeds. Before
 you treat exit 4 as a failed deploy, run `systemctl is-active
 container@openclaw`. If it prints `active`, do not repeat the switch and do not
 roll back.
+
+### Stop limits evidence (2026-11-11 UTC)
+
+Implementation: `fc09676d`, landed on `cairn`. Yari has run it since generation
+31 (20:28). The final system is generation **35**,
+`/nix/store/ip7dx262q4x95d1nvvljgcw4ys4nw1a6-nixos-system-yari-26.11.20260923.4975466`,
+the build of `715927bc`.
+
+All times come from `journalctl -u container@openclaw.service` on Yari, the
+container's own journal, and the gateway's `gateway.log`.
+
+| Stop | Limits, gateway / host | Gateway | Container stop | Result |
+| --- | --- | --- | --- | --- |
+| 22 container stops and 28 gateway stops, 10 Nov 20:56 to 11 Nov 18:02 | 90 s / 90 s | `completed cleanly` in 0.15 to 0.55 s | 2.2 to 4.2 s | Normal |
+| 18:23:14, after a research run | 90 s / 90 s | `shutdown deadline reached` at 84.8 s, killed by its watchdog at 87.3 s | Host limit expired at 90.18 s | SIGKILL, stale mount, one failed start, switch exit 4. Ready at 18:25:31 |
+| 19:07:53, 25 minutes after a research run | 90 s / 90 s | `shutdown deadline reached` at 84.8 s, killed at 87.4 s | 89.75 s | Switch exit 0, with 0.25 s to spare |
+| 20:49:35 | 35 s / 180 s | `completed cleanly in 383ms` | 3.07 s | Normal |
+| 21:33:17 | 35 s / 180 s | `completed cleanly in 217ms` | 2.92 s | Normal |
+| 22:13:39 | 35 s / 180 s | `completed cleanly in 241ms`, with 8 remote MCP sessions open | 6.17 s | Normal |
+| 22:31:08 | 35 s / 180 s | `completed cleanly in 295ms` | 3.19 s | Normal |
+
+Both slow stops listed the same pending close steps: `shutdown.gateway-close`,
+`restart.close.plugin-services` and `restart.close.cleanup-work`. Both wrote a
+`gateway.stop_shutdown_timeout` stability bundle. In the first one the host
+limit expired 8 ms after the container logged `Shutting down`.
+
+Since the change the gateway logs this line at each start:
+`shutdown budget at startup: drain=20000ms shutdown=30000ms reserve=10000ms
+exitMargin=5000ms; source=systemd system openclaw-gateway.service
+TimeoutStopUSec=35000ms`. On generation 35, `systemctl show` prints
+`TimeoutStopUSec=3min` for the container unit, and `TimeoutStopUSec=35s` and
+`KillMode=mixed` for the gateway unit.
+
+**No stop has hung since the change.** The 32 s bound for a hung close step
+comes from OpenClaw's code and the systemd limit. No live stop has exercised it.
+It is also not known if `KillMode=mixed` removes the hang. Since `2b895b74`,
+idle session MCP runtimes close after 10 minutes, so the gateway that stopped at
+22:13:13, 26 minutes after its last sub-agent run, had no remote MCP session
+open.
+
+The weekly updater restarts only the gateway, through `openclaw-profile-control
+restart-and-check`. That uses the same stop. Three runs of the controller on
+this day took 25 to 27 s with a healthy stop. A hung close step adds about 32 s,
+which is inside the updater's 300 s activation limit.
+
+Checks: `checks.x86_64-linux.openclaw` failed before the change (`attribute
+'KillMode' missing`) and passes after it. Yari's system built on Yari with
+builders disabled. After generation 35: container and gateway active, no failed
+unit on Yari or in the container, `/healthz` and `/` return 200, brief
+`df3d8216-a284-4086-a127-3890019d5cdb` unchanged at 07:00 America/Denver, roles
+and Laure's entry unchanged, and `tools/list` passes for all six `claw-*`
+endpoints.
+
+Generation 34 was a mistake. It was the build of `fc09676d`, switched at 22:13
+after a two-hour wait for a quiet gateway, over generation 33 (`715927bc`).
+Generation 35 restored the build of `715927bc` at 22:31. No sub-agent ran in
+those 17 minutes.
+
+To remove the stop limits, revert `fc09676d` and deploy. Do not use
+`nixos-rebuild switch --rollback` from generation 35 for this: generation 34
+lacks three later commits, and generation 30 predates all four.
+
+Local evidence on Zao: `/tmp/yari-claw-stop/`.
 
 ## Verify
 
