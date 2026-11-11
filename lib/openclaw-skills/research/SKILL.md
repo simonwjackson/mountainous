@@ -29,7 +29,7 @@ Choose the smallest size that answers the question. The user does not choose a w
 | Single | One narrow question that one angle covers | 1 researcher |
 | Swarm | A broad question, comparison, independent decision angles, or a search for products, tools or vendors | 2 to 6 researchers, one per angle |
 
-A product or tool search is a Swarm. No single source owns the answer. Split by candidate group, product family, or another independent angle. An angle must be answerable without the other briefs. Merge overlapping angles.
+A product or tool search MUST use Swarm, not inline research. No single source owns the answer. Split by candidate group, product family, or another independent angle. An angle must be answerable without the other briefs. Merge overlapping angles.
 
 Audit when the answer drives a decision, briefs disagree, or a claim is surprising. Background reading and Lookups need no audit.
 
@@ -38,7 +38,7 @@ Audit when the answer drives a decision, briefs disagree, or a claim is surprisi
 
 Name every important claim nobody checked.
 
-Before starting, state constraints, size and angles in one line. Label stated and inferred constraints so the user can redirect.
+Before your first search or spawn, send the user one line with constraints, size and angles. Label stated and inferred constraints so the user can redirect.
 
 ## 3. Run it
 
@@ -46,23 +46,28 @@ For Single or Swarm, choose a new run path inside your own agent workspace: `res
 
 Use `write` to save the question and constraints at `<run>/request.md`. It creates parent directories. Resolve the run path against your own workspace, not another agent's workspace.
 
-Start hidden native children with `sessions_spawn`. Omit `agentId` to keep them under your own agent and workspace. Use this shape for each researcher:
+For Single or Swarm, your next research action is spawning, not searching inline. Use `sessions_spawn` for hidden native children. Omit `agentId` to keep them under your own agent and workspace.
+
+OpenClaw defers tools. A broad `tool_search` can omit `sessions_spawn` from its truncated results. That does not mean spawning is unavailable. Call `dispatch_action` directly with `id: "sessions_spawn"` and the spawn parameters in `args`. Use this shape for each researcher:
 
 ```json
 {
-  "taskName": "researcher",
-  "label": "Research the assigned angle",
-  "runtime": "subagent",
-  "mode": "run",
-  "context": "isolated",
-  "cleanup": "keep",
-  "thinking": "medium",
-  "runTimeoutSeconds": 900,
-  "task": "Self-contained assignment, followed by the complete researcher block below"
+  "id": "sessions_spawn",
+  "args": {
+    "taskName": "researcher",
+    "label": "Research the assigned angle",
+    "runtime": "subagent",
+    "mode": "run",
+    "context": "isolated",
+    "cleanup": "keep",
+    "thinking": "medium",
+    "runTimeoutSeconds": 900,
+    "task": "Self-contained assignment, followed by the complete researcher block below"
+  }
 }
 ```
 
-Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. Tell the user who researches each angle. Then wait for completion announcements with `sessions_yield`. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis.
+Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. Tell the user who researches each angle. Then wait for completion announcements with `sessions_yield`, dispatched as `id: "sessions_yield", args: {}`. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If spawning fails, name the failed angle and the tool error. Never silently replace Single or Swarm with inline work.
 
 Each task must contain:
 
@@ -206,4 +211,4 @@ Link the page that owns the fact. Listings and reviews support only prices, stoc
 
 Carry audit verdicts into the answer. Keep unchecked claims labelled unchecked. Name every failed or timed-out child, including an auditor that writes no report.
 
-Finish only after every child reports or fails, every saved brief is read, and the answer is in the conversation. Then return to the conversation's work.
+Finish only after every child reports or fails, every saved brief is read, and the answer is in the conversation. Then return to the conversation's work. If a finding belongs in durable project notes, offer to save it there.
