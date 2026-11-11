@@ -138,18 +138,14 @@ same ARM Node runtime as the clock. No npm installation, outside service,
 credentials, mounts, or additional permissions are needed. The servers use
 `--stdio` in declarative `mcp.servers`; neither opens an HTTP listener.
 
-In a **new** Control UI session, ask “help me split a $5,000 monthly budget”
-and “show me system stats”. The budget example uses business categories and
+In a **new** Control UI session, ask “help me split a $5,000 monthly budget”. The budget example uses business categories and
 synthetic history/benchmarks, not personal finance data. Its initial budget is
 $100,000; the visible budget dropdown offers only $50k/$100k/$250k/$500k.
-Move an allocation slider to try the card. The monitor attempts to poll its
-app-only `poll-system-stats` tool, but see the verified limitation below. It reads the container's
-available OS metrics, including `/proc/meminfo`, not a remote machine; these
-values need not equal the gateway's 4 GiB cgroup limit. The existing sandbox and
-network restrictions remain unchanged.
+Move an allocation slider to try the card. The removed monitor's polling
+failure is recorded in the historical verification below.
 
-To remove only these demos, remove `interactiveDemos` and its server merge from
-`lib/openclaw-container.nix`, the two corresponding inputs from `flake.nix` and
+To remove only the budget demo, remove `interactiveDemos` and its server merge
+from `lib/openclaw-container.nix`, its corresponding input from `flake.nix` and
 `flake.lock`, and their names from the focused `openclaw` assertions. Keep the
 shared package/test for `basic-react`. Run the focused check, evaluate Yari,
 build the ARM config check and system on Yari, land on `cairn`, then deploy Yari.
@@ -362,7 +358,8 @@ network probes as the OpenClaw user, not the trusted tailscaled UID. Check:
   Restore tailscaled and its `claw-tailnet` unit immediately.
 - `/v1/models` returns 401 without a key, and succeeds with the OpenClaw key.
   Make one short completion using the default model.
-- TCP to Rakku:22 fails. HTTPS to tag:mountainous services is now allowed.
+- TCP to Rakku:22 must fail. Probe HTTPS to a tag:mountainous service; the saved
+  policy is intended to allow it. See the current reachability caveat below.
 - From Zao, load the Control UI, pair it, send a short chat, and capture a
   screenshot. Call the basic-react clock tool to inspect its MCP App.
 - Run `openclaw security audit`, record its warnings and `free -m` on Yari.
@@ -748,3 +745,121 @@ with rollback/health receipts. It also needs Git write credentials and system
 activation authority, which the current profile deployer intentionally lacks.
 That is a new mechanism, not a serviceApps option. No update automation was
 built or enabled; manual pinned updates remain the current procedure.
+
+
+## Trial deployment and verification — 2026-11-10 Denver
+
+Implementation commits on `cairn`: `629df4b5`, `276f46e2`, `d31a4b3d`,
+`3c0a27b0`, `55b6935b`. Rebased against current origin/cairn before the builds;
+no Laure-session commits were dropped. No auth, roles, sign-in or Laure persona
+configuration changed. No secret was added or rotated. No host rebooted.
+
+| Host | Generation | Running system | Build host |
+| --- | --- | --- | --- |
+| Rakku | 134 | `3bjx3bjk0x6spgsg6yma8ycly2lf9imq` | Unzen, relayed through Zao as root |
+| Unzen | 55 | `dhqa185nk8asa6mi0smlmlyfffwjb0pg` | Unzen |
+| Yari | 20 (first deployment 19) | `mr63j76hr86ib51pxn18np2lcj8j1qbs` | Yari, remote builders disabled |
+
+Focused checks passed: x86 openclaw, home-exit-node, ai-gateway and claw-tools;
+all three host toplevel evaluations; ARM openclaw-config (real CLI validation)
+and Yari system builds. Nix formatting, Ruff lint/format for the changed Python
+test, whitespace and check-flake-inputs passed. The ai-gateway check first
+rejected the old expected grant, then passed with the expanded grant assertion.
+No aggregate flake check ran. ARM config-check logging reports an unwritable
+production log path inside the build sandbox; validation still passes. The
+production gateway has zero automatic restarts.
+
+After **each** host deployment, the four claw-tools units on Rakku were active,
+container tools/list returned their exact one-tool lists, and the laure entry
+and both enabled heartbeats remained present. Rakku's Home Assistant, Z-Wave,
+all three pi-assistant units, Google and maps kept their original start times;
+only ai-gateway restarted there. Unzen's switch reached generation 55 but
+returned exit 4 from a transient `simon` user-manager activation transaction
+(`exit.target` already queued). No system units failed. The saved exit-node
+advertisement was explicitly cleared afterward. No unrelated user-unit fix was
+made.
+
+Network verification as the **openclaw user**:
+
+- Selected exit node is Rakku, `ExitNodeAllowLANAccess=false`; another node sees
+  Rakku `ExitNodeOption=true` and Unzen `false`.
+- Rakku, container curl and the **managed browser** at api.ipify.org all return
+  **38.175.187.81**. Yari itself remains **129.146.97.70**.
+- Rakku:22 times out. Stopping container tailscaled blocks a previously working
+  public HTTPS request with DNS bypassed (`--resolve ...:1.1.1.1`, curl exit 28).
+  Tailscaled and claw-tailnet were restored; the home IP and active units were
+  rechecked. Startup can briefly lack the exit peer's netmap entry; the existing
+  retry recovers without an Oracle fallback.
+- **Reachability caveat:** the tag:mountainous front door returns HTTP **401**
+  without a key and **200** with it. However, scryer and traccar HTTPS both time
+  out from the container; Scryer returns **200** from Zao. Thus general fleet
+  HTTPS reachability under the newly saved policy is **not proven**. The reason
+  is not established. No ACL, auth or service changes were made to bypass it.
+
+Browser verification used a newly paired Chromium session, **not the main
+conversation**: `agent:main:dashboard:2ee33954-f22c-405e-9038-2b6c88b53915`.
+
+| Requested behavior | Verified result |
+| --- | --- |
+| ask_user | Structured Cedar/Quartz question rendered; Cedar answer was accepted. The model corrected one malformed first call. |
+| Memory save and recall | Workspace note saved; memory_search and memory_get returned the exact marker. Recall passed again after the container restart. The first search had a partial index-repair warning; the final search had none. FTS-only, no embeddings. |
+| Native web search | Front-door Responses probe succeeded with 2 search-call items and 1 citation; OpenClaw cannot select native search for a proxy URL. Unavailable in the chat, as explained above. |
+| Attached image | Uploaded 64×64 test image; model correctly identified red left and blue right. |
+| Image generation | One 1024×1024 paper-crane image generated through the default Gemini Images route and rendered in chat. Initial private-network refusal was reproduced before the documented opt-in fix. |
+| Browser and fetch | Managed headless Chromium opened example.com; web_fetch returned HTTP 200. A subsequent managed-browser IP check returned the home IP. |
+| Shell absence | tools.effective on the new session excludes exec, process and code_execution with reason deny; terminal is excluded by the allowlist. Same global deny applies to both agents and is asserted in the focused check. No Laure run/session was created just to test her policy. |
+| Plugin confinement | Real plugins list loads exactly browser, memory-core, openai and web-readability, all bundled 2026.11.3; no other plugin loads. |
+
+Screenshots on Zao: `/tmp/claw-decisions-ask-user.png`,
+`/tmp/claw-decisions-generated.png`, `/tmp/claw-decisions-browser-ip.png`.
+They contain the verification chat and Simon's account avatar. The generated
+file is named `.png` but its actual first bytes are JPEG (`ff d8 ff e0`); it
+renders correctly. This upstream naming mismatch was reported, not patched.
+
+Morning brief retained ID **df3d8216-a284-4086-a127-3890019d5cdb**, exactly one
+07:00 America/Denver declaration, stagger 0. The final reconciled prompt contains
+the exact Denver home-place sentence from Simon's decision. Manual results
+(counts and times only):
+
+| Run (Denver) | Duration | Busy blocks | Calendar-free windows | Weather reads | Questions | Delivery |
+| --- | --- | --- | --- | --- | --- | --- |
+| 22:44:24 (before home place) | 22.084 s | 0 | 1, 08:00–22:00 | 0 | 1 | delivered |
+| 22:49:25 (final home place) | 27.187 s | 0 | 1, 08:00–22:00 | 1 | 1 | delivered |
+
+SOUL.md Growing was updated in place; owner **992:998**, mode **0600** retained.
+A same-owner/mode backup sits beside it. Both container and gateway report
+MemoryMax **8,589,934,592** bytes.
+
+Final security audit: **1 critical, 4 warnings, 1 info**. The critical is the
+unchanged trusted-proxy auth mode. Warnings cover MCP Apps, the required shared
+private-network Images opt-in, unchanged trusted loopback proxy, and cross-agent
+session access (now meaningful with session tools). These are reported, not
+silenced or repaired. Memory Core also created its default 03:00 memory-dreaming
+automation when enabled; the two heartbeat jobs and morning brief are unchanged.
+
+| Decision | Status |
+| --- | --- |
+| 1 Tools | done with a caveat: native search unavailable; Laure policy checked declaratively, without starting her agent |
+| 2 Bundled skills | done |
+| 3 Plugins | done with a caveat: four specific approved capability exceptions, no general plugins |
+| 4 Browser | done with a caveat: shared private-network opt-in required by Images |
+| 5 Models/images | done with a caveat: real context/output limits unconfirmed; defaults retained; GPT image fallback catalogued, only primary generation exercised |
+| 6 Front-door grant | done |
+| 7 Network policy verification | done with a caveat: AI HTTPS succeeds and SSH fails; general fleet HTTPS still times out |
+| 8 Rakku exit node | done |
+| 9 MemoryMax | done |
+| 10 Soul growth | done |
+| 11 Morning brief | done, including the Denver home-place follow-up |
+| 12 Demo apps | done |
+| 13 Weekly updates | proposal only; no existing narrow system-update pattern fits |
+| 14 Yari role | done |
+| 15 Preserved boundaries | done; both heartbeats, Nix-owned settings, calendar_busy-only personal endpoint and event-title handling retained |
+
+Rollback: `nixos-rebuild switch --rollback` on the affected host, no reboot.
+The first Yari rollback returns generation 19 (before the Images/home-place
+fix); generation 18 predates the trial decisions. To restore Unzen egress,
+restore its advertisement and select Unzen in the container before withdrawing
+Rakku's advertisement. SOUL.md and cron history are persistent state, not system
+closure contents; a system rollback does not undo them. Restore only the saved
+SOUL.md backup if Simon wants that wording reverted. Do not delete service or
+tailnet identity state.
