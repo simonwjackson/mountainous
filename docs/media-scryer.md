@@ -265,6 +265,35 @@ a report as a data-safety failure.
   Scryer state (no metadata), kept, not used.
 - Each app's own backup command ran on 2026-10-13.
 
+## Owners: Simon, Laure, Family (2026-11-11)
+
+The library is split by owner. Scryer and Jellyfin use the same folders, all
+on the same filesystem under `/srv/range/media`:
+
+| Owner | Scryer libraries | Jellyfin libraries | Folders |
+|---|---|---|---|
+| Simon | Simon Movies, Simon Series | Simon Movies, Simon TV | `movies/simon`, `tv/simon` |
+| Laure | Laure Movies, Laure Series | Laure Movies, Laure TV | `movies/laure`, `tv/laure` |
+| Family | Family Movies, Family Series (the former default libraries, same IDs) | Family Movies, Family TV (the former Movies and TV) | `movies/family`, `tv/family` |
+| Everyone | Anime | Anime | `tv/anime` |
+
+Accounts. Scryer: `simon` (app-wide admin; sees all libraries), `laure`, and
+`family` (Household assistant: Family and Anime only). Each Pi assistant on
+Rakku signs in as its own account through the `scryer-username` and
+`scryer-password` credentials (`secrets/hosts/rakku.yaml`,
+`scryer-password-<user>`). `admin` remains for the OpenClaw endpoint and
+recovery. Jellyfin: `simonwjackson`, `laure` and `family`, each limited to the
+libraries in its row plus Family and Anime. The new Jellyfin passwords are
+`jellyfin-password-laure` and `jellyfin-password-family` in
+`secrets/hosts/unzen.yaml`.
+
+There is no crossover library. A title lives in one library; Scryer moves it
+with `locationOperationPreview` and `startLocationOperation` (a same-disk
+rename). Scryer refuses to change a root into its own child folder, so the
+default libraries took a new `family/` root, their titles moved there, and the
+old parent root was removed. A library root must never contain another
+library's root.
+
 ## Rollback
 
 **After the 2026-10-13 retirement, rollback first needs the archive restored:**
