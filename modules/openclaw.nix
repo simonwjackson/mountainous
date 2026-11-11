@@ -381,6 +381,7 @@
           assert
             unit.ProtectSystem == "strict" && unit.ProtectHome && unit.NoNewPrivileges && unit.PrivateTmp;
           assert unit.ReadWritePaths == [ "/var/lib/openclaw" ] && unit.MemoryMax == "8G";
+          assert unit.TasksMax == 2048;
           assert
             gateway.config.skills.allowBundled == [
               "weather"

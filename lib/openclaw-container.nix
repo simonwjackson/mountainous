@@ -587,7 +587,7 @@ in
         StateDirectoryMode = "0700";
         ReadWritePaths = [ "/var/lib/openclaw" ];
         MemoryMax = "8G";
-        TasksMax = 256;
+        TasksMax = 2048;
         # OpenClaw requires mixed (its docs/gateway/restart-recovery.md): only
         # the gateway gets the stop signal, so its children live while it closes.
         KillMode = "mixed";
