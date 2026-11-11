@@ -164,10 +164,43 @@ in
           ];
           controlUi.allowedOrigins = [ origin ];
         };
-        agents.defaults = {
-          model.primary = "front-door/claude-opus-5-5";
-          workspace = "/var/lib/openclaw/workspace";
+        agents = {
+          # Two agents need explicit owners. These pin, for main, what the
+          # retired `default = true` marker meant (as `openclaw doctor --fix`).
+          ownership = "explicit";
+          defaults = {
+            model.primary = "front-door/claude-opus-5-5";
+            workspace = "/var/lib/openclaw/workspace";
+            systemAgent.agentId = "main";
+            sessionStore.agentId = "main";
+          };
+          # Two agents: when any entry has a heartbeat block, only those agents
+          # run heartbeats, and a multi-agent roster without blocks runs none.
+          # Both keep the 30-minute default explicitly.
+          entries = {
+            # Simon's agent (persona flakey), unchanged except it does not get
+            # Laure's Family calendar tool.
+            main = {
+              workspace = "/var/lib/openclaw/workspace";
+              heartbeat.every = "30m";
+              tools.deny = [ "claw-family-calendar__*" ];
+            };
+            # Laure's agent. Its persona comes from her own BOOTSTRAP.md
+            # interview; OpenClaw seeds the starter files on the first run.
+            laure = {
+              workspace = "/var/lib/openclaw/workspace-laure";
+              agentDir = "/var/lib/openclaw/agents/laure/agent";
+              heartbeat.every = "30m";
+              tools.deny = [
+                "claw-calendar__*"
+                "basic-react__*"
+                "budget-allocator__*"
+                "system-monitor__*"
+              ];
+            };
+          };
         };
+        talk.agentId = "main";
         models = {
           mode = "replace";
           providers.front-door = {

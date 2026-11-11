@@ -88,6 +88,26 @@
           assert
             gateway.config.models.providers.front-door.baseUrl == "https://ai.hummingbird-lake.ts.net/v1";
           assert gateway.config.agents.defaults.model.primary == "front-door/claude-opus-5-5";
+          # Two agents; both keep a heartbeat (any per-agent block disables the rest).
+          assert lib.attrNames gateway.config.agents.entries == [
+            "laure"
+            "main"
+          ];
+          assert gateway.config.agents.ownership == "explicit";
+          assert gateway.config.agents.defaults.systemAgent.agentId == "main";
+          assert gateway.config.agents.entries.main.workspace == gateway.config.agents.defaults.workspace;
+          assert lib.all (a: a.heartbeat.every == "30m") (lib.attrValues gateway.config.agents.entries);
+          assert gateway.config.agents.entries.main.tools.deny == [ "claw-family-calendar__*" ];
+          assert
+            gateway.config.agents.entries.laure.tools.deny == [
+              "claw-calendar__*"
+              "basic-react__*"
+              "budget-allocator__*"
+              "system-monitor__*"
+            ];
+          assert gateway.config.mcp.servers.claw-family-calendar.toolFilter.include == [
+            "family_calendar_events"
+          ];
           assert lib.all
             (
               name:
