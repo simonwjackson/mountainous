@@ -756,16 +756,22 @@ configuration changed. No secret was added or rotated. No host rebooted.
 
 | Host | Generation | Running system | Build host |
 | --- | --- | --- | --- |
-| Rakku | 134 | `3bjx3bjk0x6spgsg6yma8ycly2lf9imq` | Unzen, relayed through Zao as root |
+| Rakku | 135 (134 deployed by this run) | `7a97d9b3yb9rfb6d1wgwdrmcffp5xv12` | 134 built on Unzen/relayed through Zao; 135 deployed independently |
 | Unzen | 55 | `dhqa185nk8asa6mi0smlmlyfffwjb0pg` | Unzen |
 | Yari | 20 (first deployment 19) | `mr63j76hr86ib51pxn18np2lcj8j1qbs` | Yari, remote builders disabled |
 
-Source deployed: Rakku/Unzen `3c0a27b0`, Yari `55b6935b`. The final docs rebase
-preserved newer independent Scryer commits `98c28e06` and `2d5704ed`. These
-commits are **not in the generations above**. The supervisor directed no further
-activation to avoid racing the Scryer session's deployment. Current-tip focused
-checks/evaluations were run without activation; the Scryer session owns its
-Rakku deployment. Yari's final OpenClaw behavior is already live.
+Source deployed by this run: Rakku/Unzen `3c0a27b0`, Yari `55b6935b`. The final
+docs rebase preserved newer independent Scryer commits `98c28e06` and `2d5704ed`.
+The supervisor directed no further activation to avoid a deployment race.
+During final checks the Scryer session deployed Rakku generation **135**; its
+running output matches the current-tip toplevel derivation. Its endpoint now
+lists 5 tools (the original scryer_graphql plus its 4 new media tools); all four
+endpoints and Laure's entry were rechecked after that independent switch.
+Yari generation 20 also matches the current-tip derivation. Unzen generation
+55 still predates `98c28e06`/`2d5704ed` and lacks their shared proxy-package
+changes; it was not redeployed on the supervisor's direction. All OpenClaw
+trial changes are live. Current-tip focused checks/evaluations passed without
+another activation.
 
 Focused checks passed: x86 openclaw, home-exit-node, ai-gateway and claw-tools;
 all three host toplevel evaluations; ARM openclaw-config (real CLI validation)
