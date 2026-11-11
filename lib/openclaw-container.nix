@@ -388,6 +388,8 @@ in
           # Nothing else from claw-scryer is added; scryer_graphql stays model-only in effect.
           ++ map (tool: "claw-scryer__${tool}") scryerAppTools;
           deny = [ "group:runtime" ];
+          sessions.visibility = "agent";
+          agentToAgent.enabled = false;
           codeMode.enabled = false;
           fs.workspaceOnly = true;
           elevated.enabled = false;

@@ -158,6 +158,8 @@
             ];
           assert gateway.config.tools.profile == "full";
           assert gateway.config.tools.deny == [ "group:runtime" ];
+          assert gateway.config.tools.sessions.visibility == "agent";
+          assert !gateway.config.tools.agentToAgent.enabled;
           assert
             gateway.config.tools.allow == [
               "ask_user"

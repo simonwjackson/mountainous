@@ -15,6 +15,8 @@ run outside OpenClaw with `trusted-proxy` auth, not OpenClaw-managed Serve,
 because managed Serve needs OpenClaw to have write access to the container's
 tailscaled.
 
+Session tools use `tools.sessions.visibility = "agent"` and `tools.agentToAgent.enabled = false`: each agent can access only its own sessions, including same-agent sub-agents.
+
 ## Placement and boundaries
 
 | Service | Placement | State / address |
