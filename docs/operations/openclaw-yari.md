@@ -1045,6 +1045,83 @@ roster. A system rollback does not roll back this independent package profile;
 retain both old closures. Never delete OpenClaw state for a package rollback.
 
 
+#### Weekly profile deployment evidence — 2026-11-11 UTC
+
+Implementation: `326f4914` (profile/native transport), `856af38e` (quiet-window
+limit and this runbook), `121b17bd` (CLI receipt tests), landed on `cairn`.
+Rebased on origin/cairn before builds; systems built from `121b17bd`. No host
+rebooted. Yari built its ARM system with builders disabled; Unzen built its
+x86 system with builders disabled.
+
+| Target | Generation | Running closure |
+| --- | --- | --- |
+| Yari system | **23** | `/nix/store/in6jmak1fm9v4i8k8mc5cwnx42rvczvi-nixos-system-yari-26.11.20260923.4975466` |
+| Unzen system | **56** | `/nix/store/6rhbj10dcc5xff3xc7q782d6ldwbsfda-nixos-system-unzen-26.11.20260923.4975466` |
+| Yari OpenClaw app | **1** | `/nix/store/61j8zqks0hykidf3ws2s0k069r13plhm-activatable-openclaw-gateway-2026.11.3` |
+
+The initial app profile contained the current locked version, **2026.11.3**,
+with revision `412fc9f978072eac48c4dfe8cc77181e077696a6`. Its closure was signed
+on Unzen, then installed as app-deploy before switching Yari to profile-based
+launch. The container sees the apps directory read-only. System switch
+restarted the container; package deployments restart only the gateway.
+
+Both manual updater runs used source `a19fb38a8e6bb563db8724ed9665f64cc79aeff1`
+after the updater refreshed origin/cairn. The dry run passed with no host
+activation or acceptance write. The real run selected newer nix-openclaw
+**`b04843a59efe524bc01a14aed1d5b977dc811334`**, passed every ARM check, signed
+and deployed as app-deploy with both rollbacks and signature checking enabled.
+The upstream revision changed packaging metadata, not the selected npm gateway:
+it still resolves to **2026.11.3 and the same store closure**. Thus the app
+profile correctly stayed at generation 1, while accepted input revision advanced.
+Neither updater run changed Yari's system generation.
+
+Receipts on Unzen:
+
+- Dry run: `/var/lib/app-updater/receipts/1794379125984961677.json`.
+- Real run: `/var/lib/app-updater/receipts/1794379207815705162.json`.
+- The successful signed activation enabled `/var/lib/app-updater/enabled-openclaw`.
+  The timer is active; next run is **2026-11-15 02:15 Denver / 09:15 UTC**.
+
+Because the newer input had the same package output, a separate data-free
+broken candidate also exercised a real profile change. Its `openclaw` binary
+exited 1 without touching state. It was natively built through the actual
+forced Yari transport, signed, and deployed with the production activation hook.
+The 120-second health gate failed. Deploy-rs returned exit 1 and reported
+**"rolled back to previous generation"**. Profile generation 1 and the original
+closure were restored automatically, and the old gateway restarted with
+**0 automatic restarts**. The broken profile is not deployed. System generation
+23 and accepted input revision b04843a remained unchanged.
+
+After **each system deployment, the real package deployment, and the rollback**:
+container and gateway active; gateway health and Control UI HTTP 200; Laure's
+entry present; original brief ID `df3d8216-a284-4086-a127-3890019d5cdb` still
+enabled at 07:00 America/Denver. Tools/list as the container's OpenClaw user
+passed for calendar, family calendar, maps and Scryer; after Yari adopted the
+concurrent web-search config it also passed for web search. Final tools lists
+were 1 / 1 / 1 / 5 / 1 respectively. No Laure agent run was created. Yari's
+`sudo -l` for app-deploy lists **only** the fixed OpenClaw controller command;
+no system activation or arbitrary systemctl command is permitted.
+
+Passed: **13 Python tests**, including real subprocess dry-run/deployment/failure
+receipts; Ruff lint and format; Python compilation; Nix formatting and whitespace;
+Yari/Unzen toplevel evaluations and native system builds; focused ARM
+`app-openclaw`, `openclaw`, `openclaw-config` and `deploy-schema`; focused x86
+`openclaw`, `app-updater-closure` and `deploy-schema`. The broader focused
+`app-profiles` contract fails because it still requires Pi enabled on Aka,
+which its host explicitly disables. This same failure was reproduced against
+pre-change `98311bc3`; it was not changed here. No aggregate flake check ran.
+Korri cache HTTP 503 warnings occurred during the first ARM build; it completed
+successfully using the available inputs and native builds.
+
+Local evidence: `/tmp/claw-updates-before.json`,
+`/tmp/claw-updates-after-unzen.json`, `/tmp/claw-updates-after-yari.json`,
+`/tmp/claw-updates-after-update.json`, `/tmp/claw-updates-after-rollback.json`.
+The rollback fixture and its signed activation path are under
+`/tmp/claw-updates-rollback*` on Unzen. For rollback of this migration, use Yari
+system generation **22** (the previous fixed-path launch). Package-only rollback
+uses the profile procedure above; retain profile generation 1.
+
+
 ## Trial deployment and verification — 2026-11-10 Denver
 
 Implementation commits on `cairn`: `629df4b5`, `276f46e2`, `d31a4b3d`,
