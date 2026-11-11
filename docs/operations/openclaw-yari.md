@@ -104,6 +104,34 @@ registrations is separate from stopping the services. Once no endpoint remains,
 Simon can remove `tag:claw-tools` from the console ACL. Roll back a failed host
 switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
 
+## Official interactive demos
+
+The container also runs the official `@modelcontextprotocol/server-budget-allocator`
+and `@modelcontextprotocol/server-system-monitor`, both **2.0.4**, matching the
+React clock release. Their exact npm tarballs and content hashes are flake inputs.
+`lib/openclaw-demo.nix` packages the self-contained JavaScript and HTML with the
+same ARM Node runtime as the clock. No npm installation, outside service,
+credentials, mounts, or additional permissions are needed. Both servers use
+`--stdio` in declarative `mcp.servers`; neither opens an HTTP listener.
+
+In a **new** Control UI session, ask “help me split a $5,000 monthly budget”
+and “show me system stats”. The budget example uses business categories and
+synthetic history/benchmarks, not personal finance data. Its initial budget is
+$100,000; set the card's budget field to $5,000, then move an allocation slider.
+The monitor polls its app-only `poll-system-stats` tool. It reads the container's
+available OS metrics, including `/proc/meminfo`, not a remote machine; these
+values need not equal the gateway's 4 GiB cgroup limit. The existing sandbox and
+network restrictions remain unchanged.
+
+To remove only these demos, remove `interactiveDemos` and its server merge from
+`lib/openclaw-container.nix`, the two corresponding inputs from `flake.nix` and
+`flake.lock`, and their names from the focused `openclaw` assertions. Keep the
+shared package/test for `basic-react`. Run the focused check, evaluate Yari,
+build the ARM config check and system on Yari, land on `cairn`, then deploy Yari.
+No tailnet registration or saved service state needs removal. Existing chat
+cards may no longer reconnect after removal. A Yari generation rollback restores
+the former server configuration without deleting conversations.
+
 ## Daily morning brief
 
 `morning-brief` runs at **07:00 America/Denver**, every day (`0 7 * * *`,

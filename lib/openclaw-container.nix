@@ -11,6 +11,24 @@ let
     inherit pkgs inputs;
     node = package.runtimeNode;
   };
+  interactiveDemos =
+    lib.mapAttrs
+      (
+        name: tool:
+        import ./openclaw-demo.nix {
+          inherit
+            pkgs
+            inputs
+            name
+            tool
+            ;
+          node = package.runtimeNode;
+        }
+      )
+      {
+        budget-allocator = "get-budget-data";
+        system-monitor = "get-system-info";
+      };
   bootstrapDns = pkgs.writeText "claw-overlay-resolv.conf" "nameserver 1.1.1.1\nnameserver 8.8.8.8\n";
   exitNode = "100.120.204.5"; # Unzen's stable tailnet address, not a LAN route.
   admin = pkgs.writeShellApplication {
@@ -177,6 +195,10 @@ in
               args = [ "--stdio" ];
             };
           }
+          // lib.mapAttrs (name: demoPackage: {
+            command = "${demoPackage}/bin/mcp-server-${name}";
+            args = [ "--stdio" ];
+          }) interactiveDemos
           // lib.mapAttrs (name: endpoint: {
             transport = "streamable-http";
             url = "https://${name}.hummingbird-lake.ts.net/mcp";

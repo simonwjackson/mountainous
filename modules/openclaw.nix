@@ -88,6 +88,21 @@
           assert
             gateway.config.models.providers.front-door.baseUrl == "https://ai.hummingbird-lake.ts.net/v1";
           assert gateway.config.agents.defaults.model.primary == "front-door/claude-opus-5-5";
+          assert lib.all
+            (
+              name:
+              let
+                server = gateway.config.mcp.servers.${name};
+              in
+              server.args == [ "--stdio" ]
+              && lib.hasSuffix "/bin/mcp-server-${name}" server.command
+              && !(server ? url)
+            )
+            [
+              "basic-react"
+              "budget-allocator"
+              "system-monitor"
+            ];
           assert gateway.config.mcp.apps.enabled;
           assert gateway.config.mcp.apps.sandboxOrigin == "https://claw.hummingbird-lake.ts.net:8443";
           assert lib.hasInfix "--advertise-tags=tag:claw" c.systemd.services.claw-tailnet.script;

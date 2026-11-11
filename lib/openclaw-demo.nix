@@ -4,26 +4,28 @@
   pkgs,
   inputs,
   node,
+  name ? "basic-react",
+  tool ? "get-time",
 }:
 pkgs.stdenvNoCC.mkDerivation {
-  pname = "mcp-server-basic-react";
+  pname = "mcp-server-${name}";
   version = "2.0.4";
-  src = inputs.openclaw-basic-react-src;
+  src = inputs."openclaw-${name}-src";
   nativeBuildInputs = [ pkgs.makeWrapper ];
   dontBuild = true;
   installPhase = ''
     mkdir -p $out/lib/demo $out/bin
     cp -r dist package.json $out/lib/demo/
-    makeWrapper ${node}/bin/node $out/bin/mcp-server-basic-react \
+    makeWrapper ${node}/bin/node $out/bin/mcp-server-${name} \
       --add-flags $out/lib/demo/dist/index.js
   '';
   doInstallCheck = true;
   nativeInstallCheckInputs = [ pkgs.python3 ];
   installCheckPhase = ''
-    python3 ${../tests/openclaw-demo.py} $out/bin/mcp-server-basic-react
+    python3 ${../tests/openclaw-demo.py} $out/bin/mcp-server-${name} ${tool}
   '';
   meta = {
-    description = "Official read-only MCP Apps clock demo";
+    description = "Official MCP Apps ${name} demo";
     license = pkgs.lib.licenses.mit;
     platforms = [ "aarch64-linux" ];
   };

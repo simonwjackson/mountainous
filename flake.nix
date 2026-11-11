@@ -16,6 +16,14 @@
       url = "https://registry.npmjs.org/@modelcontextprotocol/server-basic-react/-/server-basic-react-2.0.4.tgz";
       flake = false;
     };
+    openclaw-budget-allocator-src = {
+      url = "https://registry.npmjs.org/@modelcontextprotocol/server-budget-allocator/-/server-budget-allocator-2.0.4.tgz";
+      flake = false;
+    };
+    openclaw-system-monitor-src = {
+      url = "https://registry.npmjs.org/@modelcontextprotocol/server-system-monitor/-/server-system-monitor-2.0.4.tgz";
+      flake = false;
+    };
     openclaw-node-arm64 = {
       url = "https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-arm64.tar.xz";
       flake = false;
