@@ -41,7 +41,13 @@ if production:
         "gpt-5.6-luna",
         "jev",
     ]
-    assert a["dialects"] == ["codex", "chat_completions", "models", "responses", "systemone"]
+    assert a["dialects"] == [
+        "codex",
+        "chat_completions",
+        "models",
+        "responses",
+        "systemone",
+    ]
     assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (5, 600)
     voice = next(k for k in settings["gateway_keys"] if k["name"] == "voice@zao")
     assert voice == {
