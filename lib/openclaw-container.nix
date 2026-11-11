@@ -29,6 +29,7 @@ let
         budget-allocator = "get-budget-data";
         system-monitor = "get-system-info";
       };
+  identityProxy = import ./claw-identity-proxy.nix { inherit pkgs; };
   bootstrapDns = pkgs.writeText "claw-overlay-resolv.conf" "nameserver 1.1.1.1\nnameserver 8.8.8.8\n";
   exitNode = "100.120.204.5"; # Unzen's stable tailnet address, not a LAN route.
   admin = pkgs.writeShellApplication {
@@ -324,6 +325,40 @@ in
     };
   };
   systemd.services = {
+    # Tailscale Serve sets no login for tagged devices. Simon's own fleet
+    # machines (Myoko, Ibuki, ...) carry tag:mountainous, so this proxy names
+    # Simon for that tag only. It asks tailscaled read-only (WhoIs); it has no
+    # operator rights. Logins Serve sets pass through unchanged.
+    claw-identity-proxy = {
+      description = "Name the person for tagged devices at Claw's Tailscale Serve";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "tailscaled.service" ];
+      serviceConfig = {
+        ExecStart = lib.concatStringsSep " " [
+          "${identityProxy}/bin/claw-identity-proxy"
+          "-listen 127.0.0.1:18788"
+          "-upstream http://127.0.0.1:18789"
+          "-tailscale ${config.services.tailscale.package}/bin/tailscale"
+          "-tag tag:mountainous"
+          "-login simon.jackson@gmail.com"
+        ];
+        DynamicUser = true;
+        Restart = "always";
+        RestartSec = 5;
+        NoNewPrivileges = true;
+        CapabilityBoundingSet = "";
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        PrivateDevices = true;
+        RestrictAddressFamilies = [
+          "AF_INET"
+          "AF_INET6"
+          "AF_UNIX"
+        ];
+        MemoryMax = "256M";
+      };
+    };
     openclaw-morning-brief = {
       description = "Reconcile the declarative 07:00 Denver OpenClaw morning brief";
       wantedBy = [ "multi-user.target" ];
@@ -388,7 +423,8 @@ in
         esac
         tailscale set --ssh=false --accept-dns=false --accept-routes=false \
           --exit-node=${exitNode} --exit-node-allow-lan-access=false
-        tailscale serve --bg --https=443 http://127.0.0.1:18789
+        # Through claw-identity-proxy, which names the person for tagged devices.
+        tailscale serve --bg --https=443 http://127.0.0.1:18788
         tailscale serve --bg --https=8443 http://127.0.0.1:18790
       '';
       serviceConfig = {

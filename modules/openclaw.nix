@@ -99,6 +99,9 @@
             lib.attrValues gateway.config.gateway.roles.definitions
           );
           assert lib.elem "/run/tailscale" unit.InaccessiblePaths;
+          assert lib.hasInfix "--https=443 http://127.0.0.1:18788" c.systemd.services.claw-tailnet.script;
+          assert lib.hasInfix "-tag tag:mountainous -login simon.jackson@gmail.com" c.systemd.services.claw-identity-proxy.serviceConfig.ExecStart;
+          assert c.systemd.services.claw-identity-proxy.serviceConfig.DynamicUser;
           assert
             gateway.config.models.providers.front-door.baseUrl == "https://ai.hummingbird-lake.ts.net/v1";
           assert gateway.config.agents.defaults.model.primary == "front-door/claude-opus-5-5";
@@ -170,7 +173,10 @@
               "models"
             ];
           assert key.monthly_cap_usd == 1 && key.requests_per_minute == 300;
-          pkgs.runCommand "openclaw-isolation" { } "touch $out";
+          pkgs.runCommand "openclaw-isolation" {
+            # Builds the identity proxy for this system and runs its tests.
+            proxy = import ../lib/claw-identity-proxy.nix { inherit pkgs; };
+          } "touch $out";
       }
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isAarch64 {
         openclaw-config = pkgs.runCommand "openclaw-config" { } ''
