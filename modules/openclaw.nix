@@ -25,6 +25,8 @@
         sourceBranch = "cairn";
         # Finish or abort by 06:15, before the 07:00 morning brief.
         timeout = "4h";
+        # A late catch-up could overlap the brief despite the job timeout.
+        persistent = false;
         checks = [
           "openclaw"
           "openclaw-config"
@@ -169,6 +171,11 @@
             self.deploy.nodes.yari.profiles.openclaw.profilePath == "/nix/var/nix/profiles/apps/openclaw";
           assert !(self.deploy.nodes.rakku.profiles ? openclaw);
           assert host.mountainous.appProfiles.openclaw.enable;
+          assert
+            !self.nixosConfigurations.unzen.config.systemd.timers.app-update-openclaw.timerConfig.Persistent;
+          assert
+            self.nixosConfigurations.unzen.config.systemd.services.app-update-openclaw.serviceConfig.TimeoutStartSec
+            == "4h";
           assert container.bindMounts."/nix/var/nix/profiles/apps".isReadOnly;
           assert
             self.nixosConfigurations.unzen.config.mountainous.appUpdates.openclaw.checks == [

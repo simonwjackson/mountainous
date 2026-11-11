@@ -792,26 +792,81 @@ chat adapter. `web_fetch` and managed-browser navigation remain available,
 but are not claimed as native `web_search`. The approved `claw-websearch` MCP bridge above now supplies this capability
 without patching OpenClaw or changing the working chat adapter.
 
-### Weekly update: proposal only
+### Weekly package update: signed app profile
 
-The fleet's `app-updates.nix` and `app-profiles.nix` deliberately deploy
-independent signed application profiles as `app-deploy`, not system closures.
-`service-apps.nix` follows that same contract. `scripts/app-update.py`
-explicitly refuses non-x86 builds ("Native target build transport is not
-provisioned"). OpenClaw is an aarch64 nspawn configuration built into Yari's
-system, with a custom ARM package wrapper and exact-revision flake URL.
-None of these patterns can update it with a narrow profile entry.
+OpenClaw's package now has the independent deploy-rs profile
+`/nix/var/nix/profiles/apps/openclaw` on Yari only. It contains the
+nix-openclaw gateway plus our ARM Node wrapper. The container binds the host's
+**apps directory** read-only, not the resolved profile symlink. The gateway
+launch and `openclaw-admin` resolve the profile each time they run. Models,
+tools, endpoints, permissions and other configuration still require normal
+Yari system deployment. A package update does not switch the system or the
+container, and does not update these settings.
 
-Do not install a timer that appears to update this system but cannot. A future
-system-update mechanism would need a weekly Yari-native job with a clean
-checkout rebased on current origin/cairn, an explicit update of the pinned
-nix-openclaw revision, sequential focused openclaw and ARM openclaw-config
-checks, then a Yari system build. It must pin one tested SHA, refuse deployment
-if cairn moved, fast-forward the lock commit and deploy only the tested system
-with rollback/health receipts. It also needs Git write credentials and system
-activation authority, which the current profile deployer intentionally lacks.
-That is a new mechanism, not a serviceApps option. No update automation was
-built or enabled; manual pinned updates remain the current procedure.
+Unzen runs `app-update-openclaw` each **Sunday at 02:15 America/Denver**.
+Its complete job has a four-hour limit, ending by 06:15 before the 07:00 brief.
+Missed runs do not catch up after boot, so they cannot overlap the brief. The
+timer is gated by `/var/lib/app-updater/enabled-openclaw`,
+created only after the first accepted signed deployment. Disable scheduling
+with `systemctl stop app-update-openclaw.timer` and move the gate aside.
+
+The updater takes the existing global update lock, requires a clean repository,
+fetches `origin/cairn` and fast-forwards its detached checkout before selecting
+a candidate. It selects the upstream nix-openclaw revision, not the exact
+revision embedded in the original flake URL; it does **not** edit `flake.lock`.
+It pins that candidate with `--override-input` throughout checks and deployment.
+Version and input timestamps must not decrease relative to the system lock or
+last accepted receipt. An unchanged candidate can retry a failed host.
+
+ARM derivations are evaluated on Unzen, copied to Yari, and realized **on Yari**
+using the dedicated builder key. Its forced SSH command accepts only Nix store
+transport or `app-native-build <store derivation>`. Realization explicitly sets
+`max-jobs=2`, `cores=4`, and `builders=""` on the target; remote-store options
+alone would not prevent delegation to Fuji. Outputs return to Unzen before
+signing. The app, `openclaw`, `openclaw-config` (real CLI config validation) and
+deploy-schema checks run sequentially on ARM. Only checked closures receive
+the local app-updater signature.
+
+Deploy-rs uses the existing restricted `app-deploy` account, signature checks,
+auto rollback and magic rollback. That account can change only app profiles.
+The only extra root operation is the fixed `openclaw-profile-control
+restart-and-check` controller. It cannot switch systems, restart arbitrary
+units or change config. Activation restarts only the container's gateway and
+waits up to 120 seconds for `/healthz` to return `ok=true` and the Control UI
+root to return **HTTP 200**, then checks five seconds of stable process
+identity. The previous profile runs the same hook on rollback.
+
+Manual verification uses the exact configuration path from the running unit:
+
+```sh
+# On Unzen, as root; retain the unit's HOME, LOCAL_KEY, NIX_REMOTE,
+# NIX_SSHOPTS and GIT_SSH_COMMAND environment (systemctl show -p Environment).
+systemctl cat app-update-openclaw.service
+app-update --config <app-updates.json-from-ExecStart> --app openclaw --check-only
+systemctl start app-update-openclaw.service
+```
+
+`--check-only` builds and checks but does not sign, deploy, advance acceptance
+or create the gate. Real runs produce private atomic JSON receipts and command
+logs under `/var/lib/app-updater/receipts`, including source SHA, selected input
+revision/version, ARM activation path and per-host deployment result. Accepted
+state is `/var/lib/app-updater/accepted-openclaw.json`. Keys stay under Unzen's
+`/var/lib/app-updater`; no system activation key is given to the updater.
+
+Before each manual system build, rebase on the latest origin/cairn. Before a
+Yari switch, check for another `switch-to-configuration` process. Bootstrap a
+new placement by building and signing the **current locked** activation first,
+setting it as the initial app profile as app-deploy, then switching the system
+to profile-based launch. Do not switch to a missing profile. After every host
+deployment check container/gateway health, Laure's roster entry, the unchanged
+07:00 brief, and every claw-tools tools/list endpoint. Do not start Laure's
+agent to perform this check.
+
+For package rollback, select a retained generation with `nix-env --profile
+/nix/var/nix/profiles/apps/openclaw --switch-generation N` as `app-deploy`, then
+run the permitted controller via sudo. Check both health endpoints and the
+roster. A system rollback does not roll back this independent package profile;
+retain both old closures. Never delete OpenClaw state for a package rollback.
 
 
 ## Trial deployment and verification — 2026-11-10 Denver
@@ -931,7 +986,7 @@ automation when enabled; the two heartbeat jobs and morning brief are unchanged.
 | 10 Soul growth | done |
 | 11 Morning brief | done, including the Denver home-place follow-up |
 | 12 Demo apps | done |
-| 13 Weekly updates | proposal only; no existing narrow system-update pattern fits |
+| 13 Weekly updates | superseded by the signed weekly app-profile updater above |
 | 14 Yari role | done |
 | 15 Preserved boundaries | done; both heartbeats, Nix-owned settings, calendar_busy-only personal endpoint and event-title handling retained |
 

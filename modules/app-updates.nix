@@ -13,6 +13,11 @@ let
         input = lib.mkOption { type = lib.types.str; };
         schedule = lib.mkOption { type = lib.types.str; };
         hosts = lib.mkOption { type = lib.types.listOf lib.types.str; };
+        persistent = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Catch up missed timer runs after boot.";
+        };
         timeout = lib.mkOption {
           type = lib.types.str;
           default = "8h";
@@ -162,7 +167,7 @@ in
               wantedBy = [ "timers.target" ];
               timerConfig = {
                 OnCalendar = app.schedule;
-                Persistent = true;
+                Persistent = app.persistent;
                 Unit = "app-update-${name}.service";
               };
             }
