@@ -130,6 +130,71 @@ registrations is separate from stopping the services. Once no endpoint remains,
 Simon can remove `tag:claw-tools` from the console ACL. Roll back a failed host
 switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
 
+## Model-native web search MCP
+
+`https://claw-websearch.hummingbird-lake.ts.net/mcp` runs on Rakku with
+exactly one tool: `web_search {query: string, max_results?: integer}`. Both
+agents can use it through the global streamable-HTTP server and its exact
+`toolFilter.include = [ "web_search" ]`. No plugin or outside search vendor
+is added. OpenClaw's own native-search custom-base-URL restriction is unchanged.
+
+`modules/claw-websearch.nix` declares this placement using the existing
+`media-tsnet-proxy` package. The identity has only `tag:claw-tools`, serves
+HTTPS 443, verifies the actual peer with WhoIs, and has no LAN listener or
+Funnel. Its saved identity is `/var/lib/tsnet-proxy-claw-websearch/tailnet`
+on Rakku's persistence volume. Only MCP initialization, notification of
+initialization, tool listing and the exact tool call are supported. Resources,
+prompts, unknown tools and batches fail closed.
+
+`packages/media-tsnet-proxy/websearch.go` copies pi-web-access's `openai`
+Responses request shape: user `input_text`, `web_search`, required tool choice,
+parallel tool calls, `include=["web_search_call.action.sources"]`, `store=false`,
+`stream=true`, and `OpenAI-Beta: responses=experimental`. It calls
+`http://127.0.0.1:8430/v1/responses` with **gpt-6.1-sol**, the existing
+OpenClaw-granted model already verified to run native search. It reuses
+`ai-gateway-key-openclaw-yari` as systemd credential `websearch-key`; the key
+is not in the store, process arguments or environment. Rotation restarts the
+endpoint too. Cost: this credential has the broader existing OpenClaw grant,
+not a separate search-only grant; the endpoint fixes both destination and model
+and never forwards arbitrary caller headers or Responses fields.
+
+Each search has a **60-second** deadline, no redirects, and a **4 MiB**
+request/upstream response limit. Query length is 1–2000 characters;
+`max_results` defaults to 5 and accepts integers 1–10. The result is
+`{answer, results:[{title,url,snippet}]}`, also supplied as MCP structured
+content. Answer length is capped at 16,000 characters, titles at 512, source
+URLs at 4096 bytes, and snippets at 300 characters. Sources come only from URL
+citation annotations, use HTTP(S), and are deduplicated after removal of
+`utm_source=openai`. Snippets are the nearby cited answer text, **not fetched
+page excerpts**. The agent can use `web_fetch` for page text. A successful
+search without citations returns an empty list, not invented sources.
+
+JSON and completed SSE Responses are accepted. A missing search call,
+incomplete/failed response, timeout, excessive response or transport failure
+returns a bounded typed tool error. HTTP errors return only their status, not
+an upstream body. Any decoded answer or citation containing the credential is
+withheld. The adapter does not log requests, responses or upstream errors.
+Native search can still return wrong or stale information; citations are
+untrusted external content, not an authority boundary.
+
+Run focused `claw-websearch`, `claw-tools`, `openclaw` and `tailnet-names`
+checks, evaluate Rakku and Yari, and build the ARM `openclaw-config` check on
+Yari. The search check uses a local configurable Responses server for JSON/SSE
+citations, no citations, upstream errors, timeout, invalid/oversized responses,
+credential reflection and denied arguments/methods. Rebase on the latest
+origin/cairn before **every build**. Build Rakku on Unzen, relay its closure
+through Zao as root (or signed), and switch only when no other switch runs.
+Deploy Rakku first, check every claw-tools endpoint and Laure's agent entry,
+then deploy Yari and repeat those checks. Verify a search with sources in a
+**new** conversation, never Simon's main one, and compare security audit IDs.
+
+To remove only search, remove Rakku's `claw-websearch` layer and Yari's MCP
+server entry, update their focused assertions, then build/deploy Yari and
+Rakku. Keep the saved tsnet identity for rollback. Do not delete identity or
+conversation state. A failed host switch can use
+`nixos-rebuild switch --rollback`; do not reboot Rakku. The reused gateway
+key remains required by OpenClaw and must not be removed with this endpoint.
+
 ## Official interactive demos
 
 The container also runs the official `@modelcontextprotocol/server-budget-allocator`
@@ -706,7 +771,7 @@ Evidence:
   existing per-person roles are unchanged. Do not mistake these tool choices
   for isolation between mutually untrusted users.
 
-### Native web search: unavailable in OpenClaw on this route
+### Native web search: upstream limitation and MCP bridge
 
 Simon's latest decision is front-door/model-native search only: no Brave,
 Parallel, outside search service, search plugin or new search credential.
@@ -724,8 +789,8 @@ renamed. Per-model extra_body passthrough is documented only for completions;
 there is no supported native-search opt-in for a Responses proxy. Merely
 switching `front-door.api` does not enable search. Keep the existing working
 chat adapter. `web_fetch` and managed-browser navigation remain available,
-but are not claimed as native `web_search`. No upstream patch or new service
-was added outside Simon's decisions.
+but are not claimed as native `web_search`. The approved `claw-websearch` MCP bridge above now supplies this capability
+without patching OpenClaw or changing the working chat adapter.
 
 ### Weekly update: proposal only
 
