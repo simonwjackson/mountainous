@@ -760,6 +760,13 @@ configuration changed. No secret was added or rotated. No host rebooted.
 | Unzen | 55 | `dhqa185nk8asa6mi0smlmlyfffwjb0pg` | Unzen |
 | Yari | 20 (first deployment 19) | `mr63j76hr86ib51pxn18np2lcj8j1qbs` | Yari, remote builders disabled |
 
+Source deployed: Rakku/Unzen `3c0a27b0`, Yari `55b6935b`. The final docs rebase
+preserved newer independent Scryer commits `98c28e06` and `2d5704ed`. These
+commits are **not in the generations above**. The supervisor directed no further
+activation to avoid racing the Scryer session's deployment. Current-tip focused
+checks/evaluations were run without activation; the Scryer session owns its
+Rakku deployment. Yari's final OpenClaw behavior is already live.
+
 Focused checks passed: x86 openclaw, home-exit-node, ai-gateway and claw-tools;
 all three host toplevel evaluations; ARM openclaw-config (real CLI validation)
 and Yari system builds. Nix formatting, Ruff lint/format for the changed Python
