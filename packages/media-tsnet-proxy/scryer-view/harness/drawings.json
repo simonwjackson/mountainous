@@ -1,0 +1,13 @@
+{
+  "search-office": { "ask": "Is The Office in Scryer?", "say": "Three shows are called The Office. The US one is in your library.", "tool": "scryer_search", "input": { "query": "The Office" } },
+  "search-dune": { "ask": "Find Dune", "say": "Scryer found five titles named Dune.", "tool": "scryer_search", "input": { "query": "Dune" } },
+  "search-shogun": { "ask": "Add Shōgun", "say": "Two shows are called Shōgun. Which one?", "tool": "scryer_search", "input": { "query": "Shōgun" } },
+  "search-many": { "ask": "Search Scryer for e", "say": "That matches most of the catalogue.", "tool": "scryer_search", "input": { "query": "e" } },
+  "search-one": { "ask": "Find Frieren", "say": "Frieren is in your library; Scryer is still reading its episodes.", "tool": "scryer_search", "input": { "query": "Frieren" } },
+  "search-none": { "ask": "Find Qwzzyx", "say": "Scryer found nothing with that name.", "tool": "scryer_search", "input": { "query": "Qwzzyx" } },
+  "title-office": { "ask": "What do I have of The Office?", "say": "Here is The Office (US). Seasons 2 and 3 are monitored.", "tool": "scryer_title", "input": { "titleId": "t-office-us" } },
+  "title-shogun": { "ask": "Show me Shōgun", "say": "Shōgun (2024) gets future episodes only. Season 2 starts on 24 November.", "tool": "scryer_title", "input": { "titleId": "t-shogun" } },
+  "title-frieren": { "ask": "How is Frieren doing?", "say": "Scryer is still reading Frieren's episodes.", "tool": "scryer_title", "input": { "titleId": "t-frieren" } },
+  "title-dune": { "ask": "Do I have Dune?", "say": "Dune (2021) is on disk in 2160p.", "tool": "scryer_title", "input": { "titleId": "t-dune-2021" } },
+  "title-dune2": { "ask": "And Part Two?", "say": "Dune: Part Two is monitored but not on disk yet.", "tool": "scryer_title", "input": { "titleId": "t-dune-2" } }
+}

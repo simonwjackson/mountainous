@@ -1,0 +1,11 @@
+# Inputs of dist/media.html. build.mjs stamps their SHA-256 into the page;
+# a Go test in media-tsnet-proxy recomputes it, so a source change without a rebuild fails.
+build.mjs
+package.json
+package-lock.json
+src/app.js
+src/model.js
+src/plan.js
+src/pixel.js
+src/media.css
+src/media.html

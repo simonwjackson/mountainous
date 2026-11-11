@@ -1,0 +1,355 @@
+/*
+ * Scryer media view. Product mode: the assistant's neutral shadcn tokens, its
+ * MediaTile, and its buttons. The one flourish is the poster's place, kept at
+ * night in both schemes with the kind drawn in the launcher mark's pixels; the
+ * season strip is the one new encoding (one mark per episode).
+ * Host style variables win; each fallback matches the assistant's neutral theme.
+ * Layout: src/plan.js decides structure; sizes follow the frame (cqi), not the device.
+ */
+:root {
+  color-scheme: light dark;
+  --ink: var(--color-text-primary, light-dark(oklch(0.145 0 0), oklch(0.985 0 0)));
+  --muted: var(--color-text-secondary, light-dark(oklch(0.48 0 0), oklch(0.74 0 0)));
+  --paper: var(--color-background-primary, light-dark(oklch(1 0 0), oklch(0.205 0 0)));
+  --well: var(--color-background-secondary, light-dark(oklch(0.965 0 0), oklch(0.255 0 0)));
+  --line: var(--color-border-primary, light-dark(oklch(0.922 0 0), oklch(1 0 0 / 12%)));
+  --danger: var(--color-text-danger, light-dark(oklch(0.52 0.2 27), oklch(0.74 0.17 22)));
+  --focus: var(--color-ring-primary, light-dark(oklch(0.708 0 0), oklch(0.556 0 0)));
+  --font: var(--font-sans, "Geist Variable", "Geist", ui-sans-serif, system-ui, sans-serif);
+  --radius: var(--border-radius-md, 0.625rem);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --hit: 2.75rem;
+  /* The launcher mark's three colours, for the pixel kinds only. */
+  --mark-light: #4dd8ff;
+  --mark-face: #aebbd6;
+  --mark-side: #7e8bb0;
+  --night: light-dark(oklch(0.205 0 0), oklch(0.269 0 0));
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: transparent;
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+/* The text size goes on body, not html: rem stays the 16 px the sizes below assume (44 px targets).
+   Line heights in whole pixels keep rows and borders on the pixel grid. */
+body { font: 0.9375rem/1.375rem var(--font); }
+.root {
+  container: view / inline-size;
+  /* The assistant's space ramp, against the frame's width, in whole pixels so borders stay crisp. */
+  --s3xs: round(clamp(0.125rem, 0.1rem + 0.1cqi, 0.1875rem), 1px);
+  --s2xs: round(clamp(0.25rem, 0.2rem + 0.2cqi, 0.3125rem), 1px);
+  --sxs: round(clamp(0.375rem, 0.3rem + 0.3cqi, 0.4375rem), 1px);
+  --ss: round(clamp(0.5rem, 0.4rem + 0.4cqi, 0.625rem), 1px);
+  --sm: round(clamp(0.75rem, 0.65rem + 0.5cqi, 0.875rem), 1px);
+  --sl: round(clamp(1rem, 0.85rem + 0.6cqi, 1.125rem), 1px);
+  --sxl: round(clamp(1.25rem, 1rem + 1cqi, 1.5rem), 1px);
+  min-width: 0;
+}
+/* Host frames that follow content round the reported height; 2 px of slack keeps the card's bottom border. */
+body { padding-bottom: 2px; }
+html.fixed-h body { padding-bottom: 0; }
+html.fixed-h, html.fixed-h body, html.fixed-h .root { height: 100%; }
+h1, h3, p, ol, ul { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.muted { color: var(--muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---------- buttons: the assistant's .button, 44 px targets ---------- */
+.btn {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  min-height: var(--hit);
+  padding: 0 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.2;
+}
+.btn:hover { background: var(--well); }
+.btn:active { transform: translateY(1px); }
+/* The one filled button per group: ink, not a brand blue. */
+.btn.primary { background: var(--ink); color: var(--paper); border-color: transparent; }
+.btn.primary:hover { background: color-mix(in oklab, var(--ink) 86%, var(--paper)); }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--muted); }
+.btn.quiet:hover { color: var(--ink); background: var(--well); }
+.btn:disabled { cursor: default; opacity: 0.45; transform: none; }
+/* The busy button stays legible: it is the one saying what happens. */
+.btn[aria-busy="true"], .btn[aria-busy="true"]:disabled { opacity: 1; color: var(--ink); background: var(--well); border-color: var(--line); }
+.link { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; min-height: var(--hit); }
+.chev { width: 1rem; height: 1rem; flex: none; }
+
+.spin {
+  display: inline-block;
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-right: 0.35rem;
+  vertical-align: -0.125rem;
+  border: 2px solid color-mix(in oklab, var(--muted) 35%, transparent);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+.btn .spin { margin-right: 0; }
+@keyframes spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 3s; } }
+
+.skeleton { display: block; border-radius: var(--radius-sm); background: var(--well); }
+.skeleton.line { height: 0.8rem; margin-block: 0.3rem; }
+.skeleton.fill { width: 100%; height: 100%; }
+.w40 { width: 40%; } .w60 { width: 60%; } .w70 { width: 70%; } .w90 { width: 90%; }
+
+/* ---------- the card: one surface, rows divided by hairlines ---------- */
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+html.fixed-h .card { height: 100%; }
+.card.page { border: 0; border-radius: 0; background: transparent; overflow: visible; }
+.bar { display: flex; align-items: center; gap: var(--ss); padding: var(--ss) var(--sm); border-bottom: 1px solid var(--line); min-height: var(--hit); }
+.bar-title { font-size: 0.8125rem; font-weight: 500; color: var(--muted); display: flex; align-items: center; overflow-wrap: anywhere; }
+.back { margin-left: calc(var(--ss) * -1); padding-left: 0.25rem; }
+.page > .bar { position: sticky; top: 0; z-index: 2; background: var(--paper); }
+/* In the full view the bar's words start where the content column starts. */
+.card.page { --col: 46rem; }
+.card.page[data-cols="2"] { --col: 1216px; }
+.card.page.title { --col: 60rem; }
+.card.page > .bar { padding-inline: max(var(--sm), calc((100% - var(--col)) / 2 + var(--sm))); }
+.foot { padding: var(--ss) var(--sm); border-top: 1px solid var(--line); display: flex; }
+.foot .btn { flex: 1 1 auto; }
+.empty { padding: var(--sl) var(--sm); color: var(--muted); }
+.notice { display: flex; align-items: baseline; gap: 0.4rem; margin: var(--ss) var(--sm) 0; padding: var(--ss) var(--sm); border-radius: var(--radius-sm); background: var(--well); font-size: 0.875rem; }
+.fail { color: var(--danger); font-size: 0.875rem; overflow-wrap: anywhere; }
+.fail-block { padding: var(--sl) var(--sm); display: grid; gap: var(--s2xs); }
+
+/* Inline, a fixed frame scrolls its list under the pinned header; a short one scrolls whole. */
+html.fixed-h .scroll-list.tiles, html.fixed-h .card:not(.page) .title-body { flex: 1 1 auto; min-height: 0; overflow: auto; }
+html.fixed-h .card.scroll-card { overflow: auto; }
+
+/* ---------- the poster's place ---------- */
+.art {
+  --art: round(clamp(3.5rem, 2.5rem + 6cqi, 5.5rem), 1px);
+  grid-area: art;
+  width: var(--art);
+  aspect-ratio: 4 / 5;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--sxs);
+  align-self: start;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--night);
+}
+.art[data-poster] { aspect-ratio: 2 / 3; background: var(--well); }
+.art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Whole multiples of the 16 px grid keep every pixel the same size. */
+.glyph { width: 32px; height: 32px; }
+.art-year {
+  color: oklch(0.985 0 0); /* the art is night in both schemes */
+  font-size: clamp(0.875rem, 0.7rem + 1.2cqi, 1.25rem);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.px-light { fill: var(--mark-light); }
+.px-face { fill: var(--mark-face); }
+.px-side { fill: var(--mark-side); }
+
+/* ---------- search tiles ---------- */
+.tiles { display: grid; }
+/* Whole pixels in the two-column grid, so tile borders do not land on half pixels. */
+.card.page[data-cols="2"] .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 14px; }
+.card.page[data-cols="2"] .tile { border: 1px solid var(--line); border-radius: var(--radius); }
+.card.page[data-cols="1"] .tiles { max-width: 46rem; margin-inline: auto; width: 100%; }
+.card.page[data-cols="2"] .tiles { max-width: 1216px; margin-inline: auto; width: 100%; }
+.tile + .tile { border-top: 1px solid var(--line); }
+.card.page[data-cols="2"] .tile + .tile { border-top: 1px solid var(--line); }
+.tile { container: tile / inline-size; min-width: 0; }
+.tile-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-areas:
+    "art head"
+    "art body"
+    "art actions"
+    "extra extra";
+  gap: var(--sxs) var(--sm);
+  padding: var(--sm);
+}
+.tile-head { grid-area: head; display: grid; gap: var(--s3xs); min-width: 0; }
+.tile-title { font-size: 1rem; font-weight: 500; line-height: 1.3125rem; overflow-wrap: anywhere; }
+.tile-meta { color: var(--muted); font-size: 0.8125rem; line-height: 1.125rem; overflow-wrap: anywhere; }
+/* Two results share this name: the facts that tell them apart get the ink. */
+.tile-meta.twin { color: var(--ink); }
+.tile-body { grid-area: body; display: grid; align-content: start; gap: var(--sxs); min-width: 0; }
+.tile-actions { grid-area: actions; align-self: end; display: flex; flex-wrap: wrap; gap: var(--ss); padding-top: var(--s2xs); }
+.tile-extra { grid-column: 1 / -1; display: grid; gap: var(--ss); }
+.tile.is-wait .art { background: var(--well); }
+
+.badges { display: flex; flex-wrap: wrap; gap: var(--s2xs); }
+.badge {
+  --tone: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  min-height: 1.25rem;
+  padding: 0.0625rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.badge::before { content: ""; flex: none; width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--tone); }
+.badge[data-tone="good"] { --tone: var(--ink); }
+.badge[data-tone="bad"] { --tone: var(--danger); color: var(--danger); }
+.badge[data-tone="busy"]::before { display: none; }
+.badge .spin { width: 0.625rem; height: 0.625rem; margin: 0; border-width: 1.5px; }
+
+/* The overview: clamped, and the whole text one tap away in place. */
+.overview { color: var(--muted); font-size: 0.875rem; line-height: 1.25rem; overflow-wrap: break-word; }
+.overview summary { list-style: none; cursor: pointer; display: grid; justify-items: start; }
+.overview summary::-webkit-details-marker { display: none; }
+.overview .clamp { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: var(--lines, 2); }
+.overview .more { color: var(--ink); font-size: 0.8125rem; font-weight: 600; min-height: var(--hit); display: inline-flex; align-items: center; margin-block: -0.75rem; }
+.overview[open] summary { display: none; }
+
+/* Narrow tile: words take the full width under the title; buttons share a row. */
+@container tile (max-width: 18rem) {
+  .tile-grid { grid-template-rows: auto; grid-template-areas: "art head" "body body" "actions actions" "extra extra"; }
+  .art { align-self: center; aspect-ratio: 1; --art: 3.25rem; }
+  .art-year { display: none; }
+  .tile-actions .btn { flex: 1 1 auto; }
+}
+/* Wide tile: buttons stand at the right, so a row of results stays short. */
+@container tile (min-width: 34rem) {
+  .tile-grid { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto 1fr auto; grid-template-areas: "art head actions" "art body actions" "extra extra extra"; }
+  .tile-actions { flex-direction: column; align-items: stretch; align-self: start; width: 8.5rem; padding-top: 0; }
+  .glyph { width: 48px; height: 48px; }
+}
+
+/* The scope choice: a question and its answers, under what it changes. */
+.choice { display: grid; gap: var(--sxs); padding: var(--ss); border-radius: var(--radius-sm); background: var(--well); }
+.choice-q { font-size: 0.8125rem; font-weight: 600; }
+.choice-opts { display: flex; flex-wrap: wrap; gap: var(--sxs); }
+.choice .btn:not(.primary):not(.quiet) { background: var(--paper); }
+
+/* ---------- title card ---------- */
+.title-head { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "art words"; gap: var(--sm); padding: var(--sm); align-items: start; }
+.title-words { grid-area: words; display: grid; gap: var(--s2xs); min-width: 0; }
+.title-words h1 { font-size: 1.125rem; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.page .title-words h1 { font-size: clamp(1.25rem, 1rem + 1.2cqi, 1.75rem); }
+.page .art[data-size="page"] { --art: round(clamp(4.5rem, 3rem + 7cqi, 7rem), 1px); }
+.title-counts { font-size: 0.8125rem; }
+.scope { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ss) var(--sm); padding: var(--ss) var(--sm); border-top: 1px solid var(--line); }
+.scope p { display: grid; gap: 0.0625rem; min-width: 0; }
+.scope b { font-weight: 600; }
+.scope .muted { font-size: 0.8125rem; }
+.scope + .choice, .scope ~ .fail { margin: 0 var(--sm) var(--ss); }
+.title > .overview { padding: 0 var(--sm) var(--sm); max-width: 46rem; }
+.title-body { border-top: 1px solid var(--line); }
+.card.page.title > * { width: 100%; max-width: var(--col); margin-inline: auto; }
+.card.page.title > .bar { max-width: none; }
+
+/* Episode marks: one mark, one meaning, the same in strip, counts and rows. */
+i[data-m] { display: inline-block; flex: none; width: 0.5625rem; height: 0.5625rem; border-radius: 1.5px; }
+i[data-m="disk"] { background: var(--ink); }
+i[data-m="wanted"] { box-shadow: inset 0 0 0 1.5px var(--ink); }
+i[data-m="waiting"] { box-shadow: inset 0 0 0 1px var(--muted); border-radius: 50%; }
+i[data-m="off"] { background: color-mix(in oklab, var(--muted) 35%, transparent); transform: scale(0.45); border-radius: 50%; }
+.strip { grid-area: strip; display: flex; flex-wrap: wrap; gap: 3px; align-self: center; min-width: 0; }
+.strip-none { grid-area: strip; color: var(--muted); font-size: 0.8125rem; }
+.counts { grid-area: counts; display: flex; flex-wrap: wrap; gap: 0 var(--ss); color: var(--muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.count { display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+.title-counts .counts { color: var(--ink); }
+
+.season + .season { border-top: 1px solid var(--line); }
+.seasons.is-wait .season { padding: var(--ss) var(--sm); }
+.season-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name acts" "strip strip" "counts counts";
+  align-items: center;
+  gap: var(--sxs) var(--sm);
+  padding: var(--ss) var(--sm);
+}
+.season-name { grid-area: name; display: flex; align-items: baseline; gap: var(--ss); font-weight: 500; min-width: 0; }
+button.season-name { font: inherit; font-weight: 500; color: inherit; background: none; border: 0; padding: 0; min-height: var(--hit); align-items: center; cursor: pointer; text-align: left; }
+button.season-name:hover > span:first-of-type { text-decoration: underline; }
+.season-total { color: var(--muted); font-size: 0.8125rem; font-weight: 400; }
+.season-acts { grid-area: acts; display: flex; flex-wrap: wrap; justify-content: end; gap: var(--sxs); }
+.season > .fail { padding: 0 var(--sm) var(--ss); }
+/* Wide: name, strip and buttons share one line; the counts sit under the strip. */
+@container view (min-width: 40rem) {
+  .season-row { grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr) auto; grid-template-areas: "name strip acts" "name counts acts"; row-gap: var(--s2xs); }
+  .season-name { align-self: start; }
+}
+
+/* Episodes, in the full view only. */
+.eps { margin: 0 var(--sm) var(--sm); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.ep {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  grid-template-areas: "n name tick" "n date tick" "n file tick" "fail fail fail";
+  align-items: center;
+  gap: 0 var(--ss);
+  padding: var(--sxs) var(--ss);
+  font-size: 0.875rem;
+}
+.ep + .ep { border-top: 1px solid var(--line); }
+.ep-n { grid-area: n; align-self: start; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 0.1rem; }
+.ep-name { grid-area: name; overflow-wrap: anywhere; }
+.ep-date { grid-area: date; color: var(--muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.file { grid-area: file; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; min-width: 0; overflow-wrap: anywhere; }
+.ep-fail { grid-area: fail; }
+.eps-table .ep { grid-template-columns: 2rem minmax(10rem, 1fr) 7.5rem 9.5rem 9rem; grid-template-areas: "n name date file tick" "fail fail fail fail fail"; padding-block: 0; }
+.eps-table .ep-n { padding-top: 0; align-self: center; }
+.eps-table .file, .eps-table .ep-date { font-size: 0.8125rem; }
+
+/* The episode switch: a box and its word, so the state reads without a column head. */
+.tick {
+  grid-area: tick;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 0 0.375rem;
+  min-height: var(--hit);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  justify-self: start;
+}
+.tick:hover { background: var(--well); }
+.tick:disabled { cursor: default; }
+.tick:disabled:not([aria-busy="true"]) { opacity: 0.45; }
+.tick .box { width: 1rem; height: 1rem; border-radius: 0.25rem; box-shadow: inset 0 0 0 1.5px var(--muted); flex: none; position: relative; }
+.tick[aria-checked="true"] .box { background: var(--ink); box-shadow: none; }
+.tick[aria-checked="true"] .box::after { content: ""; position: absolute; left: 0.34rem; top: 0.14rem; width: 0.28rem; height: 0.55rem; border: solid var(--paper); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.tick[aria-checked="false"] .tick-word { color: var(--muted); }
+.tick .spin { margin: 0 0.06rem; }

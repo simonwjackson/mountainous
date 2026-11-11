@@ -1,0 +1,18 @@
+{
+  "name": "scryer-media-view",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scryer media view, an MCP App page embedded in media-tsnet-proxy (claw-scryer).",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node build.mjs --check",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "2.0.4"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}

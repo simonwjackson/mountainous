@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Scryer view harness</title>
+<style>
+:root { color-scheme: light dark; --bg: light-dark(#fff, oklch(0.145 0 0)); --ink: light-dark(oklch(0.145 0 0), oklch(0.985 0 0)); --muted: light-dark(oklch(0.556 0 0), oklch(0.708 0 0)); --line: light-dark(oklch(0.922 0 0), oklch(1 0 0 / 10%)); --bubble: light-dark(oklch(0.97 0 0), oklch(0.269 0 0)); }
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+.thread { max-width: 48rem; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.bubble { align-self: flex-end; max-width: 80%; background: var(--bubble); padding: 8px 12px; border-radius: 14px; margin: 0; }
+.say { margin: 0; }
+iframe { width: 100%; border: 0; display: block; height: 120px; background: transparent; color-scheme: normal; }
+body[data-mode="fullscreen"] { overflow: hidden; }
+body[data-mode="fullscreen"] .chrome { position: fixed; inset: 0; z-index: 5; background: var(--bg); display: grid; grid-template-rows: auto minmax(0, 1fr); }
+body[data-mode="fullscreen"] iframe { height: 100% !important; }
+.top { display: none; }
+body[data-mode="fullscreen"] .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px 4px 16px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.top button { min-height: 40px; min-width: 40px; font: inherit; color: inherit; background: none; border: 0; border-radius: 8px; cursor: pointer; }
+details { color: var(--muted); font-size: 12px; }
+pre { white-space: pre-wrap; }
+body[data-mode="fullscreen"] details { display: none; }
+</style>
+</head>
+<body data-mode="inline">
+<div class="thread">
+  <p class="bubble" id="ask"></p>
+  <p class="say" id="say"></p>
+  <div class="chrome">
+    <div class="top"><span>Scryer</span><button id="close" aria-label="Close full screen">✕</button></div>
+    <iframe id="frame" title="Scryer app" sandbox="allow-scripts allow-same-origin"></iframe>
+  </div>
+  <details><summary>Model sees</summary><pre id="seen"></pre></details>
+</div>
+<!-- Loads only when the card has settled: screenshot tools that wait for images then wait for the card. -->
+<img id="settle" alt="" loading="lazy" style="display:none" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">
+<script type="module" src="host.js"></script>
+</body>
+</html>
