@@ -272,8 +272,8 @@ on the same filesystem under `/srv/range/media`:
 
 | Owner | Scryer libraries | Jellyfin libraries | Folders |
 |---|---|---|---|
-| Simon | Simon Movies, Simon Series | Simon Movies, Simon TV | `movies/simon`, `tv/simon` |
-| Laure | Laure Movies, Laure Series | Laure Movies, Laure TV | `movies/laure`, `tv/laure` |
+| Simon | Simon Movies, Simon Series | Movies, TV | `movies/simon`, `tv/simon` |
+| Laure | Laure Movies, Laure Series | Movies​, TV​ (see below) | `movies/laure`, `tv/laure` |
 | Family | Family Movies, Family Series (the former default libraries, same IDs) | Family Movies, Family TV (the former Movies and TV) | `movies/family`, `tv/family` |
 | Everyone | Anime | Anime | `tv/anime` |
 
@@ -300,6 +300,14 @@ choice, 2026-11-11); `laure` sees her own libraries plus Family and Anime;
 `family` sees Family and Anime. The new Jellyfin passwords are
 `jellyfin-password-laure` and `jellyfin-password-family` in
 `secrets/hosts/unzen.yaml`.
+
+Jellyfin library names are unique per server, so Simon's and Laure's
+libraries cannot both be plain "Movies" and "TV". Simon's are plain. Laure's
+end in one zero-width space (U+200B), which looks the same on screen. Find
+these libraries by folder path, not by name. Renaming a Jellyfin library gives
+it a new ID and drops it from every user's access list, so re-grant access by
+path after any rename. Family keeps "Family Movies" and "Family TV" because
+Laure's account shows both her own and Family's.
 
 There is no crossover library. A title lives in one library; Scryer moves it
 with `locationOperationPreview` and `startLocationOperation` (a same-disk
