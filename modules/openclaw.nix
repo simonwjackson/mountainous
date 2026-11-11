@@ -76,6 +76,10 @@
     {
       checks = {
         openclaw =
+          assert import ../tests/openclaw-morning-brief.nix {
+            inherit lib;
+            container = c;
+          };
           assert c.networking.nameservers == [ "127.0.0.1" ];
           assert c.services.dnsmasq.settings.listen-address == [ "127.0.0.1" ];
           assert container.privateNetwork && container.enableTun && container.autoStart;

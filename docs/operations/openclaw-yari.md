@@ -104,6 +104,58 @@ registrations is separate from stopping the services. Once no endpoint remains,
 Simon can remove `tag:claw-tools` from the console ACL. Roll back a failed host
 switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
 
+## Daily morning brief
+
+`morning-brief` runs at **07:00 America/Denver**, every day (`0 7 * * *`,
+zero stagger, including DST). Each run is isolated and uses the normal default
+model and full workspace persona (flakey). It reads today's `calendar_busy` and
+returns one short message: busy blocks, calendar-free windows of at least 45
+minutes within 08:00–22:00, one plain line about the day, and at most one question.
+Empty calendars and failed reads are distinct. It has no task picks, mail,
+health or training content. Maps may only use coordinates in event locations.
+
+The declaration is `lib/openclaw-morning-brief.nix`; its prompt is
+`lib/openclaw-morning-brief.md`. Change the cron expression or zone in the former,
+or edit the latter, then run the focused `openclaw` check, evaluate Yari, land,
+and deploy Yari as below. Do not edit this job in the UI: deployment restores
+the declared definition, including enablement.
+
+OpenClaw persists jobs in gateway SQLite state, not the read-only application
+config. The container's `openclaw-morning-brief.service` oneshot uses the root-only
+admin wrapper and `gateway call cron.add` to reconcile declaration key
+`mountainous:morning-brief`. This is an atomic upsert: repeated starts keep the
+job ID and history, replace its authored definition, and do not duplicate it.
+It starts after the gateway, retries startup failures, and restarts with the
+gateway. It does not run the brief during reconciliation.
+
+Delivery is `announce`, bound to `agent:main:main`, with **no external route**.
+OpenClaw commits the final response as an assistant message in the main Control
+UI conversation; the private execution transcript stays isolated. No messaging
+channel or webhook is added. The API captures that conversation's generation.
+If Simon explicitly resets/deletes the creating conversation and delivery then
+reports a stale binding, remove the job with `cron rm JOB_ID` and restart the
+oneshot to bind a replacement to the current main conversation. Normal container
+restarts keep the binding and job history.
+
+As root on Yari:
+
+```sh
+nixos-container run openclaw -- openclaw-admin cron list --all --json
+nixos-container run openclaw -- openclaw-admin cron get JOB_ID
+nixos-container run openclaw -- openclaw-admin cron run JOB_ID --wait
+nixos-container run openclaw -- openclaw-admin cron runs JOB_ID --limit 1
+nixos-container run openclaw -- systemctl restart openclaw-morning-brief
+```
+
+To remove only this brief, first remove the `openclaw-morning-brief` unit and
+its declaration from `lib/openclaw-container.nix`, remove the unused prompt,
+definition and focused test assertions, then deploy Yari. Remove the persisted
+job with `nixos-container run openclaw -- openclaw-admin cron rm JOB_ID`.
+Removing the job before removing the unit recreates it at the next reconciliation.
+This does not delete Simon's conversation or other jobs. For a temporary pause,
+`cron disable JOB_ID` works until the next reconciliation; a durable pause sets
+`enabled = false` in the declaration and deploys it.
+
 ## Credentials
 
 `ai-gateway-key-openclaw-yari` is a random 32-byte hex key with matching encrypted

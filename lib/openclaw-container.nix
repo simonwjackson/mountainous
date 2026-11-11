@@ -29,6 +29,22 @@ let
       exec runuser -u openclaw -- openclaw "$@"
     '';
   };
+  morningBrief = pkgs.writeText "openclaw-morning-brief.json" (
+    builtins.toJSON (import ./openclaw-morning-brief.nix)
+  );
+  ensureMorningBrief = pkgs.writeShellApplication {
+    name = "openclaw-ensure-morning-brief";
+    runtimeInputs = [
+      admin
+      pkgs.jq
+    ];
+    text = ''
+      # declarationKey is an atomic upsert, so retries keep the same job and history.
+      openclaw-admin gateway call cron.add --json --timeout 30000 \
+        --params "$(cat ${morningBrief})" |
+        jq -e '(.job // .) | .id != null' >/dev/null
+    '';
+  };
   origin = "https://claw.hummingbird-lake.ts.net";
   launch = pkgs.writeShellScript "openclaw-start" ''
     set -euo pipefail
@@ -192,6 +208,21 @@ in
     };
   };
   systemd.services = {
+    openclaw-morning-brief = {
+      description = "Reconcile the declarative 07:00 Denver OpenClaw morning brief";
+      wantedBy = [ "multi-user.target" ];
+      requires = [ "openclaw-gateway.service" ];
+      after = [ "openclaw-gateway.service" ];
+      partOf = [ "openclaw-gateway.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = lib.getExe ensureMorningBrief;
+        Restart = "on-failure";
+        RestartSec = 15;
+      };
+      unitConfig.StartLimitIntervalSec = 0;
+    };
     tailscaled.serviceConfig = {
       User = "tailscale";
       Group = "tailscale";
