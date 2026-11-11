@@ -10,7 +10,7 @@ import { plan } from "./plan.js";
 import { mediaGrid, pixelSvg } from "./pixel.js";
 import {
   KIND_WORDS, SCOPES, classify, failureText, formatSize, libraryBadges, mark, metaLine, plural, sameNames,
-  scopeWords, seasonName, seasonSummary, shortDate, titleSummary, years,
+  scopeLabel, scopeWords, seasonName, seasonSummary, shortDate, titleSummary, years,
 } from "./model.js";
 
 const root = document.getElementById("root");
@@ -31,6 +31,7 @@ const s = {
   choosing: undefined, // key of the tile or title whose scope choice is open
   open: new Set(), // season numbers open in the full view
   polledSince: undefined, pollTimer: undefined, checkedAt: undefined,
+  badPosters: new Set(), // posters that failed to load: the pixel kind stands in
   lastContext: "",
 };
 const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
@@ -208,11 +209,11 @@ function pushContext() {
   let text;
   if (d.view === "search") {
     text = [`Scryer search card for "${d.query}": ${plural(d.results.length, "result", "results")}.`,
-      ...d.results.map((r) => `- ${r.name} (${metaLine(r)}), key ${r.key}${r.library ? `, in library as ${r.library.titleId}, ${scopeWords(r.library.monitorType)}` : ", not in library"}`)].join("\n");
+      ...d.results.map((r) => `- ${r.name} (${metaLine(r)}), key ${r.key}${r.library ? `, in library as ${r.library.titleId}, ${r.library.monitored ? (r.library.monitorType ? scopeWords(r.library.monitorType) : "monitored") : "not monitored"}` : ", not in library"}`)].join("\n");
   } else {
     const n = titleSummary(d.seasons, today());
     text = [`Scryer title card: ${d.title.name} (${metaLine(d.title)}), title id ${d.title.id}.`,
-      `Monitoring: ${scopeWords(d.title.monitorType)}. Episodes: ${n.total}, on disk ${n.disk}, wanted ${n.wanted}, upcoming ${n.waiting}, not monitored ${n.off}.`,
+      `Monitoring: ${scopeLabel(d.title, n)}. Episodes: ${n.total}, on disk ${n.disk}, wanted ${n.wanted}, upcoming ${n.waiting}, not monitored ${n.off}.`,
       d.title.hydration === "pending" ? "Scryer is still reading this title's episodes." : ""].filter(Boolean).join("\n");
   }
   if (text === s.lastContext) return;
@@ -240,7 +241,7 @@ const blockedNote = () => (s.blocked ? `<p class="notice" role="status"><span>Th
 
 /** The poster's place: the poster when Scryer has one, else the kind in pixels and the year. */
 function art(t, size) {
-  if (t.poster) return `<div class="art" data-poster aria-hidden="true"><img src="${esc(t.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div>`;
+  if (t.poster && !s.badPosters.has(t.poster)) return `<div class="art" data-poster aria-hidden="true"><img src="${esc(t.poster)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div>`;
   if (!t.kind) return `<div class="art" aria-hidden="true"><span class="skeleton fill"></span></div>`;
   return `<div class="art" data-size="${size}" aria-hidden="true">${pixelSvg(mediaGrid(t.kind), "glyph")}${t.year !== undefined ? `<span class="art-year">${t.year}</span>` : ""}</div>`;
 }
@@ -254,7 +255,7 @@ function overview(text, lines) {
 }
 
 /** The scope choice for a whole show: the three exact scopes, seasons, or (when in library) stop. */
-function scopeChoice(key, { titleId, candidateKey, current, inLibrary }) {
+function scopeChoice(key, { titleId, candidateKey, current, inLibrary, monitored }) {
   const opts = SCOPES.map((o) => writeButton({
     key: `${key}:${o.type}`, act: inLibrary ? "scope" : "add", label: o.label, busyLabel: inLibrary ? "Saving…" : "Adding…",
     primary: o.type === current, data: { title: titleId, cand: candidateKey, type: o.type, err: key },
@@ -262,7 +263,7 @@ function scopeChoice(key, { titleId, candidateKey, current, inLibrary }) {
   const seasons = inLibrary
     ? (s.data?.view === "title" ? "" : `<button class="btn" data-act="open" data-title="${esc(titleId)}">Choose seasons</button>`)
     : writeButton({ key: `${key}:seasons`, act: "add-pick", label: "Choose seasons", busyLabel: "Adding…", data: { cand: candidateKey, err: key } });
-  const stop = inLibrary && current !== "NONE" ? writeButton({ key: `${key}:NONE`, act: "scope", label: "Stop monitoring", busyLabel: "Saving…", data: { title: titleId, type: "NONE", err: key } }) : "";
+  const stop = inLibrary && monitored ? writeButton({ key: `${key}:NONE`, act: "scope", label: "Stop monitoring", busyLabel: "Saving…", data: { title: titleId, type: "NONE", err: key } }) : "";
   return `<div class="choice" role="group" aria-label="Monitor which episodes?"><p class="choice-q">Monitor which episodes?</p><div class="choice-opts">${opts}${seasons}${stop}<button class="btn quiet" data-act="cancel">Cancel</button></div></div>`;
 }
 
@@ -293,7 +294,7 @@ function tile(c, twin) {
     </div>
     <div class="tile-body">${badges(libraryBadges(c.library, c.kind))}${overview(c.overview, 2)}</div>
     <div class="tile-actions">${tileActions(c)}</div>
-    ${s.choosing === c.key ? `<div class="tile-extra">${scopeChoice(c.key, { titleId: c.library?.titleId, candidateKey: c.key, current: c.library?.monitorType, inLibrary: Boolean(c.library) })}</div>` : ""}
+    ${s.choosing === c.key ? `<div class="tile-extra">${scopeChoice(c.key, { titleId: c.library?.titleId, candidateKey: c.key, current: c.library?.monitorType, inLibrary: Boolean(c.library), monitored: c.library?.monitored })}</div>` : ""}
     ${s.errors.has(c.key) ? `<div class="tile-extra">${errorLine(c.key)}</div>` : ""}
   </div></article>`;
 }
@@ -384,9 +385,9 @@ function scopeLine(d) {
     return `<div class="scope"><p><b>${t.monitored ? "Monitored" : "Not monitored"}</b><span class="muted">${state}</span></p><span class="scope-acts">${btn}</span></div>${errorLine(key)}`;
   }
   const choosing = s.choosing === key;
-  return `<div class="scope"><p><b>${esc(scopeWords(t.monitorType))}</b>${t.monitorType === "ADVANCED" ? `<span class="muted">New seasons stay unmonitored</span>` : ""}</p>
+  return `<div class="scope"><p><b>${esc(scopeLabel(t, titleSummary(d.seasons, today())))}</b>${t.monitorType === "ADVANCED" ? `<span class="muted">New seasons stay unmonitored</span>` : ""}</p>
     <span class="scope-acts"><button class="btn" data-act="choose" data-key="${key}:choose" data-choose="${key}" aria-expanded="${choosing}" ${s.writing || s.blocked ? "disabled" : ""}>Change</button></span></div>
-    ${choosing ? scopeChoice(key, { titleId: t.id, current: t.monitorType, inLibrary: true }) : ""}${errorLine(key)}`;
+    ${choosing ? scopeChoice(key, { titleId: t.id, current: t.monitorType, inLibrary: true, monitored: t.monitored }) : ""}${errorLine(key)}`;
 }
 function hydrationNote(t) {
   if (t.hydration === "failed") return `<p class="fail" role="alert">Scryer could not read this title's episodes. Ask in the chat to refresh its metadata.</p>`;
@@ -465,13 +466,13 @@ root.addEventListener("click", (e) => {
     case "cancel": s.choosing = undefined; render(); break;
     case "add": {
       s.choosing = undefined;
-      write(d.key, d.err, "scryer_add", { key: d.cand, monitorType: d.type }, intoTile(d.cand));
+      write(d.key, d.err, "scryer_add", addArgs(d.cand, d.type), intoTile(d.cand));
       break;
     }
     case "add-pick": {
       // A new show with chosen seasons: add it unmonitored, then open its card to choose.
       s.choosing = undefined;
-      write(d.key, d.err, "scryer_add", { key: d.cand, monitorType: "NONE" }, (fresh) => { intoTile(d.cand)(fresh); queueMicrotask(() => openTitle(fresh.title.id, fresh.title.name)); });
+      write(d.key, d.err, "scryer_add", addArgs(d.cand, "NONE"), (fresh) => { intoTile(d.cand)(fresh); queueMicrotask(() => openTitle(fresh.title.id, fresh.title.name)); });
       break;
     }
     case "scope": {
@@ -499,4 +500,14 @@ root.addEventListener("click", (e) => {
     case "reload": s.polledSince = Date.now(); watchHydration(); render(); break;
   }
 });
+/** The add tool names the result by its key; the name and year go with it as labels. */
+function addArgs(key, monitorType) {
+  const c = s.data?.results?.find((r) => r.key === key);
+  return { key, name: c?.name ?? key, ...(c?.year !== undefined ? { year: c.year } : {}), monitorType };
+}
+// A poster that does not load (offline, outside the tailnet, CSP) falls back to the pixel kind.
+root.addEventListener("error", (e) => {
+  const img = e.target;
+  if (img?.tagName === "IMG" && img.closest(".art")) { s.badPosters.add(img.getAttribute("src")); render(); }
+}, true);
 app.connect().then(() => { applyContext(app.getHostContext()); render(); });

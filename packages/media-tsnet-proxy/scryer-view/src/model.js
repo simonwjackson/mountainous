@@ -23,6 +23,17 @@ const SCOPE_WORDS = {
   NONE: "Not monitored",
 };
 export const scopeWords = (type) => SCOPE_WORDS[type] ?? "Not monitored";
+/**
+ * The whole-show line. A recorded scope names itself; without one (common in
+ * Scryer), the words come from the title flag and the episodes' own flags.
+ */
+export function scopeLabel(title, n) {
+  if (title.monitorType && title.monitorType !== "NONE") return scopeWords(title.monitorType);
+  if (!title.monitored && n.monitored === 0) return "Not monitored";
+  if (n.total > 0 && n.monitored === n.total) return "All episodes monitored";
+  if (n.monitored === 0) return title.monitored ? "Monitored, no episodes yet" : "Not monitored";
+  return "Some episodes monitored";
+}
 
 const str = (v) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
 const int = (v) => (Number.isInteger(v) ? v : undefined);
@@ -39,7 +50,7 @@ function library(v) {
   return {
     titleId: v.titleId,
     monitored: v.monitored === true,
-    monitorType: str(v.monitorType) ?? "NONE",
+    monitorType: str(v.monitorType), // Scryer leaves it unset on many titles; words then come from the flags
     hydration: str(v.hydration) ?? "ready",
     onDisk: v.onDisk && int(v.onDisk.have) !== undefined && int(v.onDisk.total) !== undefined ? { have: v.onDisk.have, total: v.onDisk.total } : undefined,
   };
@@ -78,7 +89,7 @@ export function classify(sc) {
       title: {
         id: t.id, name: str(t.name) ?? "Untitled", kind: kindOf(t.kind), year: int(t.year), endYear: int(t.endYear), ongoing: t.ongoing === true,
         network: str(t.network), overview: str(t.overview), poster: safePoster(t.poster), monitored: t.monitored === true,
-        monitorType: str(t.monitorType) ?? "NONE", hydration: str(t.hydration) ?? "ready",
+        monitorType: str(t.monitorType), hydration: str(t.hydration) ?? "ready",
       },
       seasons,
       movie: sc.movie && typeof sc.movie === "object" ? { onDisk: sc.movie.onDisk === true, quality: str(sc.movie.file?.quality), size: int(sc.movie.file?.sizeBytes) } : undefined,
@@ -160,7 +171,7 @@ export function libraryBadges(lib, kind) {
   const out = [{ text: "In library", tone: "plain" }];
   if (lib.hydration === "pending") out.push({ text: "Reading episodes", tone: "busy" });
   else if (lib.hydration === "failed") out.push({ text: "Episodes did not load", tone: "bad" });
-  if (lib.monitored && lib.monitorType !== "NONE") out.push({ text: lib.monitorType === "ALL_EPISODES" ? "Monitored" : `Monitored: ${scopeWords(lib.monitorType).toLowerCase()}`, tone: "good" });
+  if (lib.monitored && lib.monitorType !== "NONE") out.push({ text: !lib.monitorType || lib.monitorType === "ALL_EPISODES" ? "Monitored" : `Monitored: ${scopeWords(lib.monitorType).toLowerCase()}`, tone: "good" });
   else out.push({ text: "Not monitored", tone: "plain" });
   if (kind === "movie" && lib.onDisk) out.push({ text: lib.onDisk.have ? "On disk" : "Not on disk", tone: "plain" });
   else if (lib.onDisk && lib.onDisk.total > 0) out.push({ text: `${lib.onDisk.have} of ${lib.onDisk.total} on disk`, tone: "plain" });

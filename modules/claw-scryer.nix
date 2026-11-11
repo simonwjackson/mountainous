@@ -17,6 +17,7 @@
       cfg = self.nixosConfigurations.rakku.config;
       endpoint = cfg.mountainous.tailnetNames.claw-scryer;
       unit = cfg.systemd.services.tsnet-proxy-claw-scryer.serviceConfig;
+      proxy = ../packages/media-tsnet-proxy;
     in
     {
       checks.claw-scryer =
@@ -27,8 +28,12 @@
         assert lib.hasInfix "-scryer-password-file %d/scryer-admin-password" unit.ExecStart;
         pkgs.runCommand "claw-scryer-boundary" { nativeBuildInputs = [ pkgs.go ]; } ''
           export HOME=$TMPDIR GOCACHE=$TMPDIR/go-cache CGO_ENABLED=0
-          go test -v ${../packages/media-tsnet-proxy/mcp-filter.go} ${../packages/media-tsnet-proxy/scryer.go} ${../packages/media-tsnet-proxy/scryer_test.go}
-          go vet ${../packages/media-tsnet-proxy/mcp-filter.go} ${../packages/media-tsnet-proxy/scryer.go}
+          # The MCP App view is embedded from scryer-view/dist and stamped by its sources.
+          mkdir src && cd src
+          cp ${proxy}/mcp-filter.go ${proxy}/scryer.go ${proxy}/scryer_app.go ${proxy}/scryer_test.go ${proxy}/scryer_app_test.go .
+          cp -r ${proxy}/scryer-view scryer-view
+          go test -v mcp-filter.go scryer.go scryer_app.go scryer_test.go scryer_app_test.go
+          go vet mcp-filter.go scryer.go scryer_app.go
           touch $out
         '';
     };

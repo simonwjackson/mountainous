@@ -162,15 +162,15 @@ func TestScryerBoundary(t *testing.T) {
 		Result struct{ Tools []struct{ Name string } }
 	}
 	json.Unmarshal(w.Body.Bytes(), &listed)
-	if len(listed.Result.Tools) != 1 || listed.Result.Tools[0].Name != "scryer_graphql" {
+	if len(listed.Result.Tools) != 5 || listed.Result.Tools[0].Name != "scryer_graphql" {
 		t.Fatal("wrong exposed tools")
 	}
 	w = callScryer(h, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26"}}`)
-	if strings.Contains(w.Body.String(), "resources") || strings.Contains(w.Body.String(), "prompts") {
+	if !strings.Contains(w.Body.String(), `"resources":{}`) || strings.Contains(w.Body.String(), "prompts") {
 		t.Fatal("unexpected capabilities")
 	}
 	for _, body := range []string{
-		`{"jsonrpc":"2.0","id":1,"method":"resources/list"}`,
+		`{"jsonrpc":"2.0","id":1,"method":"prompts/list"}`,
 		`{"jsonrpc":"2.0","id":1,"method":"resources/read"}`,
 		`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"other"}}`,
 		`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"scryer_graphql","arguments":{"query":"x","variables":[]}}}`,

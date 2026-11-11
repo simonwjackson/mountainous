@@ -135,6 +135,7 @@ func (s *scryerClient) execute(ctx context.Context, body []byte) (any, bool) {
 }
 
 func scryerHandler(s *scryerClient, tailnetClient func(*http.Request) bool) http.Handler {
+	app := &scryerApp{client: s, origin: originOf(s.url)}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		request, ok := readMCPRequest(w, r, tailnetClient)
 		if !ok {
@@ -154,12 +155,24 @@ func scryerHandler(s *scryerClient, tailnetClient func(*http.Request) bool) http
 			if version != "2025-03-26" && version != "2025-11-25" {
 				version = "2025-03-26"
 			}
-			result = map[string]any{"protocolVersion": version, "serverInfo": map[string]string{"name": "claw-scryer", "version": "1"}, "capabilities": map[string]any{"tools": map[string]any{}}}
+			result = map[string]any{"protocolVersion": version, "serverInfo": map[string]string{"name": "claw-scryer", "version": "2"}, "capabilities": map[string]any{"tools": map[string]any{}, "resources": map[string]any{}}}
 		case "tools/list":
-			result = map[string]any{"tools": []any{map[string]any{
+			result = map[string]any{"tools": append([]any{map[string]any{
 				"name": "scryer_graphql", "description": "Full-admin Scryer GraphQL. Read the live schema. Mutations are allowed; confirm destructive actions. No uploads or downloads. Do not retry mutations after timeouts.",
 				"inputSchema": json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","minLength":1},"variables":{"type":"object"}},"required":["query"],"additionalProperties":false}`),
-			}}}
+			}}, scryerAppTools()...)}
+		case "resources/list":
+			result = map[string]any{"resources": []any{app.resource()}}
+		case "resources/read":
+			var params struct {
+				URI string `json:"uri"`
+			}
+			if json.Unmarshal(request.Params, &params) != nil || params.URI != scryerViewURI {
+				rpcError(w, request.ID, -32602, "unknown resource")
+				return
+			}
+			res := app.resource()
+			result = map[string]any{"contents": []any{map[string]any{"uri": scryerViewURI, "mimeType": scryerViewMIME, "text": scryerViewHTML, "_meta": res["_meta"]}}}
 		case "tools/call":
 			var params struct {
 				Name      string          `json:"name"`
@@ -170,8 +183,29 @@ func scryerHandler(s *scryerClient, tailnetClient func(*http.Request) bool) http
 				return
 			}
 			if params.Name != "scryer_graphql" {
-				rpcError(w, request.ID, -32601, "tool not allowed")
-				return
+				ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+				defer cancel()
+				view, err := app.call(ctx, params.Name, params.Arguments)
+				switch {
+				case errors.Is(err, errUnknownTool):
+					rpcError(w, request.ID, -32601, "tool not allowed")
+					return
+				case errors.Is(err, errInvalidArgs):
+					rpcError(w, request.ID, -32602, "invalid arguments for "+params.Name)
+					return
+				case err != nil:
+					text, _ := json.Marshal(map[string]string{"message": err.Error()})
+					result = map[string]any{"content": []any{map[string]string{"type": "text", "text": string(text)}}, "isError": true}
+				default:
+					if containsCredential(view, s.password) {
+						text, _ := json.Marshal(map[string]string{"message": "Scryer reply contained the admin credential and was withheld"})
+						result = map[string]any{"content": []any{map[string]string{"type": "text", "text": string(text)}}, "isError": true}
+						break
+					}
+					text, _ := json.Marshal(view)
+					result = map[string]any{"content": []any{map[string]string{"type": "text", "text": string(text)}}, "structuredContent": view, "isError": false}
+				}
+				break
 			}
 			var args struct {
 				Query     string                     `json:"query"`
