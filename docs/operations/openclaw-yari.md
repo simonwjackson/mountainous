@@ -277,7 +277,12 @@ irreversible data-deletion decision, not part of a routine rollback.
   Verified against the installed 0.11.0 `auth credentials set --help`,
   `auth add --help`, and the upstream
   [v0.11.0 README](https://github.com/openclaw/gogcli/blob/v0.11.0/README.md#1-get-oauth2-credentials).
-- A prepared one-run browser wizard is installed on Rakku at
+- **Superseded handoff:** the flake now installs `claw-google-auth`, using
+  the SOPS-managed Desktop client. Use the current
+  [Google sign-in runbook](assistant-google-maps.md#sign-in-or-sign-in-again),
+  not the temporary launcher described below. The remaining notes describe
+  the earlier deployment's evidence, before that client was provisioned.
+- A prepared one-run browser wizard was installed on Rakku at
   `/var/tmp/claw-google-auth/start` (launcher) and
   `/var/tmp/claw-google-auth/wizard` (unmodified wizard library plus stages).
   **No OAuth step has been run.** Simon runs:

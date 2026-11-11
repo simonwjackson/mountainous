@@ -22,6 +22,19 @@ let
 in
 assert cfg.people.simon.apps.google.port == 3171;
 assert cfg.people.simon.apps.maps.port == 3172;
+assert builtins.elem "gog-oauth-client:${config.sops.templates.google-oauth-client.path}"
+  config.systemd.services.assistant-app-simon-google.serviceConfig.LoadCredential;
+assert config.sops.templates.google-oauth-client.owner == "pi-simon";
+assert config.sops.templates.google-oauth-client.mode == "0400";
+assert
+  (builtins.fromJSON config.sops.templates.google-oauth-client.content).installed.client_id
+  == config.sops.placeholder.google-oauth-client-id;
+assert
+  (builtins.fromJSON config.sops.templates.google-oauth-client.content).installed.client_secret
+  == config.sops.placeholder.google-oauth-client-secret;
+assert builtins.elem "-/var/lib/pi-assistant-simon/apps/google/.config/gogcli/.calendar-signin.env"
+  config.systemd.services.assistant-app-simon-google.serviceConfig.EnvironmentFile;
+assert config.systemd.services.assistant-app-simon-google.preStart != "";
 assert
   cfg.people.simon.apps.google.readOnlyTools == [
     "calendar_busy"

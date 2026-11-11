@@ -1,0 +1,314 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i python3 -p python3 systemd curl
+"""Interactive launcher. --check is read-only and never starts OAuth."""
+
+import datetime
+import json
+import os
+import pathlib
+import pwd
+import shlex
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+from zoneinfo import ZoneInfo
+
+HOME = "/var/lib/pi-assistant-simon/apps/google"
+CONFIG = pathlib.Path(HOME) / ".config/gogcli"
+SECRET = "/run/secrets/pi-assistant-google-keyring-password"
+CLIENT = "/run/secrets/rendered/google-oauth-client"
+UNIT = "assistant-app-simon-google.service"
+
+
+def command(args, **kwargs):
+    return subprocess.run(args, check=True, **kwargs)
+
+
+def service_environment():
+    text = subprocess.check_output(
+        ["systemctl", "show", "-p", "Environment", "--value", UNIT], text=True
+    )
+    return dict(value.split("=", 1) for value in shlex.split(text) if "=" in value)
+
+
+def assistant_rpc(tag, payload=None):
+    body = (
+        json.dumps(
+            {
+                "_tag": "Request",
+                "id": "1",
+                "tag": tag,
+                "payload": payload or {},
+                "headers": [],
+            }
+        )
+        + "\n"
+    )
+    request = urllib.request.Request(
+        "http://127.0.0.1:4317/rpc",
+        data=body.encode(),
+        headers={"Content-Type": "application/ndjson"},
+    )
+    with urllib.request.urlopen(request, timeout=65) as response:
+        frames = [
+            json.loads(line)
+            for line in response.read().decode().splitlines()
+            if line.strip()
+        ]
+    exits = [
+        frame["exit"]
+        for frame in frames
+        if frame.get("_tag") == "Exit" and str(frame.get("requestId")) == "1"
+    ]
+    if len(exits) != 1 or exits[0].get("_tag") != "Success":
+        raise RuntimeError(
+            "Assistant RPC " + tag + " failed; no calendar success is claimed."
+        )
+    return exits[0]["value"]
+
+
+def busy_blocks(structured, day):
+    if "error" in structured:
+        raise RuntimeError(
+            "calendar_busy failed: "
+            + structured.get("error", {}).get("type", "unknown")
+        )
+    assert structured.get("day") == day and isinstance(
+        structured.get("events"), list
+    ), "Unexpected calendar result"
+    # Never print titles, locations, IDs or attendees.
+    return sorted((e["start"], e["end"]) for e in structured["events"])
+
+
+def assistant_blocks(entries, previous_ids, day):
+    for entry in reversed(entries):
+        message = entry.get("data", {}).get("message", {})
+        if (
+            entry["id"] in previous_ids
+            or message.get("role") != "toolResult"
+            or message.get("toolName") != "mcp_google_calendar_busy"
+        ):
+            continue
+        if message.get("isError"):
+            raise RuntimeError("Assistant calendar tool failed")
+        for part in message.get("content", []):
+            if part.get("type") != "text":
+                continue
+            text = part["text"]
+            if text.startswith("<external-app>\n"):
+                # The assistant fences the real MCP result as JSON, not model prose.
+                text = text.split("\n", 2)[2].rsplit("\n</external-app>", 1)[0]
+            result = json.loads(text)
+            if result.get("isError"):
+                raise RuntimeError("Assistant calendar tool failed")
+            return busy_blocks(result["structuredContent"], day)
+    raise RuntimeError(
+        "Assistant did not make a new successful calendar_busy call. No success is claimed."
+    )
+
+
+def rpc(url, day):
+    body = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": "calendar_busy", "arguments": {"day": day}},
+        }
+    ).encode()
+    request = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=65) as response:
+        text = response.read().decode()
+    if any(line.startswith("data:") for line in text.splitlines()):
+        text = "\n".join(
+            line[5:].strip() for line in text.splitlines() if line.startswith("data:")
+        )
+    envelope = json.loads(text)
+    if "error" in envelope:
+        raise RuntimeError("MCP request failed: " + str(envelope["error"].get("code")))
+    result = envelope["result"]
+    structured = result.get("structuredContent")
+    if structured is None:
+        structured = json.loads(
+            next(
+                c["text"] for c in result.get("content", []) if c.get("type") == "text"
+            )
+        )
+    if result.get("isError") or "error" in structured:
+        raise RuntimeError(
+            "calendar_busy failed: "
+            + structured.get("error", {}).get("type", "unknown")
+        )
+    return busy_blocks(structured, day)
+
+
+def main():
+    if os.geteuid() != 0 or socket.gethostname() != "rakku":
+        raise SystemExit("Run this launcher with sudo on Rakku.")
+    env = service_environment()
+    assert (
+        env.get("HOME") == HOME
+        and env.get("GOG_KEYRING_BACKEND") == "file"
+        and env.get("PORT") == "3171"
+    ), "Unexpected Google service placement"
+    gog = env["GOG_BIN"]
+    version = subprocess.check_output([gog, "--version"], text=True).strip()
+    assert "0.11.0" in version, version
+    assert CONFIG.is_dir() and os.path.isfile(SECRET) and os.path.isfile(CLIENT), (
+        "Google service config or credential source is missing"
+    )
+    assert os.stat(CONFIG).st_uid == pwd.getpwnam("pi-simon").pw_uid, (
+        "Unexpected config owner"
+    )
+    info = os.stat(CLIENT)
+    assert (
+        info.st_uid == pwd.getpwnam("pi-simon").pw_uid and info.st_mode & 0o777 == 0o400
+    ), "Unexpected rendered client owner or mode"
+    stored = CONFIG / "credentials.json"
+    assert stored.is_file(), "Service did not import the managed client"
+    assert (
+        stored.stat().st_uid == pwd.getpwnam("pi-simon").pw_uid
+        and stored.stat().st_mode & 0o777 == 0o600
+    ), "Unexpected gog client owner or mode"
+    rendered = json.loads(pathlib.Path(CLIENT).read_text())["installed"]
+    imported = json.loads(stored.read_text())
+    assert all(
+        imported[key] == rendered[key] for key in ("client_id", "client_secret")
+    ), "Imported gog client differs from the rendered client"
+    command(["systemctl", "is-active", "--quiet", UNIT])
+    wizard = pathlib.Path(__file__).with_name("wizard")
+    assert wizard.is_file(), "Wizard is missing beside launcher"
+    if sys.argv[1:] == ["--check"]:
+        print(
+            "Preflight OK:",
+            version,
+            "user pi-simon; config",
+            CONFIG,
+            "credential source present; no OAuth started.",
+        )
+        return
+    verify_only = sys.argv[1:] == ["--verify"]
+    if sys.argv[1:] and not verify_only:
+        raise SystemExit("Usage: claw-google-auth [--check|--verify]")
+    if not verify_only and not sys.stdin.isatty():
+        raise SystemExit("Use ssh -t so the wizard can read private browser values.")
+    # systemd loads the same root-only credential as the Google app. No secret
+    # is passed in argv, logged, written into these scripts, or copied to Claw.
+    if not verify_only:
+        command(
+            [
+                "systemd-run",
+                "--unit=claw-google-signin",
+                "--wait",
+                "--collect",
+                "--pty",
+                "--uid=pi-simon",
+                "--gid=pi-simon",
+                "--property=UMask=0077",
+                "--property=WorkingDirectory=" + str(CONFIG),
+                "--property=StandardOutput=tty",
+                "--property=StandardError=tty",
+                "--property=LoadCredential=gog-keyring-password:" + SECRET,
+                "--setenv=HOME=" + HOME,
+                "--setenv=XDG_CONFIG_HOME=" + HOME + "/.config",
+                "--setenv=GOG_BIN=" + gog,
+                "--setenv=GOG_KEYRING_BACKEND=file",
+                "--setenv=TZ=America/Denver",
+                "--setenv=PATH=" + os.environ["PATH"],
+                "bash",
+                str(wizard),
+            ]
+        )
+    chosen = dict(
+        line.split("=", 1)
+        for line in (CONFIG / ".calendar-signin.env").read_text().splitlines()
+        if "=" in line
+    )["GOG_ACCOUNT"]
+    assert chosen, "No selected account was saved"
+    command(["systemctl", "restart", UNIT])
+    for attempt in range(30):
+        command(["systemctl", "is-active", "--quiet", UNIT])
+        try:
+            with socket.create_connection(("127.0.0.1", 3171), timeout=1):
+                break
+        except OSError:
+            if attempt == 29:
+                raise RuntimeError("Google service did not begin listening") from None
+            time.sleep(0.5)
+    day = datetime.datetime.now(ZoneInfo("America/Denver")).date().isoformat()
+    direct = rpc("http://127.0.0.1:3171/mcp", day)
+    remote = rpc("https://claw-calendar.hummingbird-lake.ts.net/mcp", day)
+    assert direct == remote, (
+        "Direct and restricted endpoints returned different busy blocks; re-read if a calendar changed during the check."
+    )
+    print(
+        "Verified: Google service and claw-calendar return the same real blocks for",
+        day,
+        "America/Denver:",
+    )
+    for start, end in direct:
+        a = datetime.datetime.fromisoformat(start).astimezone(
+            ZoneInfo("America/Denver")
+        )
+        b = datetime.datetime.fromisoformat(end).astimezone(ZoneInfo("America/Denver"))
+        print(a.strftime("%H:%M"), "-", b.strftime("%H:%M"))
+    if not direct:
+        print("No timed busy blocks returned for today.")
+    print("Checking a new calendar_busy tool result in Simon's assistant transcript:")
+    snapshot = assistant_rpc("GetConversation")
+    assert snapshot["state"]["kind"] == "Idle", (
+        "Assistant is busy; repeat with --verify when idle."
+    )
+    session = snapshot["sessionId"]
+    previous_ids = {
+        entry["id"] for entry in assistant_rpc("GetTranscript", {"sessionId": session})
+    }
+    command(
+        [
+            "runuser",
+            "-u",
+            "pi-simon",
+            "--",
+            "env",
+            "HOME=/var/lib/pi-assistant-simon",
+            "ASSISTANT_HOME=/var/lib/pi-assistant-simon",
+            "ASSISTANT_PORT=4317",
+            "ASSISTANT_URL=http://127.0.0.1:4317/rpc",
+            "/nix/var/nix/profiles/per-user/pi-assistant/application/bin/assistant",
+            "ask",
+            f"Call mcp_google_calendar_busy directly for today, {day}. Do not delegate. Report only busy start/end times in America/Denver. Do not include event titles, locations, attendees or IDs. Do not guess.",
+        ],
+        timeout=240,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    actual = assistant_blocks(
+        assistant_rpc("GetTranscript", {"sessionId": session}), previous_ids, day
+    )
+    assert actual == direct, (
+        "Assistant and endpoints returned different busy blocks; repeat verification."
+    )
+    print(
+        "Verified: a new successful assistant calendar_busy tool result matches both endpoints."
+    )
+    print(
+        "Done. Calendar-only read-only OAuth is installed. No Gmail authorization was requested."
+    )
+    print(
+        "GOG_ACCOUNT is selected in",
+        CONFIG / ".calendar-signin.env",
+        "(0600, pi-simon); the Google service reads it at every start.",
+    )
+
+
+if __name__ == "__main__":
+    main()

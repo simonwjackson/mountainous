@@ -1,6 +1,11 @@
 # In-place port of the running Home Assistant host at 192.168.1.178.
 # Do not add the shared disk layer or use an installer against this host.
-{ config, inputs, ... }:
+{
+  config,
+  inputs,
+  self,
+  ...
+}:
 let
   operatorKey = config.mountainous.sshKey;
 in
@@ -316,6 +321,7 @@ in
                 ];
                 credentials = {
                   gog-keyring-password = config.sops.secrets.pi-assistant-google-keyring-password.path;
+                  gog-oauth-client = config.sops.templates.google-oauth-client.path;
                   decide-api-key = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
                   mechanical-api-key = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
                 };
@@ -437,6 +443,37 @@ in
           mode = "0400";
           restartUnits = [ "assistant-app-simon-google.service" ];
         };
+        sops.secrets.google-oauth-client-id = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+        };
+        sops.secrets.google-oauth-client-secret = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+        };
+        # Only placeholders enter the store. gog imports this Desktop JSON at
+        # service start and writes its normalized 0600 credentials.json in HOME.
+        sops.templates.google-oauth-client = {
+          owner = "pi-simon";
+          group = "pi-simon";
+          mode = "0400";
+          content = builtins.toJSON {
+            installed = {
+              client_id = config.sops.placeholder.google-oauth-client-id;
+              client_secret = config.sops.placeholder.google-oauth-client-secret;
+              auth_uri = "https://accounts.google.com/o/oauth2/auth";
+              token_uri = "https://oauth2.googleapis.com/token";
+              redirect_uris = [ "http://localhost" ];
+            };
+          };
+          restartUnits = [ "assistant-app-simon-google.service" ];
+        };
+        # The wizard owns the selected account, not an unmanaged unit override.
+        # Optional before the first consent; persisted with gog's private state.
+        systemd.services.assistant-app-simon-google.serviceConfig.EnvironmentFile = [
+          "-/var/lib/pi-assistant-simon/apps/google/.config/gogcli/.calendar-signin.env"
+        ];
+        environment.systemPackages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.claw-google-auth ];
         sops.secrets.pi-assistant-brave-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";

@@ -139,6 +139,47 @@ in
       );
     in
     {
+      packages.claw-google-auth =
+        pkgs.runCommand "claw-google-auth"
+          {
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+          }
+          ''
+            mkdir -p $out/bin $out/lib/claw-google-auth
+            cp ${../scripts/claw-google-auth/start} $out/lib/claw-google-auth/start
+            cp ${../scripts/claw-google-auth/wizard} $out/lib/claw-google-auth/wizard
+            makeWrapper ${pkgs.python3}/bin/python3 $out/bin/claw-google-auth \
+              --add-flags $out/lib/claw-google-auth/start \
+              --prefix PATH : ${
+                lib.makeBinPath [
+                  pkgs.bash
+                  pkgs.coreutils
+                  pkgs.gnugrep
+                  pkgs.ncurses
+                  pkgs.systemd
+                  pkgs.util-linux
+                  pkgs.python3
+                ]
+              }
+          '';
+      checks.claw-google-auth =
+        pkgs.runCommand "claw-google-auth-tests"
+          {
+            nativeBuildInputs = [
+              pkgs.python3
+              pkgs.bash
+              pkgs.shellcheck
+            ];
+          }
+          ''
+            export PYTHONDONTWRITEBYTECODE=1
+            bash -n ${../scripts/claw-google-auth/wizard}
+            shellcheck -e SC2034 ${../scripts/claw-google-auth/wizard}
+            python3 ${../tests/claw-google-auth.py} ${../scripts/claw-google-auth/start} ${
+              self.packages.${pkgs.stdenv.hostPlatform.system}.gogcli
+            }/bin/gog
+            touch $out
+          '';
       checks.pi-assistant-skills =
         pkgs.runCommand "pi-assistant-skills"
           {
@@ -928,6 +969,9 @@ in
                   ConditionPathExists = "${profile}/bin/${app}";
                   RequiresMountsFor = [ (stateOf name) ];
                 };
+                preStart = lib.optionalString (app == "google" && spec.credentials ? gog-oauth-client) ''
+                  "$GOG_BIN" auth credentials set "$CREDENTIALS_DIRECTORY/gog-oauth-client" >/dev/null
+                '';
                 serviceConfig = {
                   User = "pi-${name}";
                   Group = "pi-${name}";
