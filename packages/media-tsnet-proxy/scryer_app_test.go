@@ -150,6 +150,21 @@ func TestScryerAppListsToolsAndView(t *testing.T) {
 		if tool["name"] != "scryer_graphql" && (ui["resourceUri"] != scryerViewURI || meta["ui/resourceUri"] != scryerViewURI) {
 			t.Fatalf("%s does not point at the view", tool["name"])
 		}
+		hints, _ := tool["annotations"].(map[string]any)
+		switch tool["name"] {
+		case "scryer_graphql":
+			if hints != nil {
+				t.Fatal("full-admin GraphQL must carry no hints that could skip a host prompt")
+			}
+		case "scryer_search", "scryer_title":
+			if hints["readOnlyHint"] != true {
+				t.Fatalf("%s is read-only", tool["name"])
+			}
+		default:
+			if hints["readOnlyHint"] != false || hints["destructiveHint"] != false {
+				t.Fatalf("%s writes but never destroys", tool["name"])
+			}
+		}
 	}
 	want := map[string]string{"scryer_graphql": "null", "scryer_search": `["model","app"]`, "scryer_title": `["model","app"]`, "scryer_add": `["app"]`, "scryer_monitor": `["app"]`}
 	if fmt.Sprint(visibility) != fmt.Sprint(want) {

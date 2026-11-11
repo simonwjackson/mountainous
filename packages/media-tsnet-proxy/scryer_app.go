@@ -36,8 +36,17 @@ func scryerViewMeta(visibility ...string) map[string]any {
 
 // scryerAppTools are listed after scryer_graphql, which stays unchanged.
 func scryerAppTools() []any {
+	// Annotations are honest hints a host may use to skip a confirmation prompt:
+	// reads are read-only; add and monitor change only monitoring, are repeatable,
+	// and never delete or reach outside Scryer.
+	read := map[string]any{"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}
+	write := map[string]any{"readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}
 	tool := func(name, description, schema string, visibility ...string) map[string]any {
-		return map[string]any{"name": name, "description": description, "inputSchema": json.RawMessage(schema), "_meta": scryerViewMeta(visibility...)}
+		hints := write
+		if name == "scryer_search" || name == "scryer_title" {
+			hints = read
+		}
+		return map[string]any{"name": name, "description": description, "inputSchema": json.RawMessage(schema), "annotations": hints, "_meta": scryerViewMeta(visibility...)}
 	}
 	return []any{
 		tool("scryer_search", "Search Scryer's metadata providers for movies, series and anime by name, and show the results as cards with library state (in library, monitored, on disk). Use it to identify the exact title; same names in different years are common. The person can add or monitor from the card.",

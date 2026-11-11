@@ -29,6 +29,13 @@ let
         budget-allocator = "get-budget-data";
       };
   identityProxy = import ./claw-identity-proxy.nix { inherit pkgs; };
+  # The Scryer MCP App's tools (packages/media-tsnet-proxy/scryer_app.go).
+  scryerAppTools = [
+    "scryer_search"
+    "scryer_title"
+    "scryer_add"
+    "scryer_monitor"
+  ];
   bootstrapDns = pkgs.writeText "claw-overlay-resolv.conf" "nameserver 1.1.1.1\nnameserver 8.8.8.8\n";
   exitNode = "100.88.212.117"; # Rakku's stable tailnet address, not a LAN route.
   admin = pkgs.writeShellApplication {
@@ -311,7 +318,20 @@ in
             transport = "streamable-http";
             url = "https://${name}.hummingbird-lake.ts.net/mcp";
             toolFilter.include = endpoint.tools;
-          }) (import ./claw-tools.nix);
+          }) (import ./claw-tools.nix)
+          // {
+            # Full-admin Scryer (see docs/operations/openclaw-yari.md) and its MCP App.
+            # The four app tools are also allowed by exact name in tools.allow below,
+            # because OpenClaw checks a card's own tool calls by projected name.
+            claw-scryer = {
+              transport = "streamable-http";
+              url = "https://claw-scryer.hummingbird-lake.ts.net/mcp";
+              toolFilter.include = [
+                "scryer_graphql"
+              ]
+              ++ scryerAppTools;
+            };
+          };
           apps = {
             enabled = true;
             sandboxPort = 18790;
@@ -324,6 +344,8 @@ in
           "diagram-maker"
         ];
         skills.entries.clawhub.enabled = false;
+        # Shared by both agents: the prepared Scryer skill (lib/openclaw-skills/scryer).
+        skills.load.extraDirs = [ "${./openclaw-skills}" ];
         # Only the plugins needed by the approved browser, memory, images and web tools.
         plugins = {
           enabled = true;
@@ -361,7 +383,10 @@ in
             "view_image"
             "image_generate"
             "bundle-mcp"
-          ];
+          ]
+          # Exact names, so the Scryer card's buttons pass the session tool policy.
+          # Nothing else from claw-scryer is added; scryer_graphql stays model-only in effect.
+          ++ map (tool: "claw-scryer__${tool}") scryerAppTools;
           deny = [ "group:runtime" ];
           codeMode.enabled = false;
           fs.workspaceOnly = true;

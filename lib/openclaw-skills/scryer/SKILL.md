@@ -14,6 +14,13 @@ Use the `scryer_graphql` MCP tool. It logs in as `admin` with the sops-nix passw
 ```
 A reply can hold `data` and `errors` together. Always read `.errors[].message` and `.errors[].extensions.code`. Common codes: `VALIDATION_ERROR`, `NOT_FOUND`, `UNAUTHORIZED`, `RATE_LIMITED`, `MFA_STEP_UP_REQUIRED` (HTTP 460), `TEMPORARY_UNAVAILABLE` (see `retryAfterSeconds`). HTTP-level failures return a structured error with `kind`, `status`, and the JSON `body` when available. If `scryer_graphql` itself fails to log in, report its message; do not create another account, key or password.
 
+## Show cards
+Two tools draw interactive cards in the chat. Prefer them when the person wants to find, compare or look at media:
+- `scryer_search {query}`: search results as tiles, with library state and **Add** / **Monitor** buttons. Use it to tell same-named titles apart (remakes, US and UK versions).
+- `scryer_title {titleId}`: one library title with its seasons, what is monitored and what is on disk, with **Monitor** / **Unmonitor** per season and per episode. `titleId` is Scryer's title id (from `scryer_search` results or `titles`).
+
+You do not see the card, and you do not see what the person presses. Each button changes Scryer at an exact scope and then re-reads it; the card shows only what Scryer reports. If the person says they pressed something, read the state again with `scryer_graphql` before you describe it. The cards never delete or restore; those stay in chat under the rules below. Both tools return the same data as JSON, so you can answer from it too.
+
 ## Discover the schema
 Introspection is on. The root types are `QueryRoot`, `MutationRoot` and `SubscriptionRoot`. Read the descriptions: they say what omission, `null` and empty values do.
 Call `scryer_graphql` with these arguments to find monitoring mutations:

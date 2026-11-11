@@ -173,7 +173,29 @@
               "view_image"
               "image_generate"
               "bundle-mcp"
+              "claw-scryer__scryer_search"
+              "claw-scryer__scryer_title"
+              "claw-scryer__scryer_add"
+              "claw-scryer__scryer_monitor"
             ];
+          assert
+            gateway.config.mcp.servers.claw-scryer.url == "https://claw-scryer.hummingbird-lake.ts.net/mcp";
+          assert
+            gateway.config.mcp.servers.claw-scryer.toolFilter.include == [
+              "scryer_graphql"
+              "scryer_search"
+              "scryer_title"
+              "scryer_add"
+              "scryer_monitor"
+            ];
+          # No approval mode is set: OpenClaw prompts for scryer_graphql from a card.
+          assert !(gateway.config.mcp.servers.claw-scryer ? codex);
+          assert lib.all (a: !(lib.any (d: lib.hasPrefix "claw-scryer" d) (a.tools.deny or [ ]))) (
+            lib.attrValues gateway.config.agents.entries
+          );
+          assert
+            lib.length gateway.config.skills.load.extraDirs == 1
+            && lib.pathExists "${lib.head gateway.config.skills.load.extraDirs}/scryer/SKILL.md";
           assert !gateway.config.tools.codeMode.enabled && gateway.config.tools.fs.workspaceOnly;
           assert host.systemd.services."container@openclaw".serviceConfig.MemoryMax == "8G";
           assert !gateway.config.tools.elevated.enabled;
