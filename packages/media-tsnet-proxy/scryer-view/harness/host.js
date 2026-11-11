@@ -9,6 +9,8 @@
 //   press=<css> after load, click this element in the view (to show a pending state)
 //   nofull=1    a host without a full view
 //   still=1     freeze spinners (for repeatable screenshots)
+//   openclaw=1  size the inline frame as OpenClaw 2026.11.3 does: start at 160 px,
+//               report that height as containerDimensions.height, grow to what the card reports (max 1200)
 import { AppBridge, PostMessageTransport } from "@modelcontextprotocol/ext-apps/app-bridge";
 import { createFake } from "./fake-scryer.mjs";
 import drawings from "./drawings.json";
@@ -40,7 +42,7 @@ const context = () => ({
   displayMode: mode,
   availableDisplayModes: q.get("nofull") ? ["inline"] : ["inline", "fullscreen"],
   // Inline, OpenClaw sizes the frame to the view's content: no fixed height.
-  containerDimensions: mode === "fullscreen" ? { width: frame.clientWidth, height: frame.clientHeight } : { width: frame.clientWidth },
+  containerDimensions: mode === "fullscreen" || q.get("openclaw") ? { width: frame.clientWidth, height: frame.clientHeight } : { width: frame.clientWidth },
   safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
   theme: q.get("theme") === "dark" ? "dark" : "light",
 });
@@ -57,7 +59,12 @@ bridge.onrequestdisplaymode = async ({ mode: m }) => {
   return { mode };
 };
 let frozen = false; // still=1: after settling, a screenshot tool's own resizes change nothing
-bridge.onsizechange = ({ height }) => { if (!frozen && mode === "inline" && height) frame.style.height = `${Math.ceil(height)}px`; };
+bridge.onsizechange = ({ height }) => {
+  if (frozen || mode !== "inline" || !height) return;
+  frame.style.height = `${q.get("openclaw") ? Math.min(1200, Math.max(160, Math.round(height))) : Math.ceil(height)}px`;
+  if (q.get("openclaw")) bridge.sendHostContextChange(context());
+};
+if (q.get("openclaw")) frame.style.height = "160px";
 const initialized = new Promise((resolve) => { bridge.oninitialized = resolve; });
 await bridge.connect(new PostMessageTransport(frame.contentWindow, frame.contentWindow));
 frame.srcdoc = contents[0].text;

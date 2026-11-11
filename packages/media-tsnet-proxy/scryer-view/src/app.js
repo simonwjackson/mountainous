@@ -18,7 +18,7 @@ const root = document.getElementById("root");
 const POLL_MS = 5000, POLL_FOR_MS = 120_000;
 
 const s = {
-  mode: "inline", modes: [], fixedHeight: undefined, locale: undefined,
+  mode: "inline", modes: [], fixedHeight: undefined, dims: undefined, locale: undefined,
   waiting: true, // nothing from the host yet
   asked: undefined, // the tool input: { tool, args } while its result is on the way
   data: undefined, // classify() of the result on screen
@@ -46,10 +46,13 @@ function applyContext(ctx) {
   if (ctx.locale) s.locale = ctx.locale;
   if (ctx.availableDisplayModes) s.modes = ctx.availableDisplayModes;
   if (ctx.displayMode && (s.mode !== "expanded" || ctx.displayMode === "fullscreen")) s.mode = ctx.displayMode;
-  if (ctx.containerDimensions) {
-    s.fixedHeight = "height" in ctx.containerDimensions ? ctx.containerDimensions.height : undefined;
-    document.documentElement.classList.toggle("fixed-h", s.fixedHeight !== undefined);
-  }
+  if (ctx.containerDimensions) s.dims = ctx.containerDimensions;
+  // Inline, hosts such as OpenClaw report the frame's current height and then grow the
+  // frame to the height the card reports. Read as fixed, that height would pin the card
+  // at its first size. So a height is fixed only in full screen; inline, the card takes
+  // its natural height and the host decides how much of it to show.
+  s.fixedHeight = s.mode === "fullscreen" && s.dims && "height" in s.dims ? s.dims.height : undefined;
+  document.documentElement.classList.toggle("fixed-h", s.fixedHeight !== undefined);
   const inset = ctx.safeAreaInsets;
   if (inset) root.style.padding = `${inset.top}px ${inset.right}px ${inset.bottom}px ${inset.left}px`;
 }
@@ -191,13 +194,13 @@ async function openTitle(titleId, name) {
 async function openFull() {
   if (s.mode === "fullscreen" || s.mode === "expanded") return;
   if (s.modes.includes("fullscreen")) {
-    try { const r = await app.requestDisplayMode({ mode: "fullscreen" }); if (r?.mode === "fullscreen") { s.mode = "fullscreen"; render(); return; } } catch { /* fall back below */ }
+    try { const r = await app.requestDisplayMode({ mode: "fullscreen" }); if (r?.mode === "fullscreen") { s.mode = "fullscreen"; applyContext({}); render(); return; } } catch { /* fall back below */ }
   }
   s.mode = "expanded"; render();
 }
 async function closeFull() {
   if (s.mode === "expanded") { s.mode = "inline"; render(); return; }
-  try { await app.requestDisplayMode({ mode: "inline" }); s.mode = "inline"; } catch { /* the host keeps its own close */ }
+  try { await app.requestDisplayMode({ mode: "inline" }); s.mode = "inline"; applyContext({}); } catch { /* the host keeps its own close */ }
   render();
 }
 
