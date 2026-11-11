@@ -2,7 +2,7 @@
 {
   declarationKey = "mountainous:morning-brief";
   name = "morning-brief";
-  description = "Daily calendar-only brief for Simon in the main Control UI conversation";
+  description = "Daily supported day plan for Simon in the main Control UI conversation";
   enabled = true;
   agentId = "main";
   sessionKey = "agent:main:main";
