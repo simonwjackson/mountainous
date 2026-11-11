@@ -38,8 +38,6 @@ Audit when the answer drives a decision, briefs disagree, or a claim is surprisi
 
 Name every important claim nobody checked.
 
-Before your first search or spawn, write one visible text line with constraints, size and angles. Separate stated constraints from inferred constraints. Put this text first in the same assistant message as the spawn calls, before every tool call. Reasoning text and a yield acknowledgment do not count.
-
 ## 3. Run it
 
 For Single or Swarm, choose a new run path inside your own agent workspace: `research/<slug>-<UTC yyyymmddThhmmss>/`. Use the current UTC time, with a short topic slug. Use `session_status` if you need the current time. Keep this folder and its files. A Lookup needs no folder.
@@ -48,7 +46,13 @@ Use `write` to save the question and constraints at `<run>/request.md`. It creat
 
 For Single or Swarm, your next research action is spawning, not searching inline. Use `sessions_spawn` for hidden native children. Omit `agentId` to keep them under your own agent and workspace.
 
-OpenClaw defers tools. A broad `tool_search` can omit `sessions_spawn` from its truncated results. That does not mean spawning is unavailable. Call `dispatch_action` directly with `id: "sessions_spawn"` and the spawn parameters in `args`. Use this shape for each researcher:
+OpenClaw defers tools. A broad `tool_search` can omit `sessions_spawn` from its truncated results. That does not mean spawning is unavailable. Call `dispatch_action` directly with `id: "sessions_spawn"` and the spawn parameters in `args`.
+
+Send the assistant message that starts research in this order:
+1. Emit a normal assistant `text` block: `Stated: ... | Inferred: ... | Size: ... | Angles: ...`.
+2. Append all researcher tool calls to that same message, after the text block.
+
+This scope line is spoken progress for the user. A `thinking` block is private and does not satisfy step 1. For Lookup, emit the scope line before searching inline. Use this dispatch shape for each researcher:
 
 ```json
 {
@@ -67,7 +71,7 @@ OpenClaw defers tools. A broad `tool_search` can omit `sessions_spawn` from its 
 }
 ```
 
-Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. After the spawn receipts, tell the user each researcher's name and angle. Then wait for completion announcements with `sessions_yield`, dispatched as `id: "sessions_yield", args: {}`. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If spawning fails, name the failed angle and the tool error. Never silently replace Single or Swarm with inline work.
+Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. After the spawn receipts, emit another normal assistant `text` block naming each researcher and its angle. Then wait for completion announcements with `sessions_yield`, dispatched as `id: "sessions_yield", args: {}`. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If spawning fails, name the failed angle and the tool error. Never silently replace Single or Swarm with inline work.
 
 Each task must contain:
 
