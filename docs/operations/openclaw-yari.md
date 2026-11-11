@@ -879,6 +879,8 @@ Known limits:
 
 ## Laure's agent (2026-11-11 UTC)
 
+Display identity is Nix-managed at `agents.entries.laure.identity`: Snowy, ❄️, her interview's theme, and workspace-relative `avatars/avatar.png`; leave her user profile and role unchanged.
+
 `lib/openclaw-container.nix` declares two agents under `agents.entries` with
 `agents.ownership = "explicit"`. OpenClaw 2026.11.3 rejects the legacy
 `default = true` marker in a multi-agent roster, so the config pins what that

@@ -219,6 +219,13 @@
               "laure"
               "main"
             ];
+          assert
+            gateway.config.agents.entries.laure.identity == {
+              name = "Snowy";
+              emoji = "❄️";
+              theme = "Calm and clear-headed, a bit dry, and quietly on top of things.";
+              avatar = "avatars/avatar.png";
+            };
           assert gateway.config.agents.ownership == "explicit";
           assert gateway.config.agents.defaults.systemAgent.agentId == "main";
           assert gateway.config.agents.entries.main.workspace == gateway.config.agents.defaults.workspace;

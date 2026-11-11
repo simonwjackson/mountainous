@@ -253,6 +253,12 @@ in
             # Laure's agent. Its persona comes from her own BOOTSTRAP.md
             # interview; OpenClaw seeds the starter files on the first run.
             laure = {
+              identity = {
+                name = "Snowy";
+                emoji = "❄️";
+                theme = "Calm and clear-headed, a bit dry, and quietly on top of things.";
+                avatar = "avatars/avatar.png";
+              };
               workspace = "/var/lib/openclaw/workspace-laure";
               agentDir = "/var/lib/openclaw/agents/laure/agent";
               heartbeat.every = "30m";
