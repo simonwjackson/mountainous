@@ -199,7 +199,8 @@ func main() {
 	oauthSecret := flag.String("oauth-secret-file", "", "OAuth secret file")
 	tags := flag.String("tags", "tag:mountainous", "Comma-separated enrollment tags")
 	mcpTools := flag.String("mcp-tools", "", "Enable restricted stateless MCP endpoint with these comma-separated tool names")
-	scryerPassword := flag.String("scryer-password-file", "", "Serve full-admin Scryer MCP using this credential file and the backend GraphQL URL")
+	scryerUsername := flag.String("scryer-username", "admin", "Scryer account username")
+	scryerPassword := flag.String("scryer-password-file", "", "Serve account-scoped Scryer MCP using this credential file and the backend GraphQL URL")
 	webSearchKey := flag.String("websearch-key-file", "", "Serve model-native web search MCP using this gateway credential and the backend Responses URL")
 	webSearchModel := flag.String("websearch-model", "gpt-6.1-sol", "Fixed model for native web search")
 	flag.Parse()
@@ -287,7 +288,7 @@ func main() {
 			if err != nil || len(password) == 0 {
 				log.Fatal("Scryer credential unavailable")
 			}
-			handler = scryerHandler(newScryerClient(backendURL.String(), strings.TrimSuffix(string(password), "\n")), verifyPeer)
+			handler = scryerHandler(newScryerClient(backendURL.String(), *scryerUsername, strings.TrimSuffix(string(password), "\n")), verifyPeer)
 		} else {
 			handler = mcpHandler(backendURL, strings.Split(*mcpTools, ","), verifyPeer)
 		}

@@ -15,15 +15,15 @@ import (
 // Only the login session is cached, in process memory. Restarting drops it.
 // A rejected session (HTTP 401) is the only safe reason to resend an operation.
 type scryerClient struct {
-	url, password string
-	client        *http.Client
-	mu            sync.Mutex
-	token         string
-	expires       time.Time
+	url, username, password string
+	client                  *http.Client
+	mu                      sync.Mutex
+	token                   string
+	expires                 time.Time
 }
 
-func newScryerClient(url, password string) *scryerClient {
-	return &scryerClient{url: url, password: password, client: &http.Client{
+func newScryerClient(url, username, password string) *scryerClient {
+	return &scryerClient{url: url, username: username, password: password, client: &http.Client{
 		Timeout: 30 * time.Second, Transport: &http.Transport{},
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}}
@@ -62,12 +62,12 @@ func (s *scryerClient) session(ctx context.Context, rejected string) (string, in
 	s.token = ""
 	body, _ := json.Marshal(map[string]any{
 		"query":     "mutation($i:LoginInput!){login(input:$i){token expiresAt}}",
-		"variables": map[string]any{"i": map[string]any{"username": "admin", "password": s.password, "persistSession": false}},
+		"variables": map[string]any{"i": map[string]any{"username": s.username, "password": s.password, "persistSession": false}},
 	})
 	data, status, err := s.post(ctx, body, "")
 	// Never expose login response bodies: they may contain passwords or tokens.
 	if err != nil || status != http.StatusOK {
-		return "", status, errors.New("Scryer admin login failed")
+		return "", status, errors.New("Scryer login failed")
 	}
 	var result struct {
 		Data struct {
@@ -79,7 +79,7 @@ func (s *scryerClient) session(ctx context.Context, rejected string) (string, in
 		Errors []json.RawMessage
 	}
 	if json.Unmarshal(data, &result) != nil || len(result.Errors) != 0 || result.Data.Login.Token == "" || !result.Data.Login.ExpiresAt.After(time.Now()) {
-		return "", status, errors.New("Scryer admin login failed")
+		return "", status, errors.New("Scryer login failed")
 	}
 	s.token, s.expires = result.Data.Login.Token, result.Data.Login.ExpiresAt
 	return s.token, 0, nil
@@ -126,7 +126,7 @@ func (s *scryerClient) execute(ctx context.Context, body []byte) (any, bool) {
 	var decoded any
 	json.Unmarshal(data, &decoded)
 	if containsCredential(decoded, s.password) {
-		return map[string]any{"kind": "scryer_credential_redacted", "message": "Scryer reply contained the admin credential and was withheld"}, true
+		return map[string]any{"kind": "scryer_credential_redacted", "message": "Scryer reply contained the account credential and was withheld"}, true
 	}
 	if status < 200 || status >= 300 {
 		return map[string]any{"kind": "scryer_http_error", "status": status, "body": data}, true
@@ -158,7 +158,7 @@ func scryerHandler(s *scryerClient, tailnetClient func(*http.Request) bool) http
 			result = map[string]any{"protocolVersion": version, "serverInfo": map[string]string{"name": "claw-scryer", "version": "2"}, "capabilities": map[string]any{"tools": map[string]any{}, "resources": map[string]any{}}}
 		case "tools/list":
 			result = map[string]any{"tools": append([]any{map[string]any{
-				"name": "scryer_graphql", "description": "Full-admin Scryer GraphQL. Read the live schema. Mutations are allowed; confirm destructive actions. No uploads or downloads. Do not retry mutations after timeouts.",
+				"name": "scryer_graphql", "description": "Account-scoped Scryer GraphQL. Read the live schema. Mutations are allowed; confirm destructive actions. No uploads or downloads. Do not retry mutations after timeouts.",
 				"inputSchema": json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","minLength":1},"variables":{"type":"object"}},"required":["query"],"additionalProperties":false}`),
 			}}, scryerAppTools()...)}
 		case "resources/list":
@@ -198,7 +198,7 @@ func scryerHandler(s *scryerClient, tailnetClient func(*http.Request) bool) http
 					result = map[string]any{"content": []any{map[string]string{"type": "text", "text": string(text)}}, "isError": true}
 				default:
 					if containsCredential(view, s.password) {
-						text, _ := json.Marshal(map[string]string{"message": "Scryer reply contained the admin credential and was withheld"})
+						text, _ := json.Marshal(map[string]string{"message": "Scryer reply contained the account credential and was withheld"})
 						result = map[string]any{"content": []any{map[string]string{"type": "text", "text": string(text)}}, "isError": true}
 						break
 					}

@@ -427,7 +427,7 @@ in
         };
 
         # Root reads these; each unit gets a copy as a credential. The admin
-        # password now serves only the OpenClaw Scryer endpoint.
+        # password is retained for recovery, not given to OpenClaw.
         sops.secrets.scryer-admin-password = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";

@@ -19,13 +19,14 @@ import (
 // gqlFixture answers the operations the app tools send, from a tiny library:
 // one series (two seasons, specials) and one movie. It records every mutation.
 type gqlFixture struct {
-	mu        sync.Mutex
-	mutations []string
-	inputs    []map[string]any
-	failNext  string // a mutation name that returns a GraphQL error once
+	mu             sync.Mutex
+	mutations      []string
+	inputs         []map[string]any
+	missingLibrary bool
+	failNext       string // a mutation name that returns a GraphQL error once
 }
 
-const fixtureTitle = `{"id":"t1","name":"Curb Your Enthusiasm","facet":"SERIES","monitored":true,"monitorType":null,"year":2000,"overview":"Larry.","posterUrl":"/images/media/abc/w250","network":"HBO","contentStatus":"Ended","metadataFetchedAt":"2026-11-10T00:00:00Z",
+const fixtureTitle = `{"id":"t1","name":"Curb Your Enthusiasm","libraryName":"Simon Series","facet":"SERIES","monitored":true,"monitorType":null,"year":2000,"overview":"Larry.","posterUrl":"/images/media/abc/w250","network":"HBO","contentStatus":"Ended","metadataFetchedAt":"2026-11-10T00:00:00Z",
 "mediaFiles":[{"episodeId":"e1","sizeBytes":3000000000,"qualityLabel":"1080p","role":"primary"}],
 "collections":[
  {"id":"c0","collectionType":"SPECIALS","collectionIndex":"0","monitored":false,"episodes":[{"id":"e0","episodeNumber":"1","airDate":"1999-10-17","title":"Special","monitored":false,"sizeBytes":null,"mediaAvailability":{"state":"UNMONITORED","primaryQualityLabel":null}}]},
@@ -33,7 +34,7 @@ const fixtureTitle = `{"id":"t1","name":"Curb Your Enthusiasm","facet":"SERIES",
  {"id":"c2","collectionType":"SEASON","collectionIndex":"2","monitored":false,"episodes":[{"id":"e3","episodeNumber":"1","airDate":"2001-09-23","title":"The Car Salesman","monitored":false,"sizeBytes":null,"mediaAvailability":{"state":"UNMONITORED","primaryQualityLabel":null}}]},
  {"id":"cx","collectionType":"ARC","collectionIndex":"x","monitored":false,"episodes":[]}]}`
 
-const fixtureMovie = `{"id":"m1","name":"Frozen","facet":"MOVIE","monitored":true,"monitorType":null,"year":2013,"overview":null,"posterUrl":null,"network":null,"contentStatus":"Released","metadataFetchedAt":"2026-10-01T00:00:00Z",
+const fixtureMovie = `{"id":"m1","name":"Frozen","libraryName":"Family Movies","facet":"MOVIE","monitored":true,"monitorType":null,"year":2013,"overview":null,"posterUrl":null,"network":null,"contentStatus":"Released","metadataFetchedAt":"2026-10-01T00:00:00Z",
 "mediaFiles":[{"episodeId":null,"sizeBytes":7044446881,"qualityLabel":"1080p","role":"primary"}],"collections":[{"id":"cm","collectionType":"MOVIE","collectionIndex":"1","monitored":true,"episodes":[]}]}`
 
 func (f *gqlFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -49,6 +50,16 @@ func (f *gqlFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case strings.Contains(q, "login(input:"):
 		fmt.Fprintf(w, `{"data":{"login":{"token":"tok","expiresAt":%q}}}`, time.Now().Add(time.Hour).Format(time.RFC3339Nano))
+	case strings.Contains(q, "libraries(facet:"):
+		if !strings.Contains(q, "permission:MANAGE_TITLES") {
+			w.WriteHeader(400)
+			return
+		}
+		if f.missingLibrary {
+			fmt.Fprint(w, `{"data":{"libraries":[]}}`)
+			return
+		}
+		fmt.Fprint(w, `{"data":{"libraries":[{"id":"sm","name":"Simon Movies","facet":"MOVIE"},{"id":"ss","name":"Simon Series","facet":"SERIES"},{"id":"lm","name":"Laure Movies","facet":"MOVIE"},{"id":"ls","name":"Laure Series","facet":"SERIES"},{"id":"fm","name":"Family Movies","facet":"MOVIE"},{"id":"fs","name":"Family Series","facet":"SERIES"},{"id":"anime","name":"Anime","facet":"ANIME"}]}}`)
 	case strings.Contains(q, "searchMetadataMulti"):
 		fmt.Fprint(w, `{"data":{"searchMetadataMulti":{
 		 "movies":[{"tvdbId":"","tmdbId":109445,"name":"Frozen","year":2013,"status":"Released","overview":"Sisters.","runtimeMinutes":102,"posterUrl":"/images/media/f/w250","popularity":9},
@@ -60,7 +71,7 @@ func (f *gqlFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		values, _ := json.Marshal(body.Variables["v"])
 		switch {
 		case body.Variables["s"] == "tvdb" && strings.Contains(string(values), `"76203"`):
-			fmt.Fprint(w, `{"data":{"titlesByExternalIds":[{"id":"t1","facet":"SERIES","monitored":true,"monitorType":null,"metadataFetchedAt":"2026-11-10T00:00:00Z","episodesOwned":1,"episodesTotal":4,"mediaFiles":[],"externalIds":[{"source":"tvdb","value":"76203"}]}]}}`)
+			fmt.Fprint(w, `{"data":{"titlesByExternalIds":[{"id":"t1","libraryName":"Simon Series","facet":"SERIES","monitored":true,"monitorType":null,"metadataFetchedAt":"2026-11-10T00:00:00Z","episodesOwned":1,"episodesTotal":4,"mediaFiles":[],"externalIds":[{"source":"tvdb","value":"76203"}]}]}}`)
 		case body.Variables["s"] == "tmdb" && strings.Contains(string(values), `"109445"`):
 			fmt.Fprint(w, `{"data":{"titlesByExternalIds":[{"id":"m1","facet":"MOVIE","monitored":true,"monitorType":null,"metadataFetchedAt":"x","episodesOwned":null,"episodesTotal":null,"mediaFiles":[{"role":"primary"}],"externalIds":[{"source":"tmdb","value":"109445"}]}]}}`)
 		default:
@@ -102,7 +113,7 @@ func appHandler(t *testing.T) (*gqlFixture, http.Handler) {
 	f := &gqlFixture{}
 	server := httptest.NewServer(f)
 	t.Cleanup(server.Close)
-	return f, scryerHandler(newScryerClient(server.URL, "pw-secret"), func(*http.Request) bool { return true })
+	return f, scryerHandler(newScryerClient(server.URL, "simon", "pw-secret"), func(*http.Request) bool { return true })
 }
 
 type toolReply struct {
@@ -360,5 +371,51 @@ func TestScryerViewMatchesItsSources(t *testing.T) {
 	want := "scryer-media-view source-sha256:" + hex.EncodeToString(hash.Sum(nil))
 	if !strings.Contains(scryerViewHTML, want) {
 		t.Fatal("dist/media.html is out of date; run node build.mjs in scryer-view")
+	}
+}
+
+func TestScryerAddResolvesLibrary(t *testing.T) {
+	for _, tc := range []struct{ owner, key, id, name string }{
+		{"", "movie:tmdb:999", "sm", "Simon Movies"},
+		{"mine", "series:tvdb:999", "ss", "Simon Series"},
+		{"family", "movie:tmdb:999", "fm", "Family Movies"},
+		{"family", "series:tvdb:999", "fs", "Family Series"},
+		{"mine", "anime:tvdb:999", "anime", "Anime"},
+		{"family", "anime:tvdb:999", "anime", "Anime"},
+	} {
+		t.Run(tc.owner+tc.key, func(t *testing.T) {
+			f, h := appHandler(t)
+			r := call(t, h, "scryer_add", map[string]any{"key": tc.key, "name": "Test", "monitorType": "NONE", "library": tc.owner})
+			if r.Result.IsError || r.Error != nil || len(f.inputs) != 1 || f.inputs[0]["libraryId"] != tc.id {
+				t.Fatalf("routing: %+v inputs %v", r, f.inputs)
+			}
+			if r.Result.StructuredContent["done"].(map[string]any)["libraryName"] != tc.name {
+				t.Fatal("missing chosen library")
+			}
+		})
+	}
+}
+func TestScryerAddMissingLibraryDoesNotWrite(t *testing.T) {
+	f, h := appHandler(t)
+	f.missingLibrary = true
+	r := call(t, h, "scryer_add", map[string]any{"key": "movie:tmdb:999", "name": "Test", "monitorType": "NONE"})
+	if !r.Result.IsError || !strings.Contains(r.Result.Content[0].Text, "Simon Movies") || len(f.mutations) != 0 {
+		t.Fatalf("missing library: %+v", r)
+	}
+	f.missingLibrary = false
+	r = call(t, h, "scryer_add", map[string]any{"key": "movie:tmdb:999", "name": "Test", "monitorType": "NONE", "library": "laure"})
+	if !r.Result.IsError || len(f.mutations) != 0 {
+		t.Fatal("accepted another owner")
+	}
+}
+
+func TestScryerLaureAddsToHerOwnLibrary(t *testing.T) {
+	f := &gqlFixture{}
+	server := httptest.NewServer(f)
+	defer server.Close()
+	h := scryerHandler(newScryerClient(server.URL, "laure", "pw-secret"), func(*http.Request) bool { return true })
+	r := call(t, h, "scryer_add", map[string]any{"key": "series:tvdb:999", "name": "Test", "monitorType": "NONE"})
+	if r.Result.IsError || len(f.inputs) != 1 || f.inputs[0]["libraryId"] != "ls" {
+		t.Fatalf("Laure routing: %+v inputs %v", r, f.inputs)
 	}
 }

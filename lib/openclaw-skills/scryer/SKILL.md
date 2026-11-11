@@ -1,14 +1,14 @@
 ---
 name: scryer
-description: Full native Scryer administration for Simon, Laure, and Household. Use for movies and TV/anime, subscribing to or following named shows, exact season, episode or future-only scopes, acquisition and download queues, imports, progress, libraries, configuration, providers, users, security, backups, restore, plugins, lists, logs, and any other Scryer app action.
+description: Account-scoped Scryer tools for Simon and Laure. Use for movies and TV/anime, subscribing to or following named shows, exact season, episode or future-only scopes, acquisition and download queues, imports, progress, libraries, configuration, providers, users, security, backups, restore, plugins, lists, logs, and any other Scryer app action.
 ---
 
 # Scryer
 
-Scryer has one native GraphQL API. Simon, Laure and Household are all trusted admins. Learn the API from the live schema, not from memory.
+Scryer has one native GraphQL API. Each agent uses its own account and only its granted permissions. Learn the API from the live schema, not from memory.
 
 ## Send a request
-Use the `scryer_graphql` MCP tool. It logs in as `admin` with the sops-nix password credential, caches the session, and returns the JSON reply. Put user values in `variables`; never paste them into the query text.
+Use the `scryer_graphql` MCP tool. On main it uses `claw-scryer-simon` as `simon`; on laure it uses `claw-scryer-laure` as `laure`, with a private sops-nix password credential. It caches the session, and returns the JSON reply. Put user values in `variables`; never paste them into the query text.
 ```json
 {"query":"query($q:String!){titles(query:$q,limit:10){items{id name facet monitored monitorType}}}","variables":{"q":"Dune"}}
 ```
@@ -16,10 +16,19 @@ A reply can hold `data` and `errors` together. Always read `.errors[].message` a
 
 ## Show cards
 Two tools draw interactive cards in the chat. Prefer them when the person wants to find, compare or look at media:
-- `scryer_search {query}`: search results as tiles, with library state and **Add** / **Monitor** buttons. Use it to tell same-named titles apart (remakes, US and UK versions).
+- `scryer_search {query}`: search results as tiles, with library state and **Add for me**, **Add for family** and **Monitor** buttons. Use it to tell same-named titles apart (remakes, US and UK versions).
 - `scryer_title {titleId}`: one library title with its seasons, what is monitored and what is on disk, with **Monitor** / **Unmonitor** per season and per episode. `titleId` is Scryer's title id (from `scryer_search` results or `titles`).
 
 You do not see the card, and you do not see what the person presses. Each button changes Scryer at an exact scope and then re-reads it; the card shows only what Scryer reports. If the person says they pressed something, read the state again with `scryer_graphql` before you describe it. The cards never delete or restore; those stay in chat under the rules below. Both tools return the same data as JSON, so you can answer from it too.
+
+## Choose the owner before adding
+- “For me” or no owner named means `library: "mine"`: Simon Movies/Simon Series for main, Laure Movies/Laure Series for laure.
+- “For the family”, “for the kids”, “for all of us” or “to watch together” means `library: "family"`: Family Movies/Family Series.
+- Anime always goes to Anime, regardless of owner wording.
+- The card's `scryer_add` resolves these names from `libraries(facet:, permission: MANAGE_TITLES)` and always sends `libraryId`. For chat GraphQL adds, do the same lookup and pass the exact `libraryId` to `addTitle`. Never omit it: Scryer's default is Family, not the person's library. If the matching library is absent, stop and report it; do not fall back.
+- Never act on another person's library, even if the account can see it. Treat `UNAUTHORIZED` or `NOT_FOUND` on another person's library as the separation working. Do not retry with other credentials or another endpoint.
+- A title already in a library stays there. Do not move it to satisfy an add request. Report its current library and ask in chat if the requested owner differs.
+- Always say which library was used, including after a card action. Read `libraryName` from the title; do not claim the intended library if Scryer reports a different one.
 
 ## Discover the schema
 Introspection is on. The root types are `QueryRoot`, `MutationRoot` and `SubscriptionRoot`. Read the descriptions: they say what omission, `null` and empty values do.

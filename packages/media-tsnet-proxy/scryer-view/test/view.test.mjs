@@ -98,3 +98,19 @@ test("the fake keeps exact scope: one season changes only that season", async ()
   const reread = (await fake.call("scryer_title", { titleId: "t-office-us" })).structuredContent;
   assert.ok(reread.seasons.find((x) => x.number === 5).episodes.every((e) => !e.monitored), "a failed write changes nothing");
 });
+
+
+test("cards retain and name the library returned by Scryer", () => {
+  const title = classify({ view: "title", title: { id: "t", name: "Test", kind: "movie", libraryName: "Family Movies" }, seasons: [] });
+  assert.equal(title.title.libraryName, "Family Movies");
+  const search = classify({ view: "search", results: [{ key: "k", name: "Test", library: { titleId: "t", libraryName: "Laure Movies" } }] });
+  assert.equal(libraryBadges(search.results[0].library, "movie")[0].text, "Laure Movies");
+});
+
+test("the preview add actions preserve personal, family and anime routing", async () => {
+  for (const [key, library, expected] of [["tmdb:841", "mine", "Simon Movies"], ["tmdb:841", "family", "Family Movies"], ["tvdb:357888", "family", "Anime"]]) {
+    const api = createFake();
+    const result = (await api.call("scryer_add", {key, library, monitorType: "NONE"})).structuredContent;
+    assert.equal(result.title.libraryName, expected);
+  }
+});

@@ -21,13 +21,13 @@ and other destructive actions are not in the view.
 ```
 scryer_search  -> { view: "search", query, results: [{ key, name, kind: movie|series|anime, year, endYear?, ongoing,
                     network?, seasons?, runtimeMinutes?, overview?, poster?: https URL | null,
-                    library?: { titleId, monitored, monitorType?, hydration: ready|pending|failed, onDisk?: { have, total } } }] }
+                    library?: { titleId, libraryName, monitored, monitorType?, hydration: ready|pending|failed, onDisk?: { have, total } } }] }
 scryer_title, scryer_add, scryer_monitor
-               -> { view: "title", title: { id, name, kind, year, endYear?, ongoing, network?, overview?, poster?,
+               -> { view: "title", title: { id, name, libraryName, kind, year, endYear?, ongoing, network?, overview?, poster?,
                     monitored, monitorType?, hydration }, seasons: [{ number, episodes: [{ id, number, name?,
                     airDate?: YYYY-MM-DD, monitored, onDisk, file?: { quality, sizeBytes } }] }],
-                    movie?: { onDisk, file? }, done?: { action } }
-scryer_add     <- { key, monitorType: NONE|ALL_EPISODES|FUTURE_EPISODES|MISSING_AND_FUTURE_EPISODES }
+                    movie?: { onDisk, file? }, done?: { action, libraryName? } }
+scryer_add     <- { key, name, year?, library?: mine|family (default mine), monitorType: NONE|ALL_EPISODES|FUTURE_EPISODES|MISSING_AND_FUTURE_EPISODES }
 scryer_monitor <- { titleId, monitorType }  |  { titleId, seasonNumber, monitored }  |  { titleId, episodeIds, monitored }
 ```
 

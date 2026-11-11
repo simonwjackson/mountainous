@@ -53,8 +53,8 @@ func scryerAppTools() []any {
 			`{"type":"object","properties":{"query":{"type":"string","minLength":1,"maxLength":200}},"required":["query"],"additionalProperties":false}`, "model", "app"),
 		tool("scryer_title", "Show one library title as a card: seasons, what is monitored, what is on disk. The person can monitor or unmonitor seasons and episodes from the card. titleId is Scryer's title id.",
 			`{"type":"object","properties":{"titleId":{"type":"string","minLength":1,"maxLength":100}},"required":["titleId"],"additionalProperties":false}`, "model", "app"),
-		tool("scryer_add", "The card's Add and Monitor buttons: add one search result to the library at an exact monitoring scope.",
-			`{"type":"object","properties":{"key":{"type":"string","minLength":1,"maxLength":100},"name":{"type":"string","minLength":1,"maxLength":300},"year":{"type":"integer"},"monitorType":{"enum":["NONE","ALL_EPISODES","FUTURE_EPISODES","MISSING_AND_FUTURE_EPISODES"]}},"required":["key","name","monitorType"],"additionalProperties":false}`, "app"),
+		tool("scryer_add", "Add one search result to your own or the Family library at an exact monitoring scope. Anime always goes to Anime.",
+			`{"type":"object","properties":{"key":{"type":"string","minLength":1,"maxLength":100},"name":{"type":"string","minLength":1,"maxLength":300},"year":{"type":"integer"},"library":{"enum":["mine","family"],"default":"mine"},"monitorType":{"enum":["NONE","ALL_EPISODES","FUTURE_EPISODES","MISSING_AND_FUTURE_EPISODES"]}},"required":["key","name","monitorType"],"additionalProperties":false}`, "app"),
 		tool("scryer_monitor", "The card's Monitor and Unmonitor buttons: change monitoring of one title, one season, or named episodes, then read the title again.",
 			`{"type":"object","properties":{"titleId":{"type":"string","minLength":1,"maxLength":100},"monitorType":{"enum":["NONE","ALL_EPISODES","FUTURE_EPISODES","MISSING_AND_FUTURE_EPISODES"]},"seasonNumber":{"type":"integer","minimum":0},"episodeIds":{"type":"array","items":{"type":"string","minLength":1,"maxLength":100},"minItems":1,"maxItems":100},"monitored":{"type":"boolean"}},"required":["titleId"],"additionalProperties":false}`, "app"),
 	}
@@ -114,9 +114,9 @@ func (s *scryerClient) gql(ctx context.Context, query string, variables map[stri
 const searchQuery = `query($q:String!,$n:Int!){searchMetadataMulti(query:$q,limit:$n){movies{...M} series{...M} anime{...M}}}
 fragment M on MetadataSearchItemPayload{tvdbId tmdbId name year status overview runtimeMinutes posterUrl popularity}`
 
-const libraryQuery = `query($s:String!,$v:[String!]!){titlesByExternalIds(source:$s,values:$v){id facet monitored monitorType metadataFetchedAt episodesOwned episodesTotal mediaFiles{role} externalIds{source value}}}`
+const libraryQuery = `query($s:String!,$v:[String!]!){titlesByExternalIds(source:$s,values:$v){id libraryName facet monitored monitorType metadataFetchedAt episodesOwned episodesTotal mediaFiles{role} externalIds{source value}}}`
 
-const titleQuery = `query($id:ID!){title(id:$id){id name facet monitored monitorType year overview posterUrl network contentStatus metadataFetchedAt
+const titleQuery = `query($id:ID!){title(id:$id){id name libraryName facet monitored monitorType year overview posterUrl network contentStatus metadataFetchedAt
 mediaFiles{episodeId sizeBytes qualityLabel role}
 collections{id collectionType collectionIndex monitored episodes{id episodeNumber airDate title monitored sizeBytes mediaAvailability{state primaryQualityLabel}}}}}`
 
@@ -133,6 +133,7 @@ type searchItem struct {
 }
 
 type libraryTitle struct {
+	LibraryName       string  `json:"libraryName"`
 	ID                string  `json:"id"`
 	Facet             string  `json:"facet"`
 	Monitored         bool    `json:"monitored"`
@@ -150,6 +151,7 @@ type libraryTitle struct {
 }
 
 type scryerTitle struct {
+	LibraryName       string  `json:"libraryName"`
 	ID                string  `json:"id"`
 	Name              string  `json:"name"`
 	Facet             string  `json:"facet"`
@@ -301,7 +303,7 @@ func (a *scryerApp) search(ctx context.Context, query string) (map[string]any, e
 			r["runtimeMinutes"] = h.item.RuntimeMinutes
 		}
 		if t, ok := library[h.key]; ok {
-			lib := map[string]any{"titleId": t.ID, "monitored": t.Monitored, "monitorType": monitorTypeOf(t.MonitorType), "hydration": hydration(t.Facet, t.MetadataFetchedAt), "onDisk": nil}
+			lib := map[string]any{"titleId": t.ID, "libraryName": t.LibraryName, "monitored": t.Monitored, "monitorType": monitorTypeOf(t.MonitorType), "hydration": hydration(t.Facet, t.MetadataFetchedAt), "onDisk": nil}
 			if t.Facet == "MOVIE" {
 				have := 0
 				for _, f := range t.MediaFiles {
@@ -357,7 +359,7 @@ func (a *scryerApp) titleView(t *scryerTitle, pendingOverride bool) map[string]a
 	if pendingOverride {
 		state = "pending"
 	}
-	title := map[string]any{"id": t.ID, "name": t.Name, "kind": kind, "year": t.Year, "ongoing": ongoing(t.ContentStatus), "network": t.Network,
+	title := map[string]any{"id": t.ID, "name": t.Name, "libraryName": t.LibraryName, "kind": kind, "year": t.Year, "ongoing": ongoing(t.ContentStatus), "network": t.Network,
 		"overview": t.Overview, "poster": a.poster(t.PosterURL), "monitored": t.Monitored, "monitorType": monitorTypeOf(t.MonitorType), "hydration": state}
 	out := map[string]any{"view": "title", "title": title, "seasons": []any{}}
 	if kind == "movie" {
@@ -407,13 +409,58 @@ func deref(s *string) string {
 
 var allowedScopes = map[string]bool{"NONE": true, "ALL_EPISODES": true, "FUTURE_EPISODES": true, "MISSING_AND_FUTURE_EPISODES": true}
 
-func (a *scryerApp) add(ctx context.Context, key, name string, year *int, monitorType string) (map[string]any, error) {
+// Resolve only among libraries the authenticated account can manage. Never fall
+// back to Scryer's default (Family) when a personal library is missing.
+func (a *scryerApp) addLibrary(ctx context.Context, facet, owner string) (string, string, error) {
+	if owner == "" {
+		owner = "mine"
+	}
+	if owner != "mine" && owner != "family" {
+		return "", "", appError{"Library must be mine or family."}
+	}
+	name := "Anime"
+	if facet != "ANIME" {
+		prefix := "Family"
+		if owner == "mine" {
+			username := a.client.username
+			if username == "" {
+				return "", "", appError{"Scryer account username is missing."}
+			}
+			prefix = strings.ToUpper(username[:1]) + username[1:]
+		}
+		suffix := " Movies"
+		if facet == "SERIES" {
+			suffix = " Series"
+		}
+		name = prefix + suffix
+	}
+	var result struct {
+		Libraries []struct{ ID, Name, Facet string }
+	}
+	// The facet is from kindFacet, never caller-provided GraphQL text.
+	query := fmt.Sprintf(`query{libraries(facet:%s,permission:MANAGE_TITLES){id name facet}}`, facet)
+	if err := a.client.gql(ctx, query, nil, &result); err != nil {
+		return "", "", err
+	}
+	for _, library := range result.Libraries {
+		if library.Name == name && library.Facet == facet && library.ID != "" {
+			return library.ID, name, nil
+		}
+	}
+	return "", "", appError{fmt.Sprintf("No manageable Scryer library named %q for %s; nothing was added.", name, facet)}
+}
+
+func (a *scryerApp) add(ctx context.Context, key, name string, year *int, monitorType, owner string) (map[string]any, error) {
 	m := keyPattern.FindStringSubmatch(key)
 	if m == nil || !allowedScopes[monitorType] || strings.TrimSpace(name) == "" {
 		return nil, appError{"That result cannot be added from the card."}
 	}
 	kind, source, id := m[1], m[2], m[3]
 	facet := kindFacet[kind]
+	libraryID, libraryName, err := a.addLibrary(ctx, facet, owner)
+	if err != nil {
+		return nil, err
+	}
 	// Never add a title twice: an existing title is shown as it is.
 	var lib struct {
 		Titles []libraryTitle `json:"titlesByExternalIds"`
@@ -432,11 +479,11 @@ func (a *scryerApp) add(ctx context.Context, key, name string, year *int, monito
 				return nil, err
 			}
 			view := a.titleView(read, false)
-			view["done"] = map[string]any{"action": "exists"}
+			view["done"] = map[string]any{"action": "exists", "libraryName": read.LibraryName}
 			return view, nil
 		}
 	}
-	input := map[string]any{"name": name, "facet": facet, "monitored": monitorType != "NONE", "tags": []string{}}
+	input := map[string]any{"name": name, "facet": facet, "libraryId": libraryID, "monitored": monitorType != "NONE", "tags": []string{}}
 	if year != nil {
 		input["year"] = *year
 	}
@@ -465,7 +512,7 @@ func (a *scryerApp) add(ctx context.Context, key, name string, year *int, monito
 		return nil, err
 	}
 	view := a.titleView(read, added.AddTitle.MetadataHydrationState == "PENDING")
-	view["done"] = map[string]any{"action": "add"}
+	view["done"] = map[string]any{"action": "add", "libraryName": libraryName}
 	return view, nil
 }
 
@@ -499,7 +546,7 @@ func (a *scryerApp) monitor(ctx context.Context, args monitorArgs) (map[string]a
 				return nil, err
 			}
 		}
-		if err := a.client.gql(ctx, `mutation($i:SetTitleMonitoredInput!){setTitleMonitored(input:$i){id}}`, map[string]any{"i": map[string]any{"titleId": t.ID, "monitored": on}}, &struct{}{}); err != nil {
+		if err := a.client.gql(ctx, `mutation($i:SetTitleMonitoredInput!){setTitleMonitored(input:$i){id}}`, map[string]any{"i": map[string]any{"titleId": t.ID, "libraryName": t.LibraryName, "monitored": on}}, &struct{}{}); err != nil {
 			return nil, err
 		}
 	case args.SeasonNumber != nil:
@@ -576,6 +623,7 @@ func (a *scryerApp) call(ctx context.Context, name string, raw json.RawMessage) 
 		return a.titleView(t, false), nil
 	case "scryer_add":
 		var args struct {
+			Library     string `json:"library"`
 			Key         string `json:"key"`
 			Name        string `json:"name"`
 			Year        *int   `json:"year"`
@@ -584,7 +632,7 @@ func (a *scryerApp) call(ctx context.Context, name string, raw json.RawMessage) 
 		if strict(&args) != nil || len(args.Name) > 300 {
 			return nil, errInvalidArgs
 		}
-		return a.add(ctx, args.Key, args.Name, args.Year, args.MonitorType)
+		return a.add(ctx, args.Key, args.Name, args.Year, args.MonitorType, args.Library)
 	case "scryer_monitor":
 		var args monitorArgs
 		if strict(&args) != nil || args.TitleID == "" || len(args.EpisodeIDs) > 100 {

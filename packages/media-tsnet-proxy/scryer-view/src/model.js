@@ -48,7 +48,7 @@ export const safePoster = (v) => {
 function library(v) {
   if (!v || typeof v !== "object" || !str(v.titleId)) return undefined;
   return {
-    titleId: v.titleId,
+    titleId: v.titleId, libraryName: str(v.libraryName),
     monitored: v.monitored === true,
     monitorType: str(v.monitorType), // Scryer leaves it unset on many titles; words then come from the flags
     hydration: str(v.hydration) ?? "ready",
@@ -87,7 +87,7 @@ export function classify(sc) {
     return {
       view: "title",
       title: {
-        id: t.id, name: str(t.name) ?? "Untitled", kind: kindOf(t.kind), year: int(t.year), endYear: int(t.endYear), ongoing: t.ongoing === true,
+        id: t.id, libraryName: str(t.libraryName), name: str(t.name) ?? "Untitled", kind: kindOf(t.kind), year: int(t.year), endYear: int(t.endYear), ongoing: t.ongoing === true,
         network: str(t.network), overview: str(t.overview), poster: safePoster(t.poster), monitored: t.monitored === true,
         monitorType: str(t.monitorType), hydration: str(t.hydration) ?? "ready",
       },
@@ -168,7 +168,7 @@ export function sameNames(results) {
 /** The state words on a search tile. Empty for a title that is not in the library. */
 export function libraryBadges(lib, kind) {
   if (!lib) return [];
-  const out = [{ text: "In library", tone: "plain" }];
+  const out = [{ text: lib.libraryName ?? "In library", tone: "plain" }];
   if (lib.hydration === "pending") out.push({ text: "Reading episodes", tone: "busy" });
   else if (lib.hydration === "failed") out.push({ text: "Episodes did not load", tone: "bad" });
   if (lib.monitored && lib.monitorType !== "NONE") out.push({ text: !lib.monitorType || lib.monitorType === "ALL_EPISODES" ? "Monitored" : `Monitored: ${scopeWords(lib.monitorType).toLowerCase()}`, tone: "good" });

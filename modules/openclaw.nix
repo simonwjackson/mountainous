@@ -223,10 +223,15 @@
           assert gateway.config.agents.defaults.systemAgent.agentId == "main";
           assert gateway.config.agents.entries.main.workspace == gateway.config.agents.defaults.workspace;
           assert lib.all (a: a.heartbeat.every == "30m") (lib.attrValues gateway.config.agents.entries);
-          assert gateway.config.agents.entries.main.tools.deny == [ "claw-family-calendar__*" ];
+          assert
+            gateway.config.agents.entries.main.tools.deny == [
+              "claw-family-calendar__*"
+              "claw-scryer-laure__*"
+            ];
           assert
             gateway.config.agents.entries.laure.tools.deny == [
               "claw-calendar__*"
+              "claw-scryer-simon__*"
               "basic-react__*"
               "budget-allocator__*"
               "system-monitor__*"
@@ -280,20 +285,37 @@
               "view_image"
               "image_generate"
               "bundle-mcp"
-              "claw-scryer__scryer_search"
-              "claw-scryer__scryer_title"
-              "claw-scryer__scryer_add"
-              "claw-scryer__scryer_monitor"
+              "claw-scryer-simon__scryer_search"
+              "claw-scryer-simon__scryer_title"
+              "claw-scryer-simon__scryer_add"
+              "claw-scryer-simon__scryer_monitor"
+              "claw-scryer-laure__scryer_search"
+              "claw-scryer-laure__scryer_title"
+              "claw-scryer-laure__scryer_add"
+              "claw-scryer-laure__scryer_monitor"
             ];
-          assert
-            gateway.config.mcp.servers.claw-scryer.url == "https://claw-scryer.hummingbird-lake.ts.net/mcp";
-          assert
-            gateway.config.mcp.servers.claw-scryer.toolFilter.include == [
-              "scryer_graphql"
-              "scryer_search"
-              "scryer_title"
-              "scryer_add"
-              "scryer_monitor"
+          assert !(gateway.config.mcp.servers ? claw-scryer);
+          assert lib.all
+            (
+              username:
+              let
+                server = gateway.config.mcp.servers."claw-scryer-${username}";
+              in
+              server.url == "https://claw-scryer-${username}.hummingbird-lake.ts.net/mcp"
+              && server.transport == "streamable-http"
+              && !(server ? codex)
+              &&
+                server.toolFilter.include == [
+                  "scryer_graphql"
+                  "scryer_search"
+                  "scryer_title"
+                  "scryer_add"
+                  "scryer_monitor"
+                ]
+            )
+            [
+              "simon"
+              "laure"
             ];
           assert gateway.config.mcp.servers.claw-websearch.transport == "streamable-http";
           assert
@@ -301,11 +323,6 @@
             == "https://claw-websearch.hummingbird-lake.ts.net/mcp";
           assert gateway.config.mcp.servers.claw-websearch.toolFilter.include == [ "web_search" ];
           assert lib.all (a: !(lib.any (d: lib.hasPrefix "claw-websearch" d) (a.tools.deny or [ ]))) (
-            lib.attrValues gateway.config.agents.entries
-          );
-          # No approval mode is set: OpenClaw prompts for scryer_graphql from a card.
-          assert !(gateway.config.mcp.servers.claw-scryer ? codex);
-          assert lib.all (a: !(lib.any (d: lib.hasPrefix "claw-scryer" d) (a.tools.deny or [ ]))) (
             lib.attrValues gateway.config.agents.entries
           );
           assert

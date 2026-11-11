@@ -117,10 +117,15 @@
                 default = tailscale.tags;
                 description = "Enrollment tags for this service identity.";
               };
+              scryerUsername = lib.mkOption {
+                type = lib.types.strMatching "[a-zA-Z0-9_-]+";
+                default = "admin";
+                description = "Account used by the native Scryer MCP endpoint.";
+              };
               scryerPasswordFile = lib.mkOption {
                 type = lib.types.nullOr lib.types.str;
                 default = null;
-                description = "Enable the native full-admin Scryer MCP endpoint with this LoadCredential password file. Backend is the fixed HTTPS GraphQL URL.";
+                description = "Enable the native account-scoped Scryer MCP endpoint with this LoadCredential password file. Backend is the fixed HTTPS GraphQL URL.";
               };
               webSearchKeyFile = lib.mkOption {
                 type = lib.types.nullOr lib.types.str;
@@ -189,7 +194,7 @@
                 "oauth-id:${tailscale.oauthClientIdFile}"
                 "oauth-secret:${tailscale.oauthSecretFile}"
               ]
-              ++ lib.optional (cfg.scryerPasswordFile != null) "scryer-admin-password:${cfg.scryerPasswordFile}"
+              ++ lib.optional (cfg.scryerPasswordFile != null) "scryer-password:${cfg.scryerPasswordFile}"
               ++ lib.optional (cfg.webSearchKeyFile != null) "websearch-key:${cfg.webSearchKeyFile}";
               ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p ${state name}";
               ExecStart =
@@ -200,9 +205,9 @@
                 + lib.optionalString (
                   cfg.mcpTools != null
                 ) " -mcp-tools ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpTools)}"
-                + lib.optionalString (
-                  cfg.scryerPasswordFile != null
-                ) " -scryer-password-file %d/scryer-admin-password"
+                +
+                  lib.optionalString (cfg.scryerPasswordFile != null)
+                    " -scryer-password-file %d/scryer-password -scryer-username ${lib.escapeShellArg cfg.scryerUsername}"
                 + lib.optionalString (
                   cfg.webSearchKeyFile != null
                 ) " -websearch-key-file %d/websearch-key -websearch-model ${lib.escapeShellArg cfg.webSearchModel}";

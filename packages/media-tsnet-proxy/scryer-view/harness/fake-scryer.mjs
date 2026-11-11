@@ -92,7 +92,7 @@ export function createFake() {
       }
     }
     const monitored = c.kind === "movie" ? t.monitorType !== "NONE" : t.monitorType !== "NONE" && [...t.eps.values()].some((e) => e.monitored);
-    const title = { id: t.id, name: c.name, kind: c.kind, year: c.year, endYear: c.endYear, ongoing: c.ongoing ?? false, network: c.network, overview: c.overview, poster: null, monitored: c.kind === "movie" ? t.monitorType !== "NONE" : monitored || t.monitorType === "FUTURE_EPISODES", monitorType: t.monitorType, hydration: t.hydration };
+    const title = { id: t.id, libraryName: t.libraryName ?? (c.kind === "anime" ? "Anime" : `Simon ${c.kind === "movie" ? "Movies" : "Series"}`), name: c.name, kind: c.kind, year: c.year, endYear: c.endYear, ongoing: c.ongoing ?? false, network: c.network, overview: c.overview, poster: null, monitored: c.kind === "movie" ? t.monitorType !== "NONE" : monitored || t.monitorType === "FUTURE_EPISODES", monitorType: t.monitorType, hydration: t.hydration };
     if (c.kind === "movie") return { view: "title", title, seasons: [], movie: { onDisk: Boolean(t.movieOnDisk), file: t.movieOnDisk ? c.file : null } };
     const seasons = t.hydration === "pending" ? [] : c.seasons.map((s) => ({
       number: s.number,
@@ -115,7 +115,7 @@ export function createFake() {
     const r = readTitle(t, { hydrate: "stuck" }); // a search never advances hydration
     const eps = r.seasons.flatMap((s) => s.episodes);
     return {
-      titleId: t.id, monitored: r.title.monitored, monitorType: t.monitorType, hydration: t.hydration,
+      titleId: t.id, libraryName: r.title.libraryName, monitored: r.title.monitored, monitorType: t.monitorType, hydration: t.hydration,
       onDisk: r.movie ? { have: r.movie.onDisk ? 1 : 0, total: 1 } : eps.length ? { have: eps.filter((e) => e.onDisk).length, total: eps.length } : null,
     };
   }
@@ -139,12 +139,12 @@ export function createFake() {
       if (!t) throw new Error(`No title with id ${titleId}.`);
       return readTitle(t, knobs);
     },
-    scryer_add({ key, monitorType }, knobs) {
+    scryer_add({ key, monitorType, library = "mine" }, knobs) {
       const c = cat(key);
       if (!c) throw new Error(`Scryer has no search result ${key}.`);
       let t = byKey(key);
       if (!t) {
-        t = { id: `t-new-${next++}`, key, monitorType: monitorType ?? "NONE", hydration: c.kind === "movie" ? "ready" : "pending", reads: 0, eps: new Map() };
+        t = { id: `t-new-${next++}`, key, libraryName: c.kind === "anime" ? "Anime" : `${library === "family" ? "Family" : "Simon"} ${c.kind === "movie" ? "Movies" : "Series"}`, monitorType: monitorType ?? "NONE", hydration: c.kind === "movie" ? "ready" : "pending", reads: 0, eps: new Map() };
         lib.set(t.id, t);
       }
       return { ...readTitle(t, knobs), done: { action: "add" } };

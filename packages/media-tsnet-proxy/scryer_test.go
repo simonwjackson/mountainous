@@ -22,6 +22,7 @@ type scryerFixture struct {
 	revoke, rejectLogin, invalid, reflectPassword bool
 	status                                        int
 	password                                      string
+	username                                      string
 }
 
 func (f *scryerFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +44,7 @@ func (f *scryerFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if strings.Contains(body.Query, "login(input:") {
 		f.logins++
-		if body.Variables.I.Password != f.password || body.Variables.I.Username != "admin" || body.Variables.I.PersistSession {
+		if body.Variables.I.Password != f.password || body.Variables.I.Username != f.username || body.Variables.I.PersistSession {
 			w.WriteHeader(403)
 			return
 		}
@@ -85,10 +86,10 @@ const scryerCall = `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"nam
 
 func fixtureHandler(t *testing.T) (*scryerFixture, http.Handler) {
 	t.Helper()
-	f := &scryerFixture{password: "test-secret-\"\\-credential", lifetime: 24 * time.Hour}
+	f := &scryerFixture{username: "admin", password: "test-secret-\"\\-credential", lifetime: 24 * time.Hour}
 	server := httptest.NewServer(f)
 	t.Cleanup(server.Close)
-	return f, scryerHandler(newScryerClient(server.URL, f.password), func(*http.Request) bool { return true })
+	return f, scryerHandler(newScryerClient(server.URL, "admin", f.password), func(*http.Request) bool { return true })
 }
 
 func TestScryerSession(t *testing.T) {
@@ -190,7 +191,7 @@ func TestScryerBoundary(t *testing.T) {
 	if f.calls != 0 || f.logins != 0 {
 		t.Fatal("denied request reached Scryer")
 	}
-	outsider := scryerHandler(newScryerClient("http://127.0.0.1:1", f.password), func(*http.Request) bool { return false })
+	outsider := scryerHandler(newScryerClient("http://127.0.0.1:1", "admin", f.password), func(*http.Request) bool { return false })
 	r := httptest.NewRequest("POST", "/mcp", strings.NewReader(scryerCall))
 	r.Header.Set("X-Forwarded-For", "100.100.100.100")
 	w = httptest.NewRecorder()
@@ -215,5 +216,21 @@ func TestScryerFullAdminAndConcurrentReuse(t *testing.T) {
 	wg.Wait()
 	if f.logins != 1 || f.calls != 8 {
 		t.Fatal("concurrent calls did not reuse one session")
+	}
+}
+
+func TestScryerLoginUsesConfiguredUsername(t *testing.T) {
+	for _, username := range []string{"admin", "simon", "laure"} {
+		t.Run(username, func(t *testing.T) {
+			f := &scryerFixture{username: username, password: "test-secret", lifetime: time.Hour}
+			server := httptest.NewServer(f)
+			defer server.Close()
+			h := scryerHandler(newScryerClient(server.URL, username, f.password), func(*http.Request) bool { return true })
+			var reply struct{ Result struct{ IsError bool } }
+			json.Unmarshal(callScryer(h, scryerCall).Body.Bytes(), &reply)
+			if reply.Result.IsError || f.logins != 1 || f.calls != 1 {
+				t.Fatalf("login did not use %s", username)
+			}
+		})
 	}
 }

@@ -245,7 +245,10 @@ in
             main = {
               workspace = "/var/lib/openclaw/workspace";
               heartbeat.every = "30m";
-              tools.deny = [ "claw-family-calendar__*" ];
+              tools.deny = [
+                "claw-family-calendar__*"
+                "claw-scryer-laure__*"
+              ];
             };
             # Laure's agent. Its persona comes from her own BOOTSTRAP.md
             # interview; OpenClaw seeds the starter files on the first run.
@@ -255,6 +258,7 @@ in
               heartbeat.every = "30m";
               tools.deny = [
                 "claw-calendar__*"
+                "claw-scryer-simon__*"
                 "basic-react__*"
                 "budget-allocator__*"
                 "system-monitor__*"
@@ -327,16 +331,16 @@ in
               url = "https://claw-websearch.hummingbird-lake.ts.net/mcp";
               toolFilter.include = [ "web_search" ];
             };
-            # Full-admin Scryer (see docs/operations/openclaw-yari.md) and its MCP App.
-            # The four app tools are also allowed by exact name in tools.allow below,
-            # because OpenClaw checks a card's own tool calls by projected name.
-            claw-scryer = {
+            # Each agent denies the other account's complete tool namespace.
+            claw-scryer-simon = {
               transport = "streamable-http";
-              url = "https://claw-scryer.hummingbird-lake.ts.net/mcp";
-              toolFilter.include = [
-                "scryer_graphql"
-              ]
-              ++ scryerAppTools;
+              url = "https://claw-scryer-simon.hummingbird-lake.ts.net/mcp";
+              toolFilter.include = [ "scryer_graphql" ] ++ scryerAppTools;
+            };
+            claw-scryer-laure = {
+              transport = "streamable-http";
+              url = "https://claw-scryer-laure.hummingbird-lake.ts.net/mcp";
+              toolFilter.include = [ "scryer_graphql" ] ++ scryerAppTools;
             };
           };
           apps = {
@@ -392,8 +396,11 @@ in
             "bundle-mcp"
           ]
           # Exact names, so the Scryer card's buttons pass the session tool policy.
-          # Nothing else from claw-scryer is added; scryer_graphql stays model-only in effect.
-          ++ map (tool: "claw-scryer__${tool}") scryerAppTools;
+          # Nothing else from either Scryer server is added; scryer_graphql stays model-only in effect.
+          ++ lib.concatMap (username: map (tool: "claw-scryer-${username}__${tool}") scryerAppTools) [
+            "simon"
+            "laure"
+          ];
           deny = [ "group:runtime" ];
           sessions.visibility = "agent";
           agentToAgent.enabled = false;

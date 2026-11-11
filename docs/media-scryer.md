@@ -281,8 +281,21 @@ Accounts. Scryer: `simon` (app-wide admin; sees all libraries), `laure`, and
 `family` (Household assistant: Family and Anime only). Each Pi assistant on
 Rakku signs in as its own account through the `scryer-username` and
 `scryer-password` credentials (`secrets/hosts/rakku.yaml`,
-`scryer-password-<user>`). `admin` remains for the OpenClaw endpoint and
-recovery. Jellyfin: `simonwjackson`, `laure` and `family`, each limited to the
+`scryer-password-<user>`). `admin` remains for recovery only. OpenClaw on Yari uses two account-scoped
+MCP endpoints on Rakku: `claw-scryer-simon` for main and `claw-scryer-laure`
+for laure. Each agent denies the other endpoint's tool namespace; neither
+endpoint loads the admin password. The old `claw-scryer` unit is retired.
+Its saved tsnet identity is retained for rollback, but has no listener.
+The new identities enroll with fleet OAuth and `tag:claw-tools`.
+
+OpenClaw adds default to the caller's Movies/Series library (`mine`).
+“Family”, “kids”, “all of us” and “watch together” route to Family (`family`).
+Anime always routes to Anime. The app resolves only libraries returned with
+`MANAGE_TITLES` and always passes `libraryId`; a missing match is an error,
+never a fallback to the default Family library. Cards show the library name
+and offer Add for me / Add for family. Existing titles are not moved.
+
+Jellyfin: `simonwjackson`, `laure` and `family`, each limited to the
 libraries in its row plus Family and Anime. The new Jellyfin passwords are
 `jellyfin-password-laure` and `jellyfin-password-family` in
 `secrets/hosts/unzen.yaml`.

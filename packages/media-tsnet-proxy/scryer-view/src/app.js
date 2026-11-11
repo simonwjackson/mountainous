@@ -167,7 +167,7 @@ function intoTile(key) {
     s.data.results = s.data.results.map((r) => r.key !== key ? r : {
       ...r,
       library: {
-        titleId: t.id, monitored: t.monitored, monitorType: t.monitorType, hydration: t.hydration,
+        titleId: t.id, libraryName: t.libraryName, monitored: t.monitored, monitorType: t.monitorType, hydration: t.hydration,
         onDisk: t.kind === "movie" ? (fresh.movie ? { have: fresh.movie.onDisk ? 1 : 0, total: 1 } : undefined) : n.total ? { have: n.disk, total: n.total } : undefined,
       },
     });
@@ -225,7 +225,7 @@ function pushContext() {
   let text;
   if (d.view === "search") {
     text = [`Scryer search card for "${d.query}": ${plural(d.results.length, "result", "results")}.`,
-      ...d.results.map((r) => `- ${r.name} (${metaLine(r)}), key ${r.key}${r.library ? `, in library as ${r.library.titleId}, ${r.library.monitored ? (r.library.monitorType ? scopeWords(r.library.monitorType) : "monitored") : "not monitored"}` : ", not in library"}`)].join("\n");
+      ...d.results.map((r) => `- ${r.name} (${metaLine(r)}), key ${r.key}${r.library ? `, in ${r.library.libraryName ?? "library"} as ${r.library.titleId}, ${r.library.monitored ? (r.library.monitorType ? scopeWords(r.library.monitorType) : "monitored") : "not monitored"}` : ", not in library"}`)].join("\n");
   } else {
     const n = titleSummary(d.seasons, today());
     text = [`Scryer title card: ${d.title.name} (${metaLine(d.title)}), title id ${d.title.id}.`,
@@ -290,7 +290,7 @@ function tileActions(c) {
     const monitor = c.kind === "movie"
       ? writeButton({ key: `${key}:monitor`, act: "add", label: "Monitor", busyLabel: "Adding…", data: { cand: key, type: "ALL_EPISODES", err: key }, aria: `Add and monitor ${c.name}` })
       : `<button class="btn" data-act="choose" data-key="${esc(key)}:choose" data-choose="${esc(key)}" ${s.writing || s.blocked ? "disabled" : ""} aria-expanded="${s.choosing === key}" aria-label="Monitor ${esc(c.name)}">Monitor</button>`;
-    const add = writeButton({ key: `${key}:add`, act: "add", label: "Add", busyLabel: "Adding…", data: { cand: key, type: "NONE", err: key }, aria: `Add ${c.name} without monitoring` });
+    const add = [ ["mine", "Add for me"], ["family", "Add for family"] ].map(([library, label]) => writeButton({ key: `${key}:add:${library}`, act: "add", label, busyLabel: "Adding…", data: { cand: key, type: "NONE", library, err: key }, aria: `${label}: ${c.name} without monitoring` })).join("");
     return monitor + add;
   }
   const open = `<button class="btn" data-act="open" data-key="${esc(key)}:open" data-title="${esc(lib.titleId)}" data-name="${esc(c.name)}">Open</button>`;
@@ -419,6 +419,7 @@ function titleHtml(p) {
   const back = s.back ? `<nav class="bar nav"><button class="btn quiet back" data-act="back">${chevron(-1)}Back to results for “${esc(s.back.query)}”</button></nav>` : "";
   const head = `<header class="title-head">${art(t, page ? "page" : "card")}
       <div class="title-words"><h1>${esc(t.name)}</h1><p class="tile-meta">${esc(metaLine({ ...t, seasons: t.kind === "movie" ? undefined : d.seasons.filter((x) => x.number !== 0).length }))}</p>
+      ${t.libraryName ? `<p class="tile-meta">${esc(t.libraryName)}</p>` : ""}
       ${t.kind !== "movie" && n.total ? `<p class="title-counts">${counts(n, false)}</p>` : ""}</div></header>`;
   const seasons = d.seasons.slice(0, p.shown);
   const list = t.kind === "movie" ? "" : !d.seasons.length
@@ -485,7 +486,7 @@ root.addEventListener("click", (e) => {
     case "cancel": s.choosing = undefined; render(); break;
     case "add": {
       s.choosing = undefined;
-      write(d.key, d.err, "scryer_add", addArgs(d.cand, d.type), intoTile(d.cand));
+      write(d.key, d.err, "scryer_add", addArgs(d.cand, d.type, d.library), intoTile(d.cand));
       break;
     }
     case "add-pick": {
@@ -520,9 +521,9 @@ root.addEventListener("click", (e) => {
   }
 });
 /** The add tool names the result by its key; the name and year go with it as labels. */
-function addArgs(key, monitorType) {
+function addArgs(key, monitorType, library = "mine") {
   const c = s.data?.results?.find((r) => r.key === key);
-  return { key, name: c?.name ?? key, ...(c?.year !== undefined ? { year: c.year } : {}), monitorType };
+  return { key, library, name: c?.name ?? key, ...(c?.year !== undefined ? { year: c.year } : {}), monitorType };
 }
 // A poster that does not load (offline, outside the tailnet, CSP) falls back to the pixel kind.
 root.addEventListener("error", (e) => {

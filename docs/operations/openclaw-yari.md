@@ -633,66 +633,61 @@ irreversible data-deletion decision, not part of a routine rollback.
   on Yari support repeating network and actual-tool-call checks. No raw mail,
   event titles or credential values are recorded in this runbook.
 
-## Full-admin Scryer endpoint and its MCP App (connected to both agents)
+## Account-scoped Scryer endpoints
 
-`https://claw-scryer.hummingbird-lake.ts.net/mcp` runs on Rakku and exposes
-five tools and one resource. `scryer_graphql {query: string, variables?: object}`
-is the full-admin tool and is unchanged. The four MCP App tools and the view are
-described in "Scryer MCP App" below. The endpoint has no prompts, uploads or
-backup downloads. Its separate tsnet identity
-uses only `tag:claw-tools`, the existing fleet OAuth client, HTTPS 443, and
-WhoIs verification of the actual peer. It has no LAN listener or Funnel.
-Existing calendar/maps policies and Simon's own assistant remain unchanged.
+Rakku serves `https://claw-scryer-simon.hummingbird-lake.ts.net/mcp` as
+`simon` and `https://claw-scryer-laure.hummingbird-lake.ts.net/mcp` as `laure`.
+Each exposes `scryer_graphql` and the four MCP App tools described below.
+Main denies `claw-scryer-laure__*`; laure denies `claw-scryer-simon__*`.
+The exact-name session allowlist contains both sets of app tools, with the
+per-agent deny applied on top. No old `claw-scryer` server remains.
 
-**Simon explicitly chose full admin, with no GraphQL operation filter.** This
-is not a read-only endpoint. A permitted client can change settings and access,
-remove media or backups, restore state, and read secret fields. Tailnet ACLs
-limit reachability, not GraphQL privilege. A compromised OpenClaw agent or
-prompt injection can exercise all of those powers. The skill's confirmation
-rules are instructions, not an authorization boundary. Do not describe this
-endpoint as sandboxed or read-only.
+`modules/claw-scryer.nix` uses the existing per-person sops secrets.
+`modules/tailnet-names.nix` passes them with systemd LoadCredential and `%d`,
+never the Nix store or environment. Secret rotation restarts the matching
+proxy as well as the existing Pi assistant. Neither proxy loads the admin
+password. Simon's Scryer account still has app-wide permissions and can see
+Laure's libraries; this change does not alter accounts or grants. The shared
+skill forbids acting on the other person's library. Per-agent tool denial is
+not network isolation between mutually untrusted agents in one container.
 
-`modules/claw-scryer.nix` declares placement. `modules/tailnet-names.nix` passes
-`scryer-admin-password` through systemd LoadCredential. The password is not in
-the Nix store, environment or unit text. `packages/media-tsnet-proxy/scryer.go`
-implements the native MCP adapter in the existing proxy package. It logs in as
-`admin` with `persistSession: false`, keeps the token only in process memory,
-and renews within five minutes of expiry. It retries once only after HTTP 401;
-it does not retry timeouts or other errors. Login responses are never returned.
-An upstream reply that contains this admin password is withheld. Other valid
-GraphQL JSON is returned unchanged, including both `data` and `errors`.
-HTTP failures such as 460 are tool errors with `kind`, `status`, and the upstream
-JSON `body`; login errors retain status but omit the body. Clients must read
-state before retrying a mutation after a transport error.
+Both new tsnet names enroll with the existing fleet OAuth client and
+`tag:claw-tools`; no stored join key or ACL change is needed. Each keeps its
+own persisted state. The old admin unit is removed, not its saved identity.
+No agent has an admin endpoint or password. Do not delete saved tsnet state
+as part of deployment or rollback.
 
-Requests and upstream replies are bounded to 4 MiB. Each upstream HTTP request
-has a 30-second timeout; the complete tool call has a 60-second deadline.
-Redirects are disabled. Unknown tools, other resource URIs and other MCP methods
-fail closed. `checks.x86_64-linux.claw-scryer` tests the real HTTP boundary and a
-local Scryer fixture: login, reuse, renewal, 401 retry, partial GraphQL errors,
-460/503, invalid replies, credential reflection, concurrent reuse and denied
-requests. It also runs the MCP App tests (`scryer_app_test.go`) and the check
-that the embedded page matches its sources. Run that check plus `claw-tools`, `tailnet-names`, and Rakku toplevel
-evaluation. Build the package/system on Unzen, copy via Zao as root to Rakku,
-and switch Rakku. Never build on Rakku or run an aggregate flake check.
+The native adapter defaults `-scryer-username` to `admin` for compatibility;
+these two units explicitly select their person. Tokens stay in process memory,
+with `persistSession: false`; login response bodies are never returned.
+Credential reflections are withheld. Only HTTP 401 retries once; after a
+transport error, read state before retrying a mutation. Requests and replies
+are bounded to 4 MiB, upstream requests to 30 seconds and tool calls to 60.
+Redirects are disabled. HTTPS peer verification, no LAN listener and no Funnel
+remain unchanged.
 
-OpenClaw connects to it as the streamable-HTTP server `claw-scryer`
-(`lib/openclaw-container.nix`), with `toolFilter.include` set to all five tools.
-Both agents get it: neither agent's `tools.deny` names `claw-scryer`. The
-prepared skill `lib/openclaw-skills/scryer/SKILL.md` is installed for both
-agents through `skills.load.extraDirs`. The local `scripts/gql` and its
-credentials are not in the container.
+Adds resolve `mine` (default) or `family` against
+`libraries(facet:, permission: MANAGE_TITLES)`, then pass `libraryId` explicitly.
+Anime always resolves to Anime. Missing libraries fail without a write.
+Cards show `libraryName`, with Add for me and Add for family actions.
+Existing titles are shown in their current library, never moved by an add.
+See the Owners section of `docs/media-scryer.md` for routing words.
 
-To stop/remove just Scryer, first remove the `claw-scryer` server, the four
-`claw-scryer__…` entries in `tools.allow` and the `skills.load.extraDirs` entry
-from `lib/openclaw-container.nix`, with the matching asserts in
-`modules/openclaw.nix`, and deploy Yari. Then remove Rakku's `claw-scryer`
-layer, evaluate and build Rakku on Unzen, and deploy Rakku. Retire
-`modules/claw-scryer.nix` and its check when unused. Keep `/var/lib/tsnet-proxy-claw-scryer` under Rakku's
-persistence volume for rollback; removing the unit does not delete its identity
-or Scryer data. Deleting saved state or the tailnet registration is a separate
-action. Do not remove `tag:claw-tools`: calendar and maps still use it. Roll back
-a failed switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
+Validate focused `claw-scryer`, `tailnet-names` and `openclaw` checks, plus
+ARM `openclaw-config`. Never run an aggregate flake check. Rakku requires a
+system switch. Yari's endpoint, tool policy and skill changes also require a
+**system switch**: the independent `openclaw` deploy-rs app profile carries
+only the package, not these settings. Retain that profile and verify the
+`openclaw-profile-control restart-and-check` health gate after deployment.
+Do not replace the signed package profile just to change configuration.
+
+Rollback both affected systems with `nixos-rebuild switch --rollback`, after
+checking the previous generation's contents. This re-enables the old admin
+endpoint and is a security regression; use only to recover service. Do not
+reboot or remove any Scryer, OpenClaw or tsnet state.
+
+The evidence below records historical admin deployments; it does not describe
+the current account wiring.
 
 ### Scryer deployment evidence (2026-11-10 Denver)
 
@@ -729,11 +724,11 @@ a failed switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
 ## Scryer MCP App (2026-11-11 UTC)
 
 One MCP App view, `ui://scryer/media.html` (`text/html;profile=mcp-app`), is
-served by `claw-scryer` and draws two card shapes:
+served by each account-scoped endpoint and draws two card shapes:
 
 - **Search tiles** after `scryer_search {query}`: each result with its poster
   (or the kind in pixel art), kind, year, network or runtime, library badges,
-  and **Add** / **Monitor**. A series asks which episodes first: all, future,
+  and **Add for me** / **Add for family** / **Monitor**. A series asks which episodes first: all, future,
   missing and future, or chosen seasons.
 - **Title card** after `scryer_title {titleId}`: one mark per episode for each
   season (on disk, wanted, upcoming, not monitored), the whole-show scope, and
@@ -744,7 +739,7 @@ served by `claw-scryer` and draws two card shapes:
 | --- | --- | --- |
 | `scryer_search` | model and card | `searchMetadataMulti`, `titlesByExternalIds` |
 | `scryer_title` | model and card | `title` |
-| `scryer_add` | card only | `titlesByExternalIds` (never adds twice), `addTitle`, `title` |
+| `scryer_add` | card only | `libraries` (MANAGE_TITLES), `titlesByExternalIds` (never adds twice), `addTitle` (explicit libraryId), `title` |
 | `scryer_monitor` | card only | `setCollectionMonitored` (season), `setEpisodeMonitored` (episodes of the same title only), `updateTitle` + `setTitleMonitored` (whole-show scope), then `title` |
 
 Every write ends with a fresh read of the title, and the card draws only that
@@ -759,10 +754,9 @@ What makes the buttons work in OpenClaw 2026.11.3:
 - **Session tool policy.** OpenClaw checks a card's own tool call by its
   projected name, without plugin metadata, so `bundle-mcp` in `tools.allow`
   does not cover it. This is why the System Monitor card failed with -32603.
-  `tools.allow` therefore lists exactly `claw-scryer__scryer_search`,
-  `claw-scryer__scryer_title`, `claw-scryer__scryer_add` and
-  `claw-scryer__scryer_monitor`. Nothing else is added.
-- **Approval.** No approval mode is set for `claw-scryer`. OpenClaw then decides
+  `tools.allow` therefore lists exactly the four exact app-tool names under each of `claw-scryer-simon__` and
+  `claw-scryer-laure__`. Nothing else is added.
+- **Approval.** No approval mode is set for either Scryer server. OpenClaw then decides
   from tool annotations. The four app tools carry honest hints (reads
   read-only; add and monitor not destructive, idempotent, closed-world), so they
   run without a prompt. `scryer_graphql` has no hints, so a card calling it
