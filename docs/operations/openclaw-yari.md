@@ -479,6 +479,57 @@ exit advertisement with `tailscale set --advertise-exit-node=false`. Root SSH wo
 a sudo password. Do not reboot Rakku. Confirm Home Assistant, Z-Wave,
 ai-gateway and all three pi-assistant units remain active after switching.
 
+## Stop limits
+
+A Yari system switch that changes the container stops
+`container@openclaw.service` and starts it again. Three settings decide how
+long that stop can take.
+
+| Unit | Setting | Value | Reason |
+| --- | --- | --- | --- |
+| `openclaw-gateway.service`, in the container | `KillMode` | `mixed` | OpenClaw's `docs/gateway/restart-recovery.md` requires it. Only the gateway gets the stop signal. systemd kills the remaining children when the gateway exits. |
+| `openclaw-gateway.service`, in the container | `TimeoutStopSec` | 35 s | The gateway reads this value and sets its own deadline 5 s before it. |
+| `container@openclaw.service`, on Yari | `TimeoutStopSec` | 180 s | Must be longer than the container needs to stop itself. |
+
+The gateway divides its limit. At 35 s, active runs get about 20 s to finish,
+cleanup gets 10 s, and 5 s stay as margin. That is one full ordinary stop.
+OpenClaw documents 330 s for its own units. Do not use that value here. It
+pays for a 315 s drain that only a requested restart (`openclaw gateway
+restart`) uses, and this deployment restarts the gateway through systemd.
+
+`checks.openclaw` requires the host limit to be at least the gateway limit
+plus 90 s. The 90 s is systemd's default for one more unit that stops after
+the gateway, such as tailscaled.
+
+A healthy gateway stops in less than 1 second, and the container stops in 2 to
+4 seconds. A slow stop has one known cause. In OpenClaw 2026.11.3 the
+`plugin-services` close step did not return in the two stops that followed a
+research run with sub-agents. The gateway then waits until its deadline, writes
+a stability bundle under `/var/lib/openclaw/logs/stability/`, and its watchdog
+kills it 2 s later. At a 35 s limit that stop takes about 32 s. Which plugin
+service does not return is not known.
+
+To read how the last stops went, run these on Yari:
+
+```sh
+journalctl -u container@openclaw.service --utc -o short-precise \
+  --grep 'Stopping Container|Stopped Container|stop-sigterm|unix-export'
+grep -E 'shutdown budget|completed cleanly|shutdown deadline reached' \
+  /var/lib/nixos-containers/openclaw/var/lib/openclaw/logs/gateway.log | tail
+```
+
+`completed cleanly in N ms` is a healthy stop. `shutdown deadline reached`
+lists the close steps that did not finish.
+
+If the host limit expires, systemd logs `State 'stop-sigterm' timed out.
+Killing.` and kills systemd-nspawn. systemd-nspawn 261 then leaves
+`/run/systemd/nspawn/openclaw/unix-export` mounted. The next start fails once
+with `Mount point ... exists already, refusing`, and `switch-to-configuration`
+returns exit 4. systemd then restarts the unit, and that start succeeds. Before
+you treat exit 4 as a failed deploy, run `systemctl is-active
+container@openclaw`. If it prints `active`, do not repeat the switch and do not
+roll back.
+
 ## Verify
 
 Use `nixos-container run openclaw -- ...` or `machinectl shell` on Yari. Run

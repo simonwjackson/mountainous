@@ -588,6 +588,13 @@ in
         ReadWritePaths = [ "/var/lib/openclaw" ];
         MemoryMax = "8G";
         TasksMax = 256;
+        # OpenClaw requires mixed (its docs/gateway/restart-recovery.md): only
+        # the gateway gets the stop signal, so its children live while it closes.
+        KillMode = "mixed";
+        # The gateway reads this limit and gives up 5 s before it. 35 s funds
+        # one full ordinary stop: 20 s drain, 10 s cleanup, 5 s margin. At the
+        # 90 s default, a close step that never returns held each stop 87 s.
+        TimeoutStopSec = 35;
       };
     };
   };

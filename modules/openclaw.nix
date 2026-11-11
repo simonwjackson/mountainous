@@ -140,7 +140,15 @@
         environment.persistence."/permafrost".directories = [ "/var/lib/nixos-containers/openclaw" ];
         systemd.services."container@openclaw" = {
           after = [ "sops-install-secrets.service" ];
-          serviceConfig.MemoryMax = "8G";
+          serviceConfig = {
+            MemoryMax = "8G";
+            # Longer than the container needs to stop itself: the gateway's
+            # 35 s, then one more unit at its 90 s default, then 55 s spare.
+            # When the host kills a container that is still stopping, nspawn
+            # leaves a mount behind, the next start fails once, and a system
+            # switch returns exit 4.
+            TimeoutStopSec = 180;
+          };
           unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/openclaw" ];
         };
         assertions = [
@@ -341,6 +349,11 @@
           assert (gateway.config.agents.defaults.subagents.maxChildrenPerAgent or null) == 8;
           assert !gateway.config.tools.codeMode.enabled && gateway.config.tools.fs.workspaceOnly;
           assert host.systemd.services."container@openclaw".serviceConfig.MemoryMax == "8G";
+          # Stop limits. The gateway's limit funds one full ordinary stop. The
+          # host's limit outlasts it plus one more guest unit at systemd's 90 s.
+          assert unit.KillMode == "mixed" && unit.TimeoutStopSec == 35;
+          assert
+            host.systemd.services."container@openclaw".serviceConfig.TimeoutStopSec >= unit.TimeoutStopSec + 90;
           assert !gateway.config.tools.elevated.enabled;
           assert gateway.config.browser.enabled && gateway.config.browser.headless;
           assert gateway.config.browser.ssrfPolicy.dangerouslyAllowPrivateNetwork;
