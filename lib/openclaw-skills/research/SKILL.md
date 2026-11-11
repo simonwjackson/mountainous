@@ -34,11 +34,11 @@ A product or tool search MUST use Swarm, not inline research. No single source o
 Audit when the answer drives a decision, briefs disagree, or a claim is surprising. Background reading and Lookups need no audit.
 
 - Self-check when the recommendation rests on 1 to 3 claims. Fetch each original page yourself. Check `search only` sources first.
-- Spawn one evidence auditor when more claims drive the recommendation or the briefs disagree. Use the auditor block below.
+- Spawn one evidence auditor when more claims drive the recommendation, the briefs disagree, or the user requests an auditor. Use the auditor block below.
 
 Name every important claim nobody checked.
 
-Before your first search or spawn, send the user one line with constraints, size and angles. Label stated and inferred constraints so the user can redirect.
+Before your first search or spawn, write one visible text line with constraints, size and angles. Separate stated constraints from inferred constraints. Put this text first in the same assistant message as the spawn calls, before every tool call. Reasoning text and a yield acknowledgment do not count.
 
 ## 3. Run it
 
@@ -67,7 +67,7 @@ OpenClaw defers tools. A broad `tool_search` can omit `sessions_spawn` from its 
 }
 ```
 
-Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. Tell the user who researches each angle. Then wait for completion announcements with `sessions_yield`, dispatched as `id: "sessions_yield", args: {}`. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If spawning fails, name the failed angle and the tool error. Never silently replace Single or Swarm with inline work.
+Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. After the spawn receipts, tell the user each researcher's name and angle. Then wait for completion announcements with `sessions_yield`, dispatched as `id: "sessions_yield", args: {}`. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If spawning fails, name the failed angle and the tool error. Never silently replace Single or Swarm with inline work.
 
 Each task must contain:
 
@@ -80,7 +80,7 @@ Each task must contain:
 
 After all researchers finish, read every brief with `read`. Treat a timeout, failed child, or missing brief as a failed angle. Name it in the final answer. Do not treat a missing brief as evidence that nothing exists.
 
-For an auditor, use the same spawn shape with `taskName: "evidence-auditor"`, `thinking: "high"`, and `runTimeoutSeconds: 900`. Give it the question, every absolute brief path, the claims that drive the answer, and `<run>/audit.md`. Paste the complete auditor block into its task. Wait for its completion announcement and read its report.
+After reading the briefs, spawn the auditor through `dispatch_action` with `id: "sessions_spawn"`. Use the same `args` shape with `taskName: "evidence-auditor"`, `thinking: "high"`, and `runTimeoutSeconds: 900`. Give it the question, every absolute brief path, and the claims that drive the answer. Paste the complete auditor block into its task. Wait for its completion announcement. Use `write` yourself to save its full report as `<run>/audit.md` before answering. A missing discovery result is not a reason to replace the auditor with self-check.
 
 ### Evidence rules
 
@@ -162,7 +162,7 @@ For deferred search, discover with tool_search. Its dispatch_action id is
 mcp:claw-websearch:claw-websearch__web_search, with args {"query":"one query"}.
 Keep contradictions and uncertainty visible. If a tool fails, name it and the claims left unchecked.
 
-Use write to save the report at the assigned audit.md path. Return its path and conclusion.
+Return the full report below, not only its conclusion. The main agent saves it as audit.md.
 Use this format:
 
 # Evidence audit
@@ -209,6 +209,6 @@ Group Sources by recommendation, then the rest. Each entry needs a Markdown link
 
 Link the page that owns the fact. Listings and reviews support only prices, stock or user reports. Say so when you use them. Never link search-engine result pages.
 
-Carry audit verdicts into the answer. Keep unchecked claims labelled unchecked. Name every failed or timed-out child, including an auditor that writes no report.
+Carry audit verdicts into the answer. Keep unchecked claims labelled unchecked. Name every failed or timed-out child, including an auditor that returns no report.
 
 Finish only after every child reports or fails, every saved brief is read, and the answer is in the conversation. Then return to the conversation's work. If a finding belongs in durable project notes, offer to save it there.
