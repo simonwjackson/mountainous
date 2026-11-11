@@ -18,7 +18,11 @@ let
   installed = config.mountainous.features.pi-assistant.installedSkills;
   cfg = config.mountainous.features.pi-assistant;
   unit = name: config.systemd.services."pi-assistant-${name}";
-  credential = "scryer-admin-password:${config.sops.secrets.scryer-admin-password.path}";
+  scryerPassword = user: "scryer-password:${config.sops.secrets."scryer-password-${user}".path}";
+  loads = name: (unit name).serviceConfig.LoadCredential;
+  hasCredential =
+    name: prefix:
+    builtins.any (c: builtins.substring 0 (builtins.stringLength prefix) c == prefix) (loads name);
 in
 assert cfg.people.simon.apps.google.port == 3171;
 assert cfg.people.simon.apps.maps.port == 3172;
@@ -38,6 +42,7 @@ assert config.systemd.services.assistant-app-simon-google.preStart != "";
 assert
   cfg.people.simon.apps.google.readOnlyTools == [
     "calendar_busy"
+    "family_calendar_events"
     "mail_list"
     "mail_read"
     "mail_proposals"
@@ -57,11 +62,17 @@ assert builtins.elem
 assert config.mountainous.features.ai-gateway.settings.providers.typesafe.prepaid;
 assert cfg.household.skills.probe == "/nix/var/nix/profiles/per-user/pi-assistant/probe-skill";
 assert builtins.elem "probe:/run/secrets/probe" (unit "household").serviceConfig.LoadCredential;
-assert builtins.all (name: builtins.elem credential (unit name).serviceConfig.LoadCredential) [
-  "simon"
-  "laure"
-  "household"
-];
+# Each assistant signs in to Scryer as its own account; none holds the admin password.
+assert builtins.elem (scryerPassword "simon") (loads "simon");
+assert builtins.elem (scryerPassword "laure") (loads "laure");
+assert builtins.elem (scryerPassword "family") (loads "household");
+assert builtins.all
+  (name: hasCredential name "scryer-username:" && !hasCredential name "scryer-admin-password:")
+  [
+    "simon"
+    "laure"
+    "household"
+  ];
 assert builtins.all (name: (unit name).serviceConfig.User == "pi-${name}") [
   "simon"
   "laure"

@@ -52,6 +52,11 @@ in
             "--ignore-scripts"
           ];
         };
+        # The Scryer skill signs in with scryer-username and scryer-password.
+        scryerAccount = user: {
+          scryer-username = "${pkgs.writeText "scryer-username-${user}" user}";
+          scryer-password = config.sops.secrets."scryer-password-${user}".path;
+        };
         ebaySeller = pkgs.runCommand "pi-ebay-seller" { } ''
           mkdir -p $out
           cp -r ${inputs.pi-ebay-seller}/package.json ${inputs.pi-ebay-seller}/extensions $out/
@@ -341,7 +346,7 @@ in
               };
               skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
               skills.coach = "/nix/var/nix/profiles/per-user/pi-assistant/skills/coach";
-              credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
+              credentials = scryerAccount "simon";
               # eBay acts as Simon (offers, buyer messages), so only his
               # assistant gets it. Laure and Household do not.
               extensions.ebay-seller = ebaySeller;
@@ -351,12 +356,12 @@ in
               voicePort = 4327;
               webPort = 4328;
               skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
-              credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
+              credentials = scryerAccount "laure";
             };
           };
           household = {
             skills.scryer = "/nix/var/nix/profiles/per-user/pi-assistant/skills/scryer";
-            credentials.scryer-admin-password = config.sops.secrets.scryer-admin-password.path;
+            credentials = scryerAccount "family";
           };
           tailnet = "hummingbird-lake.ts.net";
           # Vela's /surface link (Vela ADR 0007).
@@ -421,16 +426,29 @@ in
           tankLitres = 62;
         };
 
-        # Root reads these; each assistant unit gets a copy as a credential.
-        # The same media account serves both people and their Household assistant.
+        # Root reads these; each unit gets a copy as a credential. The admin
+        # password now serves only the OpenClaw Scryer endpoint.
         sops.secrets.scryer-admin-password = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
-          restartUnits = [
-            "pi-assistant-simon.service"
-            "pi-assistant-laure.service"
-            "pi-assistant-household.service"
-          ];
+        };
+        # One Scryer account per assistant. Scryer's library grants keep them
+        # apart: simon and laure see their own libraries and Family; family
+        # sees Family only. Only simon holds app-wide admin rights.
+        sops.secrets.scryer-password-simon = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+          restartUnits = [ "pi-assistant-simon.service" ];
+        };
+        sops.secrets.scryer-password-laure = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+          restartUnits = [ "pi-assistant-laure.service" ];
+        };
+        sops.secrets.scryer-password-family = {
+          sopsFile = ../../secrets/hosts/rakku.yaml;
+          mode = "0400";
+          restartUnits = [ "pi-assistant-household.service" ];
         };
         sops.secrets.pi-assistant-cliproxyapi-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
