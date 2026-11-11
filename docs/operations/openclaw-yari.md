@@ -1,5 +1,20 @@
 # OpenClaw trial on Yari
 
+## Decision: one gateway, two agents (2026-11-11)
+
+Simon and Laure share this one gateway. Each person has an own agent: `main`
+(Simon, persona flakey) and `laure` (persona from her own BOOTSTRAP.md
+interview). Each person signs in as themselves through Tailscale and has a
+non-admin role limited to the own agent, with `sessions.others: "view"`.
+Publishing a conversation shares it with the other person. Admin work happens
+only on the command line on Yari. OpenClaw 2026.11.3 has no setting that makes
+new conversations start as Draft: the New session page always starts as
+"normal". The sidebar's default "My sessions" filter only hides the other
+person's conversations. It does not block them. Sign-in uses Tailscale Serve
+run outside OpenClaw with `trusted-proxy` auth, not OpenClaw-managed Serve,
+because managed Serve needs OpenClaw to have write access to the container's
+tailscaled.
+
 ## Placement and boundaries
 
 | Service | Placement | State / address |
@@ -59,9 +74,18 @@ on 3172. OpenClaw cannot reach those ports or the assistant endpoint.
 | --- | --- | --- |
 | `claw-calendar.hummingbird-lake.ts.net` | `127.0.0.1:3171` | `calendar_busy` |
 | `claw-maps.hummingbird-lake.ts.net` | `127.0.0.1:3172` | `travel_time` |
+| `claw-family-calendar.hummingbird-lake.ts.net` | `127.0.0.1:3171` | `family_calendar_events` |
+
+`family_calendar_events {day}` reads only Simon's "Family" calendar
+(`46g7he3srihobgru1lmoegsar8@group.calendar.google.com`, set as
+`GOOGLE_FAMILY_CALENDAR_ID` on the Google app in `modules/hosts/rakku.nix`).
+The caller cannot name a calendar; extra arguments are ignored. It returns
+title, all-day flag, start, end and location for the local Denver day. It never
+returns event IDs, descriptions or attendees, and never reads Personal,
+Routine, Interviews or Holidays. It uses Simon's existing Google sign-in.
 
 Each identity has only `tag:claw-tools`, enrolls with the existing fleet OAuth
-client, and retains its state in `/var/lib/tsnet-proxy-claw-{calendar,maps}`
+client, and retains its state in `/var/lib/tsnet-proxy-claw-{calendar,maps,family-calendar}`
 under Rakku's persistence volume. The `tsnet-proxy-*` units use tsnet's tailnet
 TLS listener, not a LAN or public listener. There is no Funnel. Before serving
 an MCP request, local-client WhoIs must identify the actual remote peer;
@@ -566,3 +590,28 @@ a failed switch with `nixos-rebuild switch --rollback`; do not reboot Rakku.
   `/tmp/claw-scryer-verification.json`, `/tmp/claw-scryer-before.json`,
   `/tmp/claw-scryer-after.json`, and `/tmp/claw-scryer-package-log`.
   The prepared skill remains unwired at `lib/openclaw-skills/scryer/SKILL.md`.
+
+## Family calendar deployment evidence (2026-11-11 UTC)
+
+- Apps `d40b848` (local `main` of `assistant/apps`) adds `family_calendar_events`.
+  Its tests prove gog receives only the configured Family ID, never `--all`,
+  ignores a caller's `calendarId`, and returns `not_configured` without a call
+  when the ID is unset. 36 app tests passed. Mountainous `cd68b31d` on `cairn`.
+- Application profile changed only `bin/google`; installed without restarting
+  other units. Rakku generation **133** runs
+  `/nix/store/xb1wkq9i3v5yszy1xvyrpwyk47jj49i9-nixos-system-rakku-26.11.20260923.4975466`,
+  built on Unzen and relayed through Zao. Rakku did not build or reboot.
+  The switch restarted only `assistant-app-simon-google` and `pi-assistant-simon`
+  (its tool list gained the read-only tool) and started the new proxy.
+  Home Assistant, Z-Wave, ai-gateway, Laure's and Household's assistants, maps
+  and the other claw proxies kept their start times.
+- Checks: focused `claw-tools`, `tailnet-names` and `openclaw`; Rakku toplevel.
+- Node `claw-family-calendar` (`100.99.2.46`) has only `tag:claw-tools`. From Zao:
+  tools/list returns only `family_calendar_events`; `calendar_busy`, `mail_list`
+  and `resources/read` return `-32601`. Fourteen days were read, with a
+  `calendarId` of the Personal calendar added to every call: every reply was
+  `calendar: "Family"`, two days had one event each (one timed, one all-day),
+  and replies held only `title`, `allDay`, `start` and `end` keys.
+- Roll back: `nixos-rebuild switch --rollback` on Rakku (to generation 132) and
+  reinstall the previous application profile generation with `nix-env --profile
+  /nix/var/nix/profiles/per-user/pi-assistant/application --rollback`.

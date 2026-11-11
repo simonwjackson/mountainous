@@ -7,7 +7,7 @@ mountainous supplies their units and credentials.
 
 | Service | Loopback port | State | Read-only tools |
 |---|---|---|---|
-| google | 3171 | `/var/lib/pi-assistant-simon/apps/google` | calendar_busy, mail_list, mail_read, mail_proposals |
+| google | 3171 | `/var/lib/pi-assistant-simon/apps/google` | calendar_busy, family_calendar_events, mail_list, mail_read, mail_proposals |
 | maps | 3172 | none | travel_time |
 
 Google runs as `pi-simon`. HOME is its app folder. The file keyring and gog
