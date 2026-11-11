@@ -48,11 +48,7 @@ For Single or Swarm, your next research action is spawning, not searching inline
 
 OpenClaw defers tools. A broad `tool_search` can omit `sessions_spawn` from its truncated results. That does not mean spawning is unavailable. Call `dispatch_action` directly with `id: "sessions_spawn"` and the spawn parameters in `args`.
 
-Send the assistant message that starts research in this order:
-1. Emit a normal assistant `text` block: `Stated: ... | Inferred: ... | Size: ... | Angles: ...`.
-2. Append all researcher tool calls to that same message, after the text block.
-
-This scope line is spoken progress for the user. A `thinking` block is private and does not satisfy step 1. For Lookup, emit the scope line before searching inline. Use this dispatch shape for each researcher:
+For Lookup, state the constraints, size and angle before searching inline. Use this dispatch shape for each researcher:
 
 ```json
 {
@@ -71,7 +67,7 @@ This scope line is spoken progress for the user. A `thinking` block is private a
 }
 ```
 
-Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. After the spawn receipts, emit another normal assistant `text` block naming each researcher and its angle. Then wait for completion announcements with `sessions_yield`, dispatched as `id: "sessions_yield", args: {}`. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If spawning fails, name the failed angle and the tool error. Never silently replace Single or Swarm with inline work.
+Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. After the spawn receipts, call `sessions_yield` through `dispatch_action` with `id: "sessions_yield"`. Set `args.acknowledgment` to one short paragraph with stated constraints against inferred constraints, the size, and each researcher with its angle. The user sees `acknowledgment`. The `message` parameter is private context for the resumed turn. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If spawning fails, name the failed angle and the tool error. Never silently replace Single or Swarm with inline work.
 
 Each task must contain:
 
@@ -84,7 +80,7 @@ Each task must contain:
 
 After all researchers finish, read every brief with `read`. Treat a timeout, failed child, or missing brief as a failed angle. Name it in the final answer. Do not treat a missing brief as evidence that nothing exists.
 
-After reading the briefs, spawn the auditor through `dispatch_action` with `id: "sessions_spawn"`. Use the same `args` shape with `taskName: "evidence-auditor"`, `thinking: "high"`, and `runTimeoutSeconds: 900`. Give it the question, every absolute brief path, and the claims that drive the answer. Paste the complete auditor block into its task. Wait for its completion announcement. Use `write` yourself to save its full report as `<run>/audit.md` before answering. A missing discovery result is not a reason to replace the auditor with self-check.
+After reading the briefs, spawn the auditor through `dispatch_action` with `id: "sessions_spawn"`. Use the same `args` shape with `taskName: "evidence-auditor"`, `thinking: "high"`, and `runTimeoutSeconds: 900`. Give it the question, every absolute brief path, and the claims that drive the answer. Paste the complete auditor block into its task. Wait with `sessions_yield`, setting `acknowledgment` to say an evidence auditor is checking N claims. Replace N with the actual claim count. After its completion announcement, use `write` yourself to save its full report as `<run>/audit.md` before answering. A missing discovery result is not a reason to replace the auditor with self-check.
 
 ### Evidence rules
 
@@ -205,11 +201,13 @@ Answer in the conversation with:
 
 Include every candidate that meets all hard constraints. Give a reason for each exclusion, such as discontinued or more expensive without a gain. A ranking that skips a cheaper fit is wrong.
 
-Group Sources by recommendation, then the rest. Each entry needs a Markdown link with the real page title and owner. Say what it supports and give exactly one status:
+Group Sources by recommendation, then the rest. Each entry needs a Markdown link with the real page title and owner. Say what it supports. Only the following three marks are allowed, one per entry:
 
 - `checked`: you or the auditor fetched the page and confirmed the claim.
 - `from a brief`: a researcher cited it and nobody checked it again.
 - `failed`: the fetch was blocked or empty. Keep the link for the user.
+
+Split an entry when its parts have different status. Put any note about an unchecked part in the entry's text, not its mark.
 
 Link the page that owns the fact. Listings and reviews support only prices, stock or user reports. Say so when you use them. Never link search-engine result pages.
 
