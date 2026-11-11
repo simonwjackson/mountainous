@@ -39,8 +39,9 @@ let
     ];
     text = ''
       FRONT_DOOR_API_KEY="$(cat /run/host-credentials/front-door)"
-      OPENCLAW_GATEWAY_TOKEN="$(cat /run/host-credentials/gateway-token)"
-      export FRONT_DOOR_API_KEY OPENCLAW_GATEWAY_TOKEN
+      # The local admin password; browsers sign in through Tailscale instead.
+      OPENCLAW_GATEWAY_PASSWORD="$(cat /run/host-credentials/gateway-token)"
+      export FRONT_DOOR_API_KEY OPENCLAW_GATEWAY_PASSWORD
       export OPENCLAW_STATE_DIR=/var/lib/openclaw
       export OPENCLAW_CONFIG_PATH=/etc/openclaw/openclaw.json
       cd /var/lib/openclaw
@@ -80,8 +81,8 @@ let
   launch = pkgs.writeShellScript "openclaw-start" ''
     set -euo pipefail
     FRONT_DOOR_API_KEY="$(cat "$CREDENTIALS_DIRECTORY/front-door")"
-    OPENCLAW_GATEWAY_TOKEN="$(cat "$CREDENTIALS_DIRECTORY/gateway-token")"
-    export FRONT_DOOR_API_KEY OPENCLAW_GATEWAY_TOKEN
+    OPENCLAW_GATEWAY_PASSWORD="$(cat "$CREDENTIALS_DIRECTORY/gateway-token")"
+    export FRONT_DOOR_API_KEY OPENCLAW_GATEWAY_PASSWORD
     exec ${package}/bin/openclaw gateway --port 18789
   '';
 in
@@ -154,9 +155,56 @@ in
           mode = "local";
           bind = "loopback";
           port = 18789;
+          # Per-person sign-in. claw-tailnet's own `tailscale serve` deletes any
+          # client Tailscale-User-* headers and sets the WhoIs login (none for
+          # tagged nodes). OpenClaw gets no tailscaled access (InaccessiblePaths).
+          # Loopback trust means a process in this container could forge a
+          # login; the gateway user is already the untrusted party, and its
+          # agents have no shell tool. The password (OPENCLAW_GATEWAY_PASSWORD)
+          # works only for local-direct clients: openclaw-admin and the brief.
           auth = {
-            mode = "token";
+            mode = "trusted-proxy";
             allowTailscale = false;
+            trustedProxy = {
+              userHeader = "tailscale-user-login";
+              requiredHeaders = [
+                "x-forwarded-proto"
+                "x-forwarded-host"
+              ];
+              allowUsers = [
+                "simon.jackson@gmail.com"
+                "chancerellelaure@gmail.com"
+              ];
+              allowLoopback = true;
+            };
+          };
+          # Non-admin roles, each limited to the person's own agent. Assign with
+          # users.setRole from the CLI after the first sign-in; until then a
+          # profile gets "pending": no agents and no scopes.
+          roles = {
+            default = "pending";
+            definitions =
+              let
+                person = agent: {
+                  sessions.others = "view";
+                  agents = [ agent ];
+                  scopes = [
+                    "operator.read"
+                    "operator.write"
+                    "operator.approvals"
+                    "operator.questions"
+                  ];
+                };
+              in
+              {
+                pending = {
+                  sessions.others = "none";
+                  agents = [ ];
+                  scopes = [ ];
+                };
+                simon = person "main";
+                laure = person "laure";
+              };
           };
           trustedProxies = [
             "127.0.0.1"

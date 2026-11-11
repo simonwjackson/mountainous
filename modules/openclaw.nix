@@ -84,7 +84,21 @@
           assert c.services.dnsmasq.settings.listen-address == [ "127.0.0.1" ];
           assert container.privateNetwork && container.enableTun && container.autoStart;
           assert gateway.config.gateway.bind == "loopback";
-          assert gateway.config.gateway.auth.mode == "token" && !gateway.config.gateway.auth.allowTailscale;
+          assert
+            gateway.config.gateway.auth.mode == "trusted-proxy" && !gateway.config.gateway.auth.allowTailscale;
+          assert gateway.config.gateway.auth.trustedProxy.userHeader == "tailscale-user-login";
+          assert gateway.config.gateway.auth.trustedProxy.allowUsers == [
+            "simon.jackson@gmail.com"
+            "chancerellelaure@gmail.com"
+          ];
+          assert gateway.config.gateway.roles.default == "pending";
+          assert gateway.config.gateway.roles.definitions.pending.scopes == [ ];
+          assert gateway.config.gateway.roles.definitions.simon.agents == [ "main" ];
+          assert gateway.config.gateway.roles.definitions.laure.agents == [ "laure" ];
+          assert lib.all (r: !(lib.elem "operator.admin" r.scopes)) (
+            lib.attrValues gateway.config.gateway.roles.definitions
+          );
+          assert lib.elem "/run/tailscale" unit.InaccessiblePaths;
           assert
             gateway.config.models.providers.front-door.baseUrl == "https://ai.hummingbird-lake.ts.net/v1";
           assert gateway.config.agents.defaults.model.primary == "front-door/claude-opus-5-5";
@@ -164,7 +178,7 @@
           export OPENCLAW_STATE_DIR=$TMPDIR/state
           export OPENCLAW_CONFIG_PATH=${c.environment.etc."openclaw/openclaw.json".source}
           export FRONT_DOOR_API_KEY=test-only
-          export OPENCLAW_GATEWAY_TOKEN=test-only
+          export OPENCLAW_GATEWAY_PASSWORD=test-only
           ${gateway.package}/bin/openclaw config validate
           touch $out
         '';
