@@ -129,3 +129,39 @@ Build Rakku on Unzen, copy its closure as root (or signed), then switch Rakku.
 Do not build or reboot Rakku. Check Home Assistant, Z-Wave, ai-gateway, all three
 pi-assistant units and the Google app remain active. Roll back a failed switch
 with `nixos-rebuild switch --rollback`; retain persisted OAuth and app state.
+
+## Deployment evidence (2026-11-11 UTC)
+
+- Implementation commits: `8fb95b65`, `943960f2`, `90598ac7` on `cairn`.
+  Rakku generation **131** runs
+  `/nix/store/3k9qmp0li936dzw5lipk66m6rwbyas5r-nixos-system-rakku-26.11.20260923.4975466`.
+  Unzen built it. Zao relayed the closure through Rakku's root Nix daemon;
+  Rakku did not build or reboot.
+- All three focused checks passed. The wizard check passed **9 tests**,
+  including real gog Desktop import/scope selection, local JSON/SSE transport,
+  assistant RPC framing, and rejection of old/error assistant tool results.
+  Nix formatting, Python formatting/static checks, Bash syntax and shellcheck
+  passed. The existing Home Assistant lovelace deprecation warning remains.
+- Rendered client: `pi-simon:pi-simon`, **0400**. Imported gog client:
+  `pi-simon:pi-simon`, **0600**. The installed `claw-google-auth --check` passed
+  and confirmed their values match without printing them. Unit text and the
+  store-side template contain no plaintext client values. Existing encrypted
+  secret entries stayed byte-identical; only two keys and SOPS metadata changed.
+- Home Assistant, Z-Wave, ai-gateway, all three assistants, Google and maps are
+  active. Only Google restarted, when the credentials were first deployed;
+  every other service retained its pre-change start time. Home Assistant HTTP
+  returned **200**. Z-Wave's real websocket returned its version greeting
+  (driver **15.15.0**).
+- Real assistant GetConversation/GetTranscript RPCs passed. Both loopback Google
+  and the restricted HTTPS endpoint returned the expected **not_authorised**
+  before consent. This proves transport, **not** access to Calendar data.
+  Successful real-data comparisons remain deliberately pending Simon's consent.
+- The installed interactive PTY path was exercised as `pi-simon` with both
+  `TERM=dumb` and `TERM=xterm-256color`. Both runs declined the readiness gate:
+  **no OAuth URL was made, no callback was exchanged, no account was saved**.
+  Simon still needs only the one-time email selection and browser consent above.
+- After the secrets were committed and deployed, `/tmp/client-id` and
+  `/tmp/client-secret` on Zao were removed with `shred --remove`; their absence
+  was checked again. No plaintext client values were found in committed source.
+  Local deployment/check evidence is in `/tmp/google-client-evidence/` on Zao;
+  that evidence directory is not required for future sign-in.
