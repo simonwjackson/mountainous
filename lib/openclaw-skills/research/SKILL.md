@@ -67,7 +67,7 @@ For Lookup, state the constraints, size and angle before searching inline. Use t
 }
 ```
 
-Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. After the spawn receipts, call `sessions_yield` through `dispatch_action` with `id: "sessions_yield"`. Set `args.acknowledgment` to one short paragraph with stated constraints against inferred constraints, the size, and each researcher with its angle. The user sees `acknowledgment`. The `message` parameter is private context for the resumed turn. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If spawning fails, name the failed angle and the tool error. Never silently replace Single or Swarm with inline work.
+Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. After the spawn receipts, call `sessions_yield` through `dispatch_action` with `id: "sessions_yield"`. Set `args.acknowledgment` to one short paragraph with stated constraints against inferred constraints, the size, and each researcher with its angle. The user sees `acknowledgment`. The `message` parameter is private context for the resumed turn. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If `sessions_spawn` returns an error, tell the user the exact error text and name the failed angle. Then research inline, one angle at a time, under the same evidence rules. Never silently replace Single or Swarm with inline work.
 
 Each task must contain:
 

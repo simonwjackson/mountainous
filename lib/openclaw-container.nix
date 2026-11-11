@@ -195,7 +195,7 @@ in
             definitions =
               let
                 person = agent: {
-                  sessions.others = "view";
+                  sessions.others = "write";
                   agents = [ agent ];
                   scopes = [
                     "operator.read"
@@ -278,6 +278,7 @@ in
           mode = "replace";
           providers.front-door = {
             baseUrl = "https://ai.hummingbird-lake.ts.net/v1";
+            timeoutSeconds = 600;
             apiKey = "\${FRONT_DOOR_API_KEY}";
             api = "openai-completions";
             models =
@@ -301,6 +302,7 @@ in
         # Use the Images dialect, not Gemini's native API, at the same front door.
         models.providers.openai = {
           baseUrl = "https://ai.hummingbird-lake.ts.net/v1";
+          timeoutSeconds = 600;
           apiKey = "\${FRONT_DOOR_API_KEY}";
           api = "openai-completions";
           models =

@@ -210,6 +210,24 @@
           assert gateway.config.gateway.roles.definitions.pending.scopes == [ ];
           assert gateway.config.gateway.roles.definitions.simon.agents == [ "main" ];
           assert gateway.config.gateway.roles.definitions.laure.agents == [ "laure" ];
+          assert lib.all (name: gateway.config.gateway.roles.definitions.${name}.sessions.others == "write") [
+            "simon"
+            "laure"
+          ];
+          assert lib.all
+            (
+              name:
+              gateway.config.gateway.roles.definitions.${name}.scopes == [
+                "operator.read"
+                "operator.write"
+                "operator.approvals"
+                "operator.questions"
+              ]
+            )
+            [
+              "simon"
+              "laure"
+            ];
           assert lib.all (r: !(lib.elem "operator.admin" r.scopes)) (
             lib.attrValues gateway.config.gateway.roles.definitions
           );
@@ -221,6 +239,10 @@
           assert
             gateway.config.models.providers.front-door.baseUrl == "https://ai.hummingbird-lake.ts.net/v1";
           assert gateway.config.agents.defaults.model.primary == "front-door/claude-opus-5-5";
+          assert lib.all (name: (gateway.config.models.providers.${name}.timeoutSeconds or null) == 600) [
+            "front-door"
+            "openai"
+          ];
           # Two agents; both keep a heartbeat (any per-agent block disables the rest).
           assert
             lib.attrNames gateway.config.agents.entries == [
@@ -348,6 +370,12 @@
             dir: lib.pathExists "${dir}/research/SKILL.md"
           ) gateway.config.skills.load.extraDirs;
           assert (gateway.config.agents.defaults.subagents.maxChildrenPerAgent or null) == 8;
+          assert lib.hasInfix "tell the user the exact error text" (
+            builtins.readFile ../lib/openclaw-skills/research/SKILL.md
+          );
+          assert lib.hasInfix "research inline, one angle at a time" (
+            builtins.readFile ../lib/openclaw-skills/research/SKILL.md
+          );
           assert !gateway.config.tools.codeMode.enabled && gateway.config.tools.fs.workspaceOnly;
           assert host.systemd.services."container@openclaw".serviceConfig.MemoryMax == "8G";
           # Stop limits. The gateway's limit funds one full ordinary stop. The

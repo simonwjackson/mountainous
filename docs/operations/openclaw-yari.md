@@ -5,7 +5,7 @@
 Simon and Laure share this one gateway. Each person has an own agent: `main`
 (Simon, persona flakey) and `laure` (persona from her own BOOTSTRAP.md
 interview). Each person signs in as themselves through Tailscale and has a
-non-admin role limited to the own agent, with `sessions.others: "view"`.
+non-admin role limited to the own agent, with `sessions.others: "write"`.
 Publishing a conversation shares it with the other person. Admin work happens
 only on the command line on Yari. OpenClaw 2026.11.3 has no setting that makes
 new conversations start as Draft: the New session page always starts as
@@ -15,12 +15,15 @@ run outside OpenClaw with `trusted-proxy` auth, not OpenClaw-managed Serve,
 because managed Serve needs OpenClaw to have write access to the container's
 tailscaled.
 
+On 2026-11-11 Simon chose `sessions.others: "write"` for both roles so agent-created sub-agents can start. He accepted cross-person renames and deletion of already archived ordinary sessions. Neither person can run or send messages through the other person's agent, archive or restore the other person's sessions, re-share them, or fork them. Foreign Drafts remain unreadable. The cap also grants membership in foreign Read-only and Suggest sessions. Scopes and allowed agent lists remain unchanged.
+
 Session tools use `tools.sessions.visibility = "agent"` and `tools.agentToAgent.enabled = false`: each agent can access only its own sessions, including same-agent sub-agents.
 
 Both agents share the research skill in `lib/openclaw-skills/research/SKILL.md`, with at most 8 children per parent and a 900-second timeout per researcher or auditor spawn.
 
 The gateway has `TasksMax=2048`; the former 256-task limit exhausted under session MCP workers and caused `EAGAIN` on 2026-11-11.
 Session MCP runtimes use `mcp.sessionIdleTtlMs=600000` to release idle stdio servers and their supervisors after 10 minutes, on the next minute sweep.
+Both model provider entries use `timeoutSeconds=600` for the shared model request and idle watchdog; lower explicit run budgets still apply.
 
 ## Placement and boundaries
 
