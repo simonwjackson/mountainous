@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# Root on Yari. NEVER invoke until Simon explicitly releases the no-touch rule.
+set -Eeuo pipefail
+if [[ $# != 1 || $1 != --laure-has-stopped || $EUID != 0 ]]; then
+  echo 'After explicit go only: openclaw-activate-in-place --laure-has-stopped' >&2
+  exit 2
+fi
+candidate=$(cat /var/tmp/openclaw-in-place-system)
+baseline=$(readlink -e /nix/var/nix/gcroots/openclaw-before-in-place-handoff)
+[[ $candidate == /nix/store/*-nixos-system-yari-* ]]
+[[ $(readlink -e /run/current-system) == "$baseline" ]] || {
+  echo 'Yari changed since pre-build; rebase/rebuild before proceeding' >&2; exit 1;
+}
+exec 9>/run/lock/openclaw-in-place-handoff.lock
+flock -n 9
+if pgrep -af '[/]switch-to-configuration( |$)'; then exit 1; fi
+new_system=$(sed -n 's/^SYSTEM_PATH=//p' "$candidate/etc/nixos-containers/openclaw.conf")
+[[ $new_system != /nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git ]]
+jq -e '.gateway.auth.trustedProxy.allowUsers == ["chancerellelaure@gmail.com"] and (.agents.entries|keys) == ["laure"] and .gateway.roles.default == "laure"' "$new_system/etc/openclaw/openclaw.json" >/dev/null
+openclaw-wait-idle openclaw claw-simon
+backup=/permafrost/openclaw-migration-backups/handoff-$(date -u +%Y%m%dT%H%M%SZ)
+install -d -m 0700 "$backup"
+printf '%s\n' "$backup" > /permafrost/openclaw-migration-backups/latest-handoff
+stopped=false
+rollback() {
+  local result=$?
+  trap - ERR
+  set +e
+  if [[ $stopped == true ]]; then
+    echo 'HANDOFF CHECK FAILED: restoring directories and pinned legacy system' >&2
+    openclaw-wait-idle --timeout 120 openclaw
+    nixos-container run openclaw -- systemctl stop openclaw-gateway
+    if [[ -d $backup/retired-simon/workspace ]]; then
+      if [[ -e /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace ]]; then
+        mv /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace "$backup/rollback-new-workspace"
+      fi
+      mv "$backup/retired-simon/workspace" /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace
+    fi
+    if [[ -d $backup/retired-simon/agents-main ]]; then
+      if [[ -e /var/lib/nixos-containers/openclaw/var/lib/openclaw/agents/main ]]; then
+        mv /var/lib/nixos-containers/openclaw/var/lib/openclaw/agents/main "$backup/rollback-new-agents-main"
+      fi
+      mv "$backup/retired-simon/agents-main" /var/lib/nixos-containers/openclaw/var/lib/openclaw/agents/main
+    fi
+    nix-env --profile /nix/var/nix/profiles/system --set "$baseline"
+    "$baseline/bin/switch-to-configuration" switch
+    nixos-container run openclaw -- systemctl start openclaw-gateway
+    echo 'Rollback attempted. Check both gateways; revert source legacy flag before another deployment.' >&2
+  fi
+  exit "$result"
+}
+trap rollback ERR
+umask 077
+nixos-container run openclaw -- install -d -m 0700 -o openclaw -g openclaw /var/tmp/openclaw-handoff-backup
+nixos-container run openclaw -- openclaw-admin backup create --output /var/tmp/openclaw-handoff-backup --verify --json > "$backup/backup-result.json"
+jq -e '.verified == true' "$backup/backup-result.json" >/dev/null
+archive=$(jq -er .archivePath "$backup/backup-result.json")
+[[ $archive == /var/tmp/openclaw-handoff-backup/*.tar.gz ]]
+mv "/var/lib/nixos-containers/openclaw$archive" "$backup/"
+chown root:root "$backup/"*.tar.gz
+chmod 600 "$backup/"*.tar.gz
+profiles() {
+  nixos-container run openclaw -- openclaw-admin gateway call users.list --json |
+    jq -S '[.profiles[]|{id,role}]|sort_by(.id)'
+}
+devices() {
+  nixos-container run openclaw -- openclaw-admin devices list --json |
+    jq -S '[.paired[]|{deviceId,roles,scopes}]|sort_by(.deviceId)'
+}
+count_sessions() {
+  nixos-container run openclaw -- openclaw-admin gateway call sessions.list --json --params "$1" |
+    jq -er '.totalCount'
+}
+params='{"agentId":"laure","archived":"all","includeDerivedTitles":false,"includeLastMessage":false}'
+main_params='{"agentId":"main","configuredAgentsOnly":false,"archived":"all","includeDerivedTitles":false,"includeLastMessage":false}'
+profiles > "$backup/profiles-before.json"
+devices > "$backup/devices-before.json"
+profile=$(readlink -e /nix/var/nix/profiles/apps/openclaw)
+sha256sum /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace-laure/avatars/avatar.png | cut -d' ' -f1 > "$backup/avatar-sha256"
+nixos-container run openclaw -- tailscale status --json | jq -S '{id:.Self.ID,dns:.Self.DNSName,ips:.Self.TailscaleIPs,tags:.Self.Tags}' > "$backup/tailnet-before.json"
+openclaw-wait-idle openclaw claw-simon
+count_sessions "$params" > "$backup/laure-count"
+if pgrep -af '[/]switch-to-configuration( |$)'; then exit 1; fi
+[[ $(readlink -e /run/current-system) == "$baseline" ]]
+start=$(date +%s)
+stopped=true
+nixos-container run openclaw -- systemctl stop openclaw-gateway
+install -d -m 0700 "$backup/retired-simon"
+mv /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace "$backup/retired-simon/workspace"
+mv /var/lib/nixos-containers/openclaw/var/lib/openclaw/agents/main "$backup/retired-simon/agents-main"
+nix-env --profile /nix/var/nix/profiles/system --set "$candidate"
+"$candidate/bin/switch-to-configuration" switch
+deadline=$((SECONDS + 90))
+until nixos-container run openclaw -- curl -fsS --max-time 3 http://127.0.0.1:18789/healthz >/dev/null &&
+  [[ $(count_sessions "$params") == "$(cat "$backup/laure-count")" ]]; do
+  if (( SECONDS >= deadline )); then false; fi
+  sleep 2
+done
+[[ $(count_sessions "$main_params") == 0 ]]
+profiles > "$backup/profiles-after.json"
+devices > "$backup/devices-after.json"
+cmp "$backup/profiles-before.json" "$backup/profiles-after.json"
+cmp "$backup/devices-before.json" "$backup/devices-after.json"
+[[ $(readlink -e /nix/var/nix/profiles/apps/openclaw) == "$profile" ]]
+nixos-container run openclaw -- openclaw-admin cron list --all --json > "$backup/cron-after.json"
+jq -e '([.jobs[]|select(.id=="be615b2c-0e91-49fd-b561-ea16cea9ce74" and .effectiveAgentId=="laure")]|length)==1 and ([.jobs[]|select(.id=="b930183b-f866-400a-9e30-0a5d0516911b" and .effectiveAgentId=="laure")]|length)==1 and ([.jobs[]|select(.name=="morning-brief")]|length)==0' "$backup/cron-after.json" >/dev/null
+nixos-container run openclaw -- openclaw-admin agents list --json | jq -e 'length == 1 and .[0].id == "laure" and .[0].identityName == "Snowy"' >/dev/null
+[[ $(sha256sum /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace-laure/avatars/avatar.png | cut -d' ' -f1) == "$(cat "$backup/avatar-sha256")" ]]
+nixos-container run openclaw -- tailscale status --json | jq -S '{id:.Self.ID,dns:.Self.DNSName,ips:.Self.TailscaleIPs,tags:.Self.Tags}' > "$backup/tailnet-after.json"
+cmp "$backup/tailnet-before.json" "$backup/tailnet-after.json"
+nixos-container run openclaw -- openclaw-admin models list --json | jq -e '([.models[]|select(.key=="front-door/claude-opus-5-5" and .contextWindow==1000000)]|length)==1 and ([.models[]|select(.key=="front-door/gpt-6.1-sol" and .contextWindow==500000 and .contextTokens==272000)]|length)==1 and ([.models[]|select(.key=="front-door/gemini-3.8-flash-high" and .contextWindow==1048576)]|length)==1' >/dev/null
+for endpoint in claw-calendar claw-family-calendar claw-maps claw-scryer-simon claw-scryer-laure claw-websearch; do
+  expected=1
+  if [[ $endpoint == claw-scryer-* ]]; then expected=5; fi
+  nixos-container run openclaw -- runuser -u openclaw -- curl -fsS --max-time 25 -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' "https://$endpoint.hummingbird-lake.ts.net/mcp" | jq -e --argjson count "$expected" '.result.tools|length==$count' >/dev/null
+  echo "VERIFIED tools/list $endpoint"
+done
+systemctl is-active container@openclaw container@claw-simon
+printf 'VERIFIED in-place activation and unchanged Laure count/profile/pairings in %s seconds; backup %s\n' "$(( $(date +%s)-start ))" "$backup"
+trap - ERR
+# Real source pairing follows only after the continuity checks. No Laure fixture.
+bash /var/tmp/openclaw-pair-source claw-simon openclaw claw
+bash /var/tmp/openclaw-pair-source openclaw claw-simon claw-simon

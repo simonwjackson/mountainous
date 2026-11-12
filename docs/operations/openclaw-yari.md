@@ -132,7 +132,7 @@ own user/state and durable paired token, not an ambient local gateway password.
 
 An online full backup of the live legacy gateway passed `--verify` after an idle
 check, without restarting it: **82409441 bytes**, root:root 0600 at
-`/var/lib/openclaw-migration-backups/2026-11-12T03-37-18.170+00-00-openclaw-backup.tar.gz`.
+`/permafrost/openclaw-migration-backups/2026-11-12T03-37-18.170+00-00-openclaw-backup.tar.gz`.
 SQLite online backups are safe while running; an archive has per-database
 consistency, not a single cross-database transaction. Fresh backup at handoff is
 still required. Full restore preserves identities/tokens verbatim; a copied
@@ -167,7 +167,29 @@ pinned/live, claw-simon live, claw-laure shielded/empty. Do not move Laure's sta
 change her address, add a brief, or re-pair her devices. A GC root pins the exact
 pre-handoff host system at `/nix/var/nix/gcroots/openclaw-before-in-place-handoff`;
 the same path is recorded root-only in
-`/var/lib/openclaw-migration-backups/pre-handoff-system`.
+`/permafrost/openclaw-migration-backups/pre-handoff-system`.
+
+### Single-command activation after explicit go
+
+After landing the source boolean below and confirming the pre-built candidate,
+copy `scripts/openclaw-activate-in-place` and `scripts/openclaw-pair-source` to
+`/var/tmp/` on Yari. The one root command is:
+
+```sh
+bash /var/tmp/openclaw-activate-in-place --laure-has-stopped
+```
+
+It refuses a changed baseline, checks idle, takes a fresh verified online backup,
+stops the gateway, archives Simon's directories, activates, checks counts,
+profiles, pairing contracts, avatar, tailnet identity, jobs, model windows and all
+six endpoints, and automatically restores the archived directories and exact
+GC-pinned host system if a continuity check fails. Only after these checks does
+it pair the two real read-only sources. Source Git flag changes remain the
+operator's explicit action, not a timer. The detailed commands below document
+its stages and the recovery path. Do not run either activation path twice.
+Backups and retired files are under `/permafrost/openclaw-migration-backups`,
+not ephemeral root storage; `/var/lib/openclaw-migration-backups` is a convenience
+symlink for this boot.
 
 ### 1. Source and pre-built candidate
 
@@ -203,9 +225,9 @@ On Yari, as root (all of this is after go):
 ```sh
 openclaw-wait-idle openclaw
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
-backup=/var/lib/openclaw-migration-backups/handoff-$stamp
+backup=/permafrost/openclaw-migration-backups/handoff-$stamp
 install -d -m 0700 "$backup"
-printf '%s\n' "$backup" > /var/lib/openclaw-migration-backups/latest-handoff
+printf '%s\n' "$backup" > /permafrost/openclaw-migration-backups/latest-handoff
 nixos-container run openclaw -- install -d -m 0700 -o openclaw -g openclaw /var/tmp/openclaw-handoff-backup
 nixos-container run openclaw -- openclaw-admin backup create --output /var/tmp/openclaw-handoff-backup --verify --json > "$backup/backup-result.json"
 jq -e '.verified == true' "$backup/backup-result.json"
@@ -229,7 +251,7 @@ On Yari as root, using the pre-built candidate:
 
 ```sh
 candidate=$(cat /var/tmp/openclaw-in-place-system)
-backup=$(cat /var/lib/openclaw-migration-backups/latest-handoff)
+backup=$(cat /permafrost/openclaw-migration-backups/latest-handoff)
 if pgrep -af '[/]switch-to-configuration( |$)'; then exit 1; fi
 openclaw-wait-idle openclaw claw-simon
 nixos-container run openclaw -- systemctl stop openclaw-gateway
@@ -314,7 +336,7 @@ newer Laure messages. Do not roll back the independent app profile unnecessarily
 ```sh
 openclaw-wait-idle openclaw
 nixos-container run openclaw -- systemctl stop openclaw-gateway
-backup=$(cat /var/lib/openclaw-migration-backups/latest-handoff)
+backup=$(cat /permafrost/openclaw-migration-backups/latest-handoff)
 # If new empty main directories exist, move them aside first; never overwrite.
 test ! -e /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace
 mv "$backup/retired-simon/workspace" /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace
