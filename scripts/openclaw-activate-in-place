@@ -59,6 +59,28 @@ archive=$(jq -er .archivePath "$backup/backup-result.json")
 mv "/var/lib/nixos-containers/openclaw$archive" "$backup/"
 chown root:root "$backup/"*.tar.gz
 chmod 600 "$backup/"*.tar.gz
+# A role/login change does NOT revoke an already-paired native operator token
+# or remove a phone's node capabilities. These tailnet addresses were verified
+# as Simon's usu, Zao and Myoko before this split. Revoke through supported API.
+retired_ips='["100.110.243.2","100.114.19.92","100.117.218.54"]'
+nixos-container run openclaw -- openclaw-admin devices list --json > "$backup/devices-unfiltered-before.json"
+jq -r --argjson ips "$retired_ips" '.paired[] | select(.remoteIp as $ip | $ips | index($ip)) | .deviceId' "$backup/devices-unfiltered-before.json" > "$backup/retired-device-ids"
+while IFS= read -r device; do
+  [[ -n $device ]] || continue
+  nixos-container run openclaw -- openclaw-admin devices remove "$device" --json >/dev/null
+done < "$backup/retired-device-ids"
+jq -r --argjson ips "$retired_ips" '.pending[] | select(.remoteIp as $ip | $ips | index($ip)) | .requestId' "$backup/devices-unfiltered-before.json" > "$backup/retired-pending-ids"
+while IFS= read -r request; do
+  [[ -n $request ]] || continue
+  nixos-container run openclaw -- openclaw-admin devices reject "$request" --json >/dev/null
+done < "$backup/retired-pending-ids"
+nixos-container run openclaw -- openclaw-admin devices list --json | jq -e --argjson ips "$retired_ips" '[(.paired[],.pending[]) | select(.remoteIp as $ip | $ips | index($ip))] | length == 0' >/dev/null
+nixos-container run openclaw -- openclaw-admin nodes list --json | jq -e --argjson ips "$retired_ips" '[.paired[] | select(.displayName == "usu" or (.remoteIp as $ip | $ips | index($ip)))] | length == 0' >/dev/null
+# Fail closed on an unclassified pairing instead of assuming it is Laure's.
+# These are Laure's iPad/phone, the local CLI, and the narrow Simon source.
+approved_devices='["da467e0e5bc61e9d5a5019418ceb787b76c1a06011f7fa4ddf2dda28ce54dc1a","359b918afd97174d8f361ef035372af47ec672c2dd0864d214183ea2c48b1e2e","2ee6e6c18d85bc7e874181ec93e341301d5c135b7899b8e830fb085536af4680","c6a5517c1c0a27c279a29bb87e1f410f2e8e7fca90a9681c5bc5b2e8ccb1d0f7"]'
+nixos-container run openclaw -- openclaw-admin devices list --json | jq -e --argjson approved "$approved_devices" '(.pending | length) == 0 and ([.paired[] | select(.deviceId as $id | $approved | index($id) | not)] | length) == 0' >/dev/null
+# Compare only the retained devices below, not all former household devices.
 profiles() {
   nixos-container run openclaw -- openclaw-admin gateway call users.list --json |
     jq -S '[.profiles[]|{id,role}]|sort_by(.id)'

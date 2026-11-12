@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Explicit operator rollback only. It never restores old credential databases.
+set -euo pipefail
+if [[ $# != 1 || $1 != --restore-pinned-legacy || $EUID != 0 ]]; then
+  echo 'Usage as root on Yari: openclaw-rollback-in-place --restore-pinned-legacy' >&2
+  exit 2
+fi
+exec 9>/run/lock/openclaw-in-place-handoff.lock
+flock -n 9
+if pgrep -af '[/]switch-to-configuration( |$)'; then exit 1; fi
+baseline=$(readlink -e /nix/var/nix/gcroots/openclaw-before-in-place-handoff)
+backup=$(cat /permafrost/openclaw-migration-backups/latest-handoff)
+[[ -x $baseline/bin/switch-to-configuration ]]
+[[ -d $backup/retired-simon/workspace && -d $backup/retired-simon/agents-main ]]
+openclaw-wait-idle openclaw claw-simon
+nixos-container run openclaw -- systemctl stop openclaw-gateway
+if [[ -e /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace ]]; then
+  mv /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace "$backup/rollback-new-workspace-$(date -u +%Y%m%dT%H%M%SZ)"
+fi
+if [[ -e /var/lib/nixos-containers/openclaw/var/lib/openclaw/agents/main ]]; then
+  mv /var/lib/nixos-containers/openclaw/var/lib/openclaw/agents/main "$backup/rollback-new-agents-main-$(date -u +%Y%m%dT%H%M%SZ)"
+fi
+mv "$backup/retired-simon/workspace" /var/lib/nixos-containers/openclaw/var/lib/openclaw/workspace
+mv "$backup/retired-simon/agents-main" /var/lib/nixos-containers/openclaw/var/lib/openclaw/agents/main
+nix-env --profile /nix/var/nix/profiles/system --set "$baseline"
+"$baseline/bin/switch-to-configuration" switch
+nixos-container run openclaw -- systemctl start openclaw-gateway
+printf 'Pinned legacy system restored. Verify Laure count against %s/laure-count and health; revert source legacy flag to true before any normal deployment. Device revocations remain in force.\n' "$backup"
