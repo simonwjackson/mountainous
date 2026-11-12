@@ -516,12 +516,14 @@ plus 90 s. The 90 s is systemd's default for one more unit that stops after
 the gateway, such as tailscaled.
 
 A healthy gateway stops in less than 1 second, and the container stops in 2 to
-4 seconds. A slow stop has one known cause. In OpenClaw 2026.11.3 the
-`plugin-services` close step did not return in the two stops that followed a
-research run with sub-agents. The gateway then waits until its deadline, writes
-a stability bundle under `/var/lib/openclaw/logs/stability/`, and its watchdog
-kills it 2 s later. At a 35 s limit that stop takes about 32 s. Which plugin
-service does not return is not known.
+4 seconds. On 2026-11-11 the `plugin-services` close step of OpenClaw 2026.11.3
+did not return in two stops that followed a research run with sub-agents. Both
+stops ran under the old `KillMode=control-group`, and both gateways had started
+the managed browser. The gateway then waits until its deadline, writes a
+stability bundle under `/var/lib/openclaw/logs/stability/`, and its watchdog
+kills it 2 s later. At a 35 s limit that stop takes about 32 s. Under
+`KillMode=mixed` the same conditions stop cleanly: see "Stop after a research
+run" below. Which plugin service hung under `control-group` is not proven.
 
 To read how the last stops went, run these on Yari:
 
@@ -578,7 +580,8 @@ TimeoutStopUSec=35000ms`. On generation 35, `systemctl show` prints
 
 **No stop has hung since the change.** The 32 s bound for a hung close step
 comes from OpenClaw's code and the systemd limit. No live stop has exercised it.
-It is also not known if `KillMode=mixed` removes the hang. Since `2b895b74`,
+"Stop after a research run" below tests whether `KillMode=mixed` removes the
+hang. Since `2b895b74`,
 idle session MCP runtimes close after 10 minutes, so the gateway that stopped at
 22:13:13, 28 minutes after its last sub-agent run, had no remote MCP session
 open.
@@ -606,6 +609,78 @@ To remove the stop limits, revert `fc09676d` and deploy. Do not use
 lacks three later commits, and generation 30 predates all four.
 
 Local evidence on Zao: `/tmp/yari-claw-stop/`.
+
+### Stop after a research run (2026-11-12 UTC)
+
+The hang did not come back under `KillMode=mixed`. Two stops right after a
+research run with sub-agents completed cleanly while the managed browser still
+ran. One was the weekly updater's gateway restart. The other was a container
+restart, which is the stop that a system switch does.
+
+Each test sent one research request to a new test conversation on `main`
+(`agent:main:explicit:claw-stop-hang-repro-*`, never `agent:main:main`) with
+`openclaw-admin agent`. The request told every researcher to open one source
+with the browser tool, because both hung gateways had started the browser. Each
+run had three researchers and one auditor and ended with a final answer.
+
+| Stop (UTC) | Command | After the run ended | Chromium processes | Gateway | Container stop |
+| --- | --- | --- | --- | --- | --- |
+| 00:44:42 | `openclaw-profile-control restart-and-check` | 49 s | 13 | `completed cleanly in 833ms` | Not stopped. The controller took 28.4 s |
+| 01:06:39 | `systemctl restart container@openclaw` | 8 s | 14 | `completed cleanly in 531ms` | 3.21 s |
+
+The plugin services stop one after the other, in reverse start order, and
+without a deadline: `openai/decisions:openai`,
+`memory-core/memory-core-standing-intents`, `memory-core/memory-core-dreaming`,
+`memory-core/memory-core-index`, `browser/browser-control`. In both tests the
+first four returned in 0 to 9 ms. `browser-control` returned in 225 ms and
+159 ms. In the second test the trace shows it closed the `openclaw` browser
+profile in 155 ms. One second after SIGTERM the gateway cgroup had no Chromium
+process in either test.
+
+`OPENCLAW_GATEWAY_RESTART_TRACE=1` times only whole close steps, so it cannot
+name a plugin service. For these tests a temporary preload logged each plugin
+service stop. A runtime drop-in under the container's
+`/run/systemd/system/openclaw-gateway.service.d/` set
+`OPENCLAW_GATEWAY_RESTART_TRACE=1` and
+`NODE_OPTIONS=--import=/run/openclaw-diag/stop-trace.mjs`. The preload uses
+`registerHooks` from `node:module` to add log calls to the 2026.11.3 chunk files
+and writes `/var/lib/openclaw/logs/stop-trace.log`. The container restart
+cleared the drop-in and the preload, and the log was moved to Zao. To use the
+preload again, take it from `/tmp/claw-hang/stop-trace.mjs` on Zao. Its patches
+name hashed chunk files, so a new OpenClaw release needs new patches.
+
+The history in `gateway.log` and the host journal, 10 Nov 20:56 to 12 Nov
+01:07, adds these facts:
+
+- Four container stops under `control-group` came from gateways that had
+  started the browser. The stops at 05:47:38 and 06:11:40 on 11 Nov were clean.
+  The stops at 18:23:14 and 19:07:53 hung. A running browser alone did not
+  cause the hang. Why the two earlier stops were clean is not known.
+- In both hung stops the stdio MCP servers logged `closed; next request
+  reconnects` within 90 ms of SIGTERM. The remote `claw-*` servers logged it
+  1.6 to 2.7 s after SIGTERM. Inferred: `control-group` killed the gateway's children at once,
+  and the remote connections dropped when the container's network units
+  stopped. These lines are an effect of the stop, not its cause. Stops under
+  `mixed` log none of them, because the gateway closes its own children.
+- Inferred, not proven: `browser-control` was the service that did not return.
+  Of the five plugin services, only `browser-control` owned processes in the
+  gateway cgroup in these tests (Chromium), and it stops last. Under
+  `control-group`, systemd sent SIGTERM to Chromium before `browser-control`
+  tried to close it.
+
+No test ran `control-group` again to prove this. That test would hang the live
+gateway for about 32 s, and OpenClaw's `docs/gateway/restart-recovery.md`
+requires `mixed`. For the same reason no issue went to openclaw/openclaw. Not
+tested: a research run that starts the browser without being told to, and a
+stop after 10 or more idle minutes.
+
+Before you attach a `gateway.stop_shutdown_timeout` stability bundle to a
+public report, remove the session keys. `snapshot.events[].source` holds values
+such as `session:agent:main:main` and `session:agent:main:explicit:<name>`. The
+19:09 bundle on 2026-11-11 had 24 of them. Its host name is already
+`<redacted-hostname>`, and it has no message text, e-mail address or URL.
+
+Local evidence on Zao: `/tmp/claw-hang/`.
 
 ## Verify
 
