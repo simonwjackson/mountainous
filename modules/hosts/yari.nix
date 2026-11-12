@@ -33,7 +33,7 @@
       nix.daemonIOSchedClass = "idle";
 
       # Set false only after Simon lifts the no-touch constraint at handoff.
-      mountainous.features.openclaw.legacy.enable = true;
+      mountainous.features.openclaw.legacy.enable = false;
       system.stateVersion = "24.11";
     };
   };
