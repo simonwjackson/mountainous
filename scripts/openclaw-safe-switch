@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Run as root ON Yari. Never switch a candidate that changes Laure's live node.
+set -euo pipefail
+if [[ $# != 1 || $1 != /nix/store/*-nixos-system-yari-* ]]; then
+  echo "Usage: openclaw-safe-switch /nix/store/...-nixos-system-yari-..." >&2
+  exit 2
+fi
+candidate=$1
+exec 9>/run/lock/openclaw-safe-switch.lock
+flock -n 9 || { echo 'Another guarded switch is running' >&2; exit 1; }
+if pgrep -af '[/]switch-to-configuration( |$)'; then
+  echo 'Another system activation is running; refusing' >&2
+  exit 1
+fi
+running=$(readlink -e /run/current-system)
+unit=etc/systemd/system/container@openclaw.service
+conf=etc/nixos-containers/openclaw.conf
+cmp "$running/$unit" "$candidate/$unit"
+cmp "$running/$conf" "$candidate/$conf"
+test "$(readlink -e "$running/$conf")" = "$(readlink -e "$candidate/$conf")"
+old_system=$(sed -n 's/^SYSTEM_PATH=//p' "$running/$conf")
+new_system=$(sed -n 's/^SYSTEM_PATH=//p' "$candidate/$conf")
+test "$old_system" = "$new_system"
+test "$(nixos-container run openclaw -- readlink -e /run/current-system)" = "$old_system"
+old_config=$(readlink -e "$old_system/etc/openclaw/openclaw.json")
+new_config=$(readlink -e "$new_system/etc/openclaw/openclaw.json")
+test "$old_config" = "$new_config"
+nixos-container run openclaw -- cat /etc/openclaw/openclaw.json | cmp "$new_config" -
+# Exact root equality implies exact closure equality; print both to make the gate auditable.
+printf 'VERIFIED legacy unit SHA256: '; sha256sum "$running/$unit"
+printf 'VERIFIED legacy container conf: %s\n' "$(readlink -e "$running/$conf")"
+printf 'VERIFIED legacy system closure (both): %s\nVERIFIED legacy gateway config (both): %s\n' "$old_system" "$old_config"
+legacy_incarnation=$(systemctl show container@openclaw -p MainPID -p InvocationID -p ActiveEnterTimestampMonotonic)
+gateway_incarnation=$(nixos-container run openclaw -- systemctl show openclaw-gateway -p MainPID -p InvocationID -p ActiveEnterTimestampMonotonic)
+app_profile=$(readlink -e /nix/var/nix/profiles/apps/openclaw)
+# Recheck after the probes. Do not reset a newer independent deployment.
+test "$(readlink -e /run/current-system)" = "$running"
+if pgrep -af '[/]switch-to-configuration( |$)'; then exit 1; fi
+nix-env --profile /nix/var/nix/profiles/system --set "$candidate"
+"$candidate/bin/switch-to-configuration" switch
+test "$(systemctl show container@openclaw -p MainPID -p InvocationID -p ActiveEnterTimestampMonotonic)" = "$legacy_incarnation"
+test "$(nixos-container run openclaw -- systemctl show openclaw-gateway -p MainPID -p InvocationID -p ActiveEnterTimestampMonotonic)" = "$gateway_incarnation"
+test "$(readlink -e /nix/var/nix/profiles/apps/openclaw)" = "$app_profile"
+systemctl is-active container@openclaw
+nixos-container run openclaw -- curl -fsS --max-time 5 http://127.0.0.1:18789/healthz
+printf '\nVERIFIED legacy container, gateway, and app profile unchanged after switch\n'

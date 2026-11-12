@@ -176,8 +176,14 @@
                 TimeoutStopSec = 180;
               };
               unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/openclaw" ];
+              unitConfig."X-Restart-Triggers" =
+                lib.mkForce "/nix/store/n63mxcv1saygx0b0ypkd01cl6h02nknh-X-Restart-Triggers-container-openclaw";
             };
           };
+        # Preserve the actual historical artifacts, not merely their text:
+        # changing a derivation's string context also changes restart triggers.
+        environment.etc."nixos-containers/openclaw.conf".source =
+          lib.mkForce "/nix/store/30qbz85w5qhckyl8dmj9m294ifyv7f07-etc-nixos-containers-openclaw.conf";
         networking.nat = {
           enable = true;
           internalInterfaces = [ "ve-openclaw" ] ++ map (name: "ve-${name}") newNames;
