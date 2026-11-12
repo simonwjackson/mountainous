@@ -1875,8 +1875,9 @@ copy the closure through Zao as root, then switch without reboot. Yari builds
 itself. Compare Laure's container config and system path before switching.
 
 Verify as the OpenClaw user inside `claw-simon`: initialize, exactly two tools
-with read-only hints, resource listing, and reads of both real views (first
-line `<!-- ebay-view source-sha256:`; MIME `text/html;profile=mcp-app`, image
+with read-only hints, resource listing, and reads of both real views (DOCTYPE
+first, `<!-- ebay-view source-sha256:` within the first 300 bytes; match its hash
+to the pinned committed pages; MIME `text/html;profile=mcp-app`, image
 CSP `https://i.ebayimg.com`). One `ebay_listings {limit:3}` call must succeed;
 print only its count. Refuse an unknown tool without reaching eBay. Keep live
 HTTP attempts within the approved budget; reads/listing of MCP metadata use
@@ -1892,3 +1893,81 @@ remove the feature and input if unused. Retain the two shared secrets and
 saved tsnet identity. For emergency rollback, inspect the previous generation
 for concurrent changes before `nixos-rebuild switch --rollback`; do not reboot
 Rakku or roll back to a Yari configuration that changes Laure's container.
+
+
+### eBay deployment evidence (2026-11-12 UTC)
+
+Implementation `a8f8a9f6` landed on `cairn`. Both hosts run it. No secret value,
+eBay source file, package profile or Laure conversation was changed or read.
+
+| Host | Generation | Running system | Built on |
+| --- | --- | --- | --- |
+| Rakku | **143** | `/nix/store/pnlhssn0lh7kwi5ba03s66yy6xhs0h0y-nixos-system-rakku-26.11.20260923.4975466` | Unzen, closure copied via Zao to root@rakku |
+| Yari | **41** | `/nix/store/8bfh03fv7zd7pvhm61dj78zbqal4y7df-nixos-system-yari-26.11.20260923.4975466` | Yari, remote builders disabled |
+
+Rebased on latest `origin/cairn` before builds; checked for concurrent switches
+and unfinished Simon agent runs. Rechecked origin and the running systems before
+activation. No host rebooted. Only Simon's container stopped on Yari. Rakku's
+14 existing tsnet units restarted for the shared proxy binary and returned
+active; the new eBay server and proxy are active with zero automatic restarts.
+Home Assistant returned HTTP 200; Z-Wave JS completed a WebSocket handshake and
+version receipt. Their start times, ai-gateway's and all three Pi assistants'
+start times stayed unchanged.
+
+Passed: focused x86 `claw-ebay`, `claw-tools`, `tailnet-names`, `openclaw` and
+`openclaw-people` drift checks; both toplevel drvPath evaluations; native ARM
+`openclaw-config` (real CLI validation); Nix formatting, Go formatting/vet,
+whitespace and existing-lock-node equality. The new boundary test first failed
+before implementation, then passed. The proxy package's 29 tests passed during
+Unzen's build. No aggregate flake check ran. Initial Yari evaluation needed the
+runbook's retained transitional closures copied from Yari; evaluation then passed.
+
+From the real OpenClaw user inside `claw-simon`, with verified TLS:
+
+| Probe | Result |
+| --- | --- |
+| initialize | HTTP 200, MCP 2025-11-25 success |
+| tools/list | HTTP 200, exactly 2, both read-only |
+| resources/list | HTTP 200, exactly 2 |
+| resources/read, both pages | HTTP 200, real views, MIME and image CSP passed |
+| unknown tool | HTTP 200, JSON-RPC -32601 |
+| ebay_listings, limit 3 | HTTP 200, success, count **3** |
+
+Both views have `<!DOCTYPE html>` on line 1 and the source stamp on line 2;
+the stamp is within the first 300 bytes and matches the pinned committed pages:
+`16111f89c67d3ba9eee0331a8f82584e999c38354ecdf951365743a2ae79fb96`.
+The first TLS handshake timed out during certificate issuance; the next passed.
+No eBay tool ran on those first metadata probes. The service's static client
+journal records exactly **2 eBay HTTP attempts**: one OAuth and one Trading,
+no retry, buyer-tag audit empty. No search or write call was made. All metadata
+probes and all six other claw endpoint tools/list checks passed again after
+Yari switched. The node is online at `100.85.21.66`, with only `tag:claw-tools`.
+
+`openclaw-admin mcp list` in `claw-simon` lists `claw-ebay-simon`.
+The admin CLI's `mcp probe` requires exclusive offline state and correctly refused
+the live state. A real CLI probe with empty throwaway client state and the exact
+deployed read-only config discovered exactly `claw-ebay-simon__ebay_listings`
+and `claw-ebay-simon__ebay_search`, resources enabled, approval auto, no diagnostics.
+The throwaway client state was removed; the serving gateway was not stopped for
+this check. The eBay skill is eligible and enabled. Simon's gateway is active,
+health `ok=true`, zero automatic restarts; started **21:30:07 UTC**.
+The browser card UI is not tested here; Simon/parent will test it.
+
+Before the Yari switch, byte comparisons passed for Laure's live and candidate
+container unit, container config, and private gateway config. Their store paths
+and container system closure were identical. After the switch, container and
+gateway process identities and the signed app profile still matched. Laure's
+container remained at **04:38:53 UTC**, MainPID **1462903**, InvocationID
+`16c35f6d73314cb798339be98ab5dfad`. Config SHA256 stayed
+`00c26526158088baba45a8499389bee708ace3be8194b84778ff3f0b573a3ac9`;
+container config SHA256 stayed
+`2924b0618f171b3d20cff34c21d502f07ead760f2236083a15baddc0b3edc1ff`.
+Her system stayed `/nix/store/z4mglka9jzbr1yssdkjnxwy0ipgylhw2-nixos-system-claw-26.11pre-git`.
+No Laure agent run was created.
+
+Rollback: after inspecting for concurrent changes, Rakku generation **142**
+removes the eBay service/endpoint, and Yari generation **40** removes Simon's
+wiring without changing Laure's config. Prefer reverting the feature and
+redeploying if later generations contain unrelated work. Keep both existing
+eBay secrets and the saved proxy identity. Evidence and copied Nix-shebang
+scripts are under `/tmp/claw-ebay-evidence/` on Zao.
