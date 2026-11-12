@@ -151,6 +151,18 @@ in
         # (see ibuki.nix). 56774 matches ibuki.
         services.korriProduct.runtimeAccount.uid = 56774;
 
+        # Hookshot's game runner, as the korri account, shares game memory
+        # with the GPU through /dev/udmabuf. Without read/write there the
+        # game runs at 16-20 fps instead of about 40. systemd gives the node
+        # to root:kvm 0660, and libcamera's uaccess tag reaches seat sessions
+        # only, which a service account never has. The kvm group would also
+        # open /dev/kvm, so grant this one account an ACL on this one node.
+        # udev resets the node's permissions on each event and then runs
+        # RUN, so the ACL returns after every add and every re-trigger.
+        services.udev.extraRules = ''
+          ACTION!="remove", SUBSYSTEM=="misc", KERNEL=="udmabuf", RUN+="${pkgs.acl}/bin/setfacl -m u:${config.users.users.korri.name}:rw /dev/%k"
+        '';
+
         # Korri requires USB gadget facts. A tower has no USB device
         # controller, so the unit stays off.
         services.korriProduct.usbGadget = {
