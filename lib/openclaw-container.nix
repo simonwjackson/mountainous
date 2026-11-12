@@ -1,6 +1,7 @@
 {
   inputs,
   profilePath ? "/nix/var/nix/profiles/apps/openclaw",
+  person,
 }:
 {
   config,
@@ -10,27 +11,6 @@
 }:
 let
   package = import ./openclaw-package.nix { inherit pkgs inputs; };
-  demo = import ./openclaw-demo.nix {
-    inherit pkgs inputs;
-    node = package.runtimeNode;
-  };
-  interactiveDemos =
-    lib.mapAttrs
-      (
-        name: tool:
-        import ./openclaw-demo.nix {
-          inherit
-            pkgs
-            inputs
-            name
-            tool
-            ;
-          node = package.runtimeNode;
-        }
-      )
-      {
-        budget-allocator = "get-budget-data";
-      };
   identityProxy = import ./claw-identity-proxy.nix { inherit pkgs; };
   # The Scryer MCP App's tools (packages/media-tsnet-proxy/scryer_app.go).
   scryerAppTools = [
@@ -58,7 +38,12 @@ let
     '';
   };
   morningBrief = pkgs.writeText "openclaw-morning-brief.json" (
-    builtins.toJSON (import ./openclaw-morning-brief.nix)
+    builtins.toJSON ((import ./openclaw-morning-brief.nix) // {
+      agentId = person.agentId;
+      sessionKey = "agent:${person.agentId}:main";
+      description = "Daily supported day plan for ${person.name}";
+      payload = (import ./openclaw-morning-brief.nix).payload // { message = person.morningBriefPrompt; };
+    })
   );
   ensureMorningBrief = pkgs.writeShellApplication {
     name = "openclaw-ensure-morning-brief";
@@ -86,7 +71,7 @@ let
       jq -e --arg id "$id" '(.job // .).id == $id' <<< "$result" >/dev/null
     '';
   };
-  origin = "https://claw.hummingbird-lake.ts.net";
+  origin = "https://${person.nodeName}.hummingbird-lake.ts.net";
   launch = pkgs.writeShellScript "openclaw-start" ''
     set -euo pipefail
     FRONT_DOOR_API_KEY="$(cat "$CREDENTIALS_DIRECTORY/front-door")"
@@ -99,7 +84,7 @@ in
   imports = [ inputs.nix-openclaw.nixosModules.openclaw-gateway ];
   system.stateVersion = "26.05";
   networking = {
-    hostName = "claw";
+    hostName = person.nodeName;
     useHostResolvConf = false;
     nameservers = [ "127.0.0.1" ];
     firewall = {
@@ -180,40 +165,18 @@ in
                 "x-forwarded-proto"
                 "x-forwarded-host"
               ];
-              allowUsers = [
-                "simon.jackson@gmail.com"
-                "chancerellelaure@gmail.com"
-              ];
+              allowUsers = [ person.login ];
               allowLoopback = true;
             };
           };
-          # Non-admin roles, each limited to the person's own agent. Assign with
-          # users.setRole from the CLI after the first sign-in; until then a
-          # profile gets "pending": no agents and no scopes.
+          # One non-admin person; same-agent sub-agents need sessions.others=write.
           roles = {
-            default = "pending";
-            definitions =
-              let
-                person = agent: {
-                  sessions.others = "write";
-                  agents = [ agent ];
-                  scopes = [
-                    "operator.read"
-                    "operator.write"
-                    "operator.approvals"
-                    "operator.questions"
-                  ];
-                };
-              in
-              {
-                pending = {
-                  sessions.others = "none";
-                  agents = [ ];
-                  scopes = [ ];
-                };
-                simon = person "main";
-                laure = person "laure";
-              };
+            default = "person";
+            definitions.person = {
+              sessions.others = "write";
+              agents = [ person.agentId ];
+              scopes = [ "operator.read" "operator.write" "operator.approvals" "operator.questions" ];
+            };
           };
           trustedProxies = [
             "127.0.0.1"
@@ -234,46 +197,17 @@ in
             };
             model.primary = "front-door/claude-opus-5-5";
             workspace = "/var/lib/openclaw/workspace";
-            systemAgent.agentId = "main";
-            sessionStore.agentId = "main";
+            systemAgent.agentId = person.agentId;
+            sessionStore.agentId = person.agentId;
           };
-          # Two agents: when any entry has a heartbeat block, only those agents
-          # run heartbeats, and a multi-agent roster without blocks runs none.
-          # Both keep the 30-minute default explicitly.
-          entries = {
-            # Simon's agent (persona flakey), unchanged except it does not get
-            # Laure's Family calendar tool.
-            main = {
-              workspace = "/var/lib/openclaw/workspace";
-              heartbeat.every = "30m";
-              tools.deny = [
-                "claw-family-calendar__*"
-                "claw-scryer-laure__*"
-              ];
-            };
-            # Laure's agent. Its persona comes from her own BOOTSTRAP.md
-            # interview; OpenClaw seeds the starter files on the first run.
-            laure = {
-              identity = {
-                name = "Snowy";
-                emoji = "❄️";
-                theme = "Calm and clear-headed, a bit dry, and quietly on top of things.";
-                avatar = "avatars/avatar.png";
-              };
-              workspace = "/var/lib/openclaw/workspace-laure";
-              agentDir = "/var/lib/openclaw/agents/laure/agent";
-              heartbeat.every = "30m";
-              tools.deny = [
-                "claw-calendar__*"
-                "claw-scryer-simon__*"
-                "basic-react__*"
-                "budget-allocator__*"
-                "system-monitor__*"
-              ];
-            };
+          entries.${person.agentId} = {
+            identity = person.identity;
+            workspace = "/var/lib/openclaw/workspace";
+            agentDir = "/var/lib/openclaw/agents/${person.agentId}/agent";
+            heartbeat.every = "30m";
           };
         };
-        talk.agentId = "main";
+        talk.agentId = person.agentId;
         models = {
           mode = "replace";
           providers.front-door = {
@@ -320,39 +254,18 @@ in
         memory.search.provider = "none";
         mcp = {
           sessionIdleTtlMs = 600000;
-          servers = {
-            basic-react = {
-              command = "${demo}/bin/mcp-server-basic-react";
-              args = [ "--stdio" ];
-            };
-          }
-          // lib.mapAttrs (name: demoPackage: {
-            command = "${demoPackage}/bin/mcp-server-${name}";
-            args = [ "--stdio" ];
-          }) interactiveDemos
-          // lib.mapAttrs (name: endpoint: {
+          servers = lib.mapAttrs (name: endpoint: {
             transport = "streamable-http";
             url = "https://${name}.hummingbird-lake.ts.net/mcp";
             toolFilter.include = endpoint.tools;
-          }) (import ./claw-tools.nix)
+          }) ((lib.filterAttrs (name: _: name == "claw-maps") (import ./claw-tools.nix)) // person.mcpServers)
           // {
             claw-websearch = {
               transport = "streamable-http";
               url = "https://claw-websearch.hummingbird-lake.ts.net/mcp";
               toolFilter.include = [ "web_search" ];
             };
-            # Each agent denies the other account's complete tool namespace.
-            claw-scryer-simon = {
-              transport = "streamable-http";
-              url = "https://claw-scryer-simon.hummingbird-lake.ts.net/mcp";
-              toolFilter.include = [ "scryer_graphql" ] ++ scryerAppTools;
-            };
-            claw-scryer-laure = {
-              transport = "streamable-http";
-              url = "https://claw-scryer-laure.hummingbird-lake.ts.net/mcp";
-              toolFilter.include = [ "scryer_graphql" ] ++ scryerAppTools;
-            };
-          };
+          } // (person.extraMcpServers or {});
           apps = {
             enabled = true;
             sandboxPort = 18790;
@@ -366,7 +279,7 @@ in
         ];
         skills.entries.clawhub.enabled = false;
         # Shared by both agents: the hand-kept skills in lib/openclaw-skills.
-        skills.load.extraDirs = [ "${./openclaw-skills}" ];
+        skills.load.extraDirs = [ "${./openclaw-skills/shared}" "${./openclaw-skills + "/${person.name}"}" ] ++ (person.extraSkillFolders or []);
         # Only the plugins needed by the approved browser, memory, images and web tools.
         plugins = {
           enabled = true;
@@ -375,7 +288,12 @@ in
             "memory-core"
             "openai"
             "web-readability"
-          ];
+            "session-share"
+          ] ++ (person.extraPlugins or []);
+          entries.session-share = {
+            enabled = true;
+            config.share.groups = [ "Shared" ];
+          };
         };
         discovery.mdns.mode = "off";
         browser = {
@@ -405,12 +323,9 @@ in
             "image_generate"
             "bundle-mcp"
           ]
-          # Exact names, so the Scryer card's buttons pass the session tool policy.
-          # Nothing else from either Scryer server is added; scryer_graphql stays model-only in effect.
-          ++ lib.concatMap (username: map (tool: "claw-scryer-${username}__${tool}") scryerAppTools) [
-            "simon"
-            "laure"
-          ];
+          ++ lib.concatMap (name: map (tool: "${name}__${tool}") scryerAppTools)
+            (lib.filter (name: lib.hasPrefix "claw-scryer-" name) (lib.attrNames person.mcpServers))
+          ++ (person.extraToolPermissions or []);
           deny = [ "group:runtime" ];
           sessions.visibility = "agent";
           agentToAgent.enabled = false;
@@ -442,7 +357,7 @@ in
     # machines (Myoko, Ibuki, ...) carry tag:mountainous, so this proxy names
     # Simon for that tag only. It asks tailscaled read-only (WhoIs); it has no
     # operator rights. Logins Serve sets pass through unchanged.
-    claw-identity-proxy = {
+    claw-identity-proxy = lib.mkIf (person.name == "simon") {
       description = "Name the person for tagged devices at Claw's Tailscale Serve";
       wantedBy = [ "multi-user.target" ];
       after = [ "tailscaled.service" ];
@@ -472,7 +387,7 @@ in
         MemoryMax = "256M";
       };
     };
-    openclaw-morning-brief = {
+    openclaw-morning-brief = lib.mkIf (person.enableMorningBrief or false) {
       description = "Reconcile the declarative 07:00 Denver OpenClaw morning brief";
       wantedBy = [ "multi-user.target" ];
       requires = [ "openclaw-gateway.service" ];
@@ -486,6 +401,32 @@ in
         RestartSec = 15;
       };
       unitConfig.StartLimitIntervalSec = 0;
+    };
+    openclaw-session-share = {
+      description = "Read-only Session Share source connected to the other person's gateway";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "openclaw-gateway.service" "claw-tailnet.service" ];
+      unitConfig.ConditionPathExists = "/var/lib/openclaw/node.json";
+      environment = {
+        HOME = "/var/lib/openclaw";
+        OPENCLAW_STATE_DIR = "/var/lib/openclaw";
+        OPENCLAW_CONFIG_PATH = "/etc/openclaw/openclaw.json";
+        OPENCLAW_NIX_MODE = "1";
+      };
+      serviceConfig = {
+        User = "openclaw";
+        Group = "openclaw";
+        ExecStart = "${profilePath}/bin/openclaw node run --commands openclaw.sessions.list.v1,openclaw.sessions.read.v1";
+        Restart = "always";
+        RestartSec = 10;
+        UMask = "0077";
+        NoNewPrivileges = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        ReadWritePaths = [ "/var/lib/openclaw" ];
+        InaccessiblePaths = [ "/nix/var/nix/daemon-socket" "/run/host-credentials" "/run/tailscale" ];
+        MemoryMax = "1G";
+      };
     };
     tailscaled.serviceConfig = {
       User = "tailscale";
@@ -527,7 +468,7 @@ in
         case "$state" in
           NeedsLogin|NoState)
             tailscale up --auth-key="$(cat "$CREDENTIALS_DIRECTORY/oauth-secret")?ephemeral=false&preauthorized=true" \
-              --hostname=claw --advertise-tags=tag:claw --ssh=false \
+              --hostname=${person.nodeName} --advertise-tags=tag:claw --ssh=false \
               --accept-dns=false --accept-routes=false --exit-node=${exitNode} \
               --exit-node-allow-lan-access=false
             ;;
@@ -537,7 +478,7 @@ in
         tailscale set --ssh=false --accept-dns=false --accept-routes=false \
           --exit-node=${exitNode} --exit-node-allow-lan-access=false
         # Through claw-identity-proxy, which names the person for tagged devices.
-        tailscale serve --bg --https=443 http://127.0.0.1:18788
+        tailscale serve --bg --https=443 http://127.0.0.1:${if person.name == "simon" then "18788" else "18789"}
         tailscale serve --bg --https=8443 http://127.0.0.1:18790
       '';
       serviceConfig = {

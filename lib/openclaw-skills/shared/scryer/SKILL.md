@@ -1,0 +1,62 @@
+---
+name: scryer
+description: Account-scoped Scryer tools for Simon and Laure. Use for movies and TV/anime, subscribing to or following named shows, exact season, episode or future-only scopes, acquisition and download queues, imports, progress, libraries, configuration, providers, users, security, backups, restore, plugins, lists, logs, and any other Scryer app action.
+---
+
+# Scryer
+
+Scryer has one native GraphQL API. Each agent uses its own account and only its granted permissions. Learn the API from the live schema, not from memory.
+
+## Send a request
+Use the `scryer_graphql` MCP tool. On main it uses `claw-scryer-simon` as `simon`; on laure it uses `claw-scryer-laure` as `laure`, with a private sops-nix password credential. It caches the session, and returns the JSON reply. Put user values in `variables`; never paste them into the query text.
+```json
+{"query":"query($q:String!){titles(query:$q,limit:10){items{id name facet monitored monitorType}}}","variables":{"q":"Dune"}}
+```
+A reply can hold `data` and `errors` together. Always read `.errors[].message` and `.errors[].extensions.code`. Common codes: `VALIDATION_ERROR`, `NOT_FOUND`, `UNAUTHORIZED`, `RATE_LIMITED`, `MFA_STEP_UP_REQUIRED` (HTTP 460), `TEMPORARY_UNAVAILABLE` (see `retryAfterSeconds`). HTTP-level failures return a structured error with `kind`, `status`, and the JSON `body` when available. If `scryer_graphql` itself fails to log in, report its message; do not create another account, key or password.
+
+## Show cards
+Two tools draw interactive cards in the chat. Prefer them when the person wants to find, compare or look at media:
+- `scryer_search {query, library?}`: search results as tiles, with library state and **Add** / **Monitor** buttons. Use it to tell same-named titles apart (remakes, US and UK versions). When there is more than one library for that kind, the card asks which one and proposes one. The reply lists the libraries and marks the proposal.
+- `scryer_title {titleId}`: one library title with its seasons, what is monitored and what is on disk, with **Monitor** / **Unmonitor** per season and per episode. `titleId` is Scryer's title id (from `scryer_search` results or `titles`).
+
+You do not see the card, and you do not see what the person presses. Each button changes Scryer at an exact scope and then re-reads it; the card shows only what Scryer reports. If the person says they pressed something, read the state again with `scryer_graphql` before you describe it. The cards never delete or restore; those stay in chat under the rules below. Both tools also return a short text summary, so you can answer from it too.
+
+## Choose the library before adding
+Scryer can hold several libraries for one kind of media: often one per person and one shared. Do not assume names or a count; they differ between households. The libraries this account can add to come from Scryer: `scryer_search` lists them in its reply, and in chat you read them with `{me{libraryPermissions{libraryId permissions}} libraries(permission: MANAGE_TITLES){id name facet isDefault}}`.
+- Nobody named, or “for me”: the person's own library. This is what the card proposes by default, so call `scryer_search` without `library`.
+- The person says who it is for (“for the kids”, “for the family”, “for all of us”, “to watch together”): find the library that fits in the list, usually the shared one, and pass words from its name as `library`, for example `{"query":"Bluey","library":"family"}`. The card then proposes that library. If the reply says the hint matched no library, search again with words from a listed name.
+- If you cannot tell which library fits, ask in chat before you search. Say which library the card proposes when you show it, so the person can pick another.
+- One library for that kind: there is nothing to choose, and the card does not ask.
+- The card's buttons send the chosen `libraryId`. For chat GraphQL adds, pass the exact `libraryId` to `addTitle` yourself. Never omit it: Scryer's default library may not be the person's own. If no listed library fits, stop and report it; do not fall back.
+- Never act on another person's library, even if the account can see it. Treat `UNAUTHORIZED` or `NOT_FOUND` on another person's library as the separation working. Do not retry with other credentials or another endpoint.
+- A title already in a library stays there. Do not move it to satisfy an add request. Report its current library and ask in chat if the requested one differs.
+- Always say which library was used, including after a card action. Read `libraryName` from the title; do not claim the intended library if Scryer reports a different one.
+
+## Discover the schema
+Introspection is on. The root types are `QueryRoot`, `MutationRoot` and `SubscriptionRoot`. Read the descriptions: they say what omission, `null` and empty values do.
+Call `scryer_graphql` with these arguments to find monitoring mutations:
+```json
+{"query":"{__schema{mutationType{fields{name}}}}"}
+```
+To inspect an input object, enum or type:
+```json
+{"query":"query($n:String!){__type(name:$n){kind description fields{name description args{name description defaultValue type{...R}} type{...R}} inputFields{name description defaultValue type{...R}} enumValues{name description}}} fragment R on __Type{kind name ofType{kind name ofType{kind name ofType{kind name}}}}","variables":{"n":"AddTitleInput"}}
+```
+Use the same query with `variables: {"n":"MutationRoot"}` and read the `addTitle` field to find that root field and its arguments.
+Unwrap `type` through `ofType`: `NON_NULL` means required, `LIST` means a list.
+
+## Work safely
+- Identify the exact media first. If a name matches more than one title (remakes, US and UK versions, same name in different years), ask which one before adding anything, unless the user's words already decide it.
+- Read the current state before every change. Find titles with `titles(query:)`, `title(id:)` or `titlesByExternalIds`. Use `searchMetadata` only to add a new title; its `existingTitleId` is not reliable. Change an existing title; do not add it again. After `addTitle`, check `reusedExistingTitle`.
+- Keep the exact scope the user asked for. Never widen it to the whole show without asking.
+  - Whole show: `monitorType: ALL_EPISODES`. Future episodes only: `FUTURE_EPISODES`. Missing and future: `MISSING_AND_FUTURE_EPISODES`.
+  - Named seasons: `monitorType: ADVANCED` with `options.monitorSelection.seasonNumbers` (0 is specials). Other seasons, and seasons that appear later, stay unmonitored.
+  - Named episodes: use `setEpisodeMonitored` per episode. For a new show, add it with `monitorType: NONE` and wait until `metadataHydrationState` is not `PENDING` and episodes exist, then mark only those episodes.
+- Patch only the fields the user named. Omitted input fields keep their value; `null` often clears. For settings, read the current object first and send back the other values unchanged.
+- Destructive actions need confirmation first: deleting titles, files, backups, users, libraries, lists or plugins, emptying the recycle bin, restore, revoking access, and security changes that can lock users out. State the exact effect, including the number of files removed from disk. Run the matching `...Preview` query first when one exists (for example `deleteTitlePreview`) and pass its `fingerprint` as `previewFingerprint`, and its `typedConfirmationPrompt` as `typedConfirmation`. Ordinary explicit requests (add, monitor, search, pause, settings change) need no second approval.
+- After every write, read the state again and report it. Say clearly what is done and what is still pending (hydration, searches, downloads, imports, jobs, restarts). Do not claim a download or import that has not happened.
+- After a timeout or a network error, do not send the mutation again. Read the state first; the change may already be done.
+- Some queries return stored secrets in plain text. Select secret fields only when the task needs them, and never repeat a secret in a reply.
+
+## Uploads and other routes
+Uploads and backup downloads are not available through `scryer_graphql`. This tool accepts only GraphQL JSON; it does not send multipart uploads, read local files, or fetch download URLs. Use Simon's own assistant for uploads, plugin file installation, restore bundles, and backup downloads. Do not request or expose a session token to work around this boundary.

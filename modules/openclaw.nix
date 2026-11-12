@@ -42,6 +42,8 @@
     }:
     let
       profilePath = config.mountainous.appProfiles.openclaw.profilePath;
+      people = import ../lib/openclaw-people.nix;
+      newNames = map (name: people.${name}.nodeName) (lib.attrNames people);
       controller = pkgs.writeShellApplication {
         name = "openclaw-profile-control";
         runtimeInputs = [
@@ -51,24 +53,30 @@
         ];
         text = ''
           if [[ $# != 1 || "$1" != restart-and-check ]]; then exit 2; fi
-          systemctl is-active --quiet container@openclaw.service
-          nixos-container run openclaw -- systemctl restart openclaw-gateway.service
-          ready() {
-            nixos-container run openclaw -- systemctl is-active --quiet openclaw-gateway.service &&
-            nixos-container run openclaw -- ${pkgs.curl}/bin/curl -fsS --max-time 5 http://127.0.0.1:18789/healthz |
-              ${pkgs.jq}/bin/jq -e '.ok == true' >/dev/null &&
-            [[ "$(nixos-container run openclaw -- ${pkgs.curl}/bin/curl -sS --max-time 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:18789/)" == 200 ]]
-          }
-          deadline=$((SECONDS + 120))
-          until ready; do
-            if (( SECONDS >= deadline )); then echo 'OpenClaw profile failed health gate' >&2; exit 1; fi
-            sleep 2
-          done
-          incarnation=$(nixos-container run openclaw -- systemctl show openclaw-gateway -p MainPID -p InvocationID -p NRestarts)
-          for ((i = 0; i < 5; i++)); do
-            sleep 1
-            ready
-            [[ "$(nixos-container run openclaw -- systemctl show openclaw-gateway -p MainPID -p InvocationID -p NRestarts)" == "$incarnation" ]]
+          # Never touch the live legacy gateway during the split. Both new
+          # placements resolve this ONE app profile at process startup.
+          for container in ${lib.concatStringsSep " " newNames}; do
+            systemctl is-active --quiet "container@$container.service"
+            nixos-container run "$container" -- systemctl restart openclaw-gateway.service
+            ready() {
+              nixos-container run "$container" -- systemctl is-active --quiet openclaw-gateway.service &&
+              nixos-container run "$container" -- ${pkgs.curl}/bin/curl -fsS --max-time 5 http://127.0.0.1:18789/healthz |
+                ${pkgs.jq}/bin/jq -e '.ok == true' >/dev/null &&
+              [[ "$(nixos-container run "$container" -- ${pkgs.curl}/bin/curl -sS --max-time 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:18789/)" == 200 ]]
+            }
+            deadline=$((SECONDS + 120))
+            until ready; do
+              if (( SECONDS >= deadline )); then echo "$container failed health gate" >&2; exit 1; fi
+              sleep 2
+            done
+            incarnation=$(nixos-container run "$container" -- systemctl show openclaw-gateway -p MainPID -p InvocationID -p NRestarts)
+            for ((i = 0; i < 5; i++)); do
+              sleep 1
+              ready
+              [[ "$(nixos-container run "$container" -- systemctl show openclaw-gateway -p MainPID -p InvocationID -p NRestarts)" == "$incarnation" ]]
+            done
+            # Sources also run the shared package; restart after its health gate.
+            nixos-container run "$container" -- systemctl try-restart openclaw-session-share.service
           done
         '';
       };
@@ -103,7 +111,7 @@
             restartUnits = [ "container@openclaw.service" ];
           };
         };
-        containers.openclaw = {
+        containers = { openclaw = {
           autoStart = true;
           enableTun = true;
           privateNetwork = true;
@@ -129,28 +137,37 @@
               isReadOnly = true;
             };
           };
-          config = import ../lib/openclaw-container.nix { inherit inputs profilePath; };
+          # Frozen until Laure's final handoff. Pinning the system path keeps
+          # the nspawn unit/restart triggers/config byte-identical even as the
+          # shared definition and skills evolve for the new placements.
+          path = lib.mkForce "/nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git";
+          config = import ../lib/openclaw-legacy-container.nix { inherit inputs profilePath; };
         };
+        } // lib.mapAttrs' (name: person: lib.nameValuePair person.nodeName {
+          autoStart = true;
+          enableTun = true;
+          privateNetwork = true;
+          hostAddress = if name == "simon" then "10.231.1.1" else "10.231.2.1";
+          localAddress = if name == "simon" then "10.231.1.2" else "10.231.2.2";
+          bindMounts = config.containers.openclaw.bindMounts;
+          config = import ../lib/openclaw-container.nix { inherit inputs profilePath person; };
+        }) people;
+        systemd.services = lib.genAttrs (map (name: "container@${name}") newNames) (name: {
+          after = [ "sops-install-secrets.service" ];
+          serviceConfig = { MemoryMax = "8G"; TimeoutStopSec = 180; };
+          unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/${lib.removePrefix "container@" name}" ];
+        }) // { "container@openclaw" = {
+          after = [ "sops-install-secrets.service" ];
+          serviceConfig = { MemoryMax = "8G"; TimeoutStopSec = 180; };
+          unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/openclaw" ];
+        }; };
         networking.nat = {
           enable = true;
-          internalInterfaces = [ "ve-openclaw" ];
+          internalInterfaces = [ "ve-openclaw" ] ++ map (name: "ve-${name}") newNames;
           externalInterface = "enp0s6";
         };
         # Retain the whole nspawn root: overlay identity, config, and service state.
-        environment.persistence."/permafrost".directories = [ "/var/lib/nixos-containers/openclaw" ];
-        systemd.services."container@openclaw" = {
-          after = [ "sops-install-secrets.service" ];
-          serviceConfig = {
-            MemoryMax = "8G";
-            # Longer than the container needs to stop itself: the gateway's
-            # 35 s, then one more unit at its 90 s default, then 55 s spare.
-            # When the host kills a container that is still stopping, nspawn
-            # leaves a mount behind, the next start fails once, and a system
-            # switch returns exit 4.
-            TimeoutStopSec = 180;
-          };
-          unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/openclaw" ];
-        };
+        environment.persistence."/permafrost".directories = [ "/var/lib/nixos-containers/openclaw" ] ++ map (name: "/var/lib/nixos-containers/${name}") newNames;
         assertions = [
           {
             assertion = config.networking.hostName == "yari";
@@ -174,6 +191,9 @@
     in
     {
       checks = {
+        openclaw-people =
+          assert import ../tests/openclaw-people.nix { inherit lib host; };
+          pkgs.runCommand "openclaw-people-drift" { } "touch $out";
         openclaw =
           assert
             self.deploy.nodes.yari.profiles.openclaw.profilePath == "/nix/var/nix/profiles/apps/openclaw";
@@ -454,6 +474,9 @@
           export FRONT_DOOR_API_KEY=test-only
           export OPENCLAW_GATEWAY_PASSWORD=test-only
           ${gateway.package}/bin/openclaw config validate
+          ${lib.concatMapStringsSep "\n" (name: let
+            new = host.containers.${name}.config;
+          in "export OPENCLAW_CONFIG_PATH=${new.environment.etc."openclaw/openclaw.json".source}\n${new.services.openclaw-gateway.package}/bin/openclaw config validate") [ "claw-simon" "claw-laure" ]}
           touch $out
         '';
       };
