@@ -376,6 +376,11 @@
           assert lib.hasInfix "research inline, one angle at a time" (
             builtins.readFile ../lib/openclaw-skills/research/SKILL.md
           );
+          assert lib.hasInfix "call `sessions_yield` directly" (
+            builtins.readFile ../lib/openclaw-skills/research/SKILL.md
+          );
+          assert
+            !lib.hasInfix ''id: "sessions_yield"'' (builtins.readFile ../lib/openclaw-skills/research/SKILL.md);
           assert !gateway.config.tools.codeMode.enabled && gateway.config.tools.fs.workspaceOnly;
           assert host.systemd.services."container@openclaw".serviceConfig.MemoryMax == "8G";
           # Stop limits. The gateway's limit funds one full ordinary stop. The

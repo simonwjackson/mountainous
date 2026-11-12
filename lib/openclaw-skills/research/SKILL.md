@@ -46,7 +46,9 @@ Use `write` to save the question and constraints at `<run>/request.md`. It creat
 
 For Single or Swarm, your next research action is spawning, not searching inline. Use `sessions_spawn` for hidden native children. Omit `agentId` to keep them under your own agent and workspace.
 
-OpenClaw defers tools. A broad `tool_search` can omit `sessions_spawn` from its truncated results. That does not mean spawning is unavailable. Call `dispatch_action` directly with `id: "sessions_spawn"` and the spawn parameters in `args`.
+Call `ls`, `read`, `edit`, `write`, and `sessions_yield` directly. Route `skills_read`, `sessions_spawn`, `web_fetch`, `progress_card`, `session_status`, and MCP tools through `dispatch_action`, with the tool ID in `id` and its parameters in `args`. A broad `tool_search` can omit `sessions_spawn` from truncated results; dispatch it by name.
+
+Each spawn `label` names its angle in plain words, at most 50 characters, with distinguishing words first. Good: `Offers and buyer messages`. Bad: `Research eBay seller MCP servers: offers and buyer messages`. The UI's child rows show the size and angles.
 
 For Lookup, state the constraints, size and angle before searching inline. Use this dispatch shape for each researcher:
 
@@ -55,7 +57,7 @@ For Lookup, state the constraints, size and angle before searching inline. Use t
   "id": "sessions_spawn",
   "args": {
     "taskName": "researcher",
-    "label": "Research the assigned angle",
+    "label": "Offers and buyer messages",
     "runtime": "subagent",
     "mode": "run",
     "context": "isolated",
@@ -67,7 +69,7 @@ For Lookup, state the constraints, size and angle before searching inline. Use t
 }
 ```
 
-Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. After the spawn receipts, call `sessions_yield` through `dispatch_action` with `id: "sessions_yield"`. Set `args.acknowledgment` to one short paragraph with stated constraints against inferred constraints, the size, and each researcher with its angle. The user sees `acknowledgment`. The `message` parameter is private context for the resumed turn. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If `sessions_spawn` returns an error, tell the user the exact error text and name the failed angle. Then research inline, one angle at a time, under the same evidence rules. Never silently replace Single or Swarm with inline work.
+Name them `researcher`, `researcher-2`, and so on. Spawn every researcher before waiting for any. After the spawn receipts, call `sessions_yield` directly, with `acknowledgment: "Researchers are running; I will report when they finish."`. The `message` parameter is private context for the resumed turn. Follow the spawn receipt's continuation instructions. Do not poll or use collector mode. If one finishes early, keep waiting for the others before synthesis. If `sessions_spawn` returns an error, tell the user the exact error text and name the failed angle. Then research inline, one angle at a time, under the same evidence rules. Never silently replace Single or Swarm with inline work.
 
 Each task must contain:
 
@@ -80,15 +82,15 @@ Each task must contain:
 
 After all researchers finish, read every brief with `read`. Treat a timeout, failed child, or missing brief as a failed angle. Name it in the final answer. Do not treat a missing brief as evidence that nothing exists.
 
-After reading the briefs, spawn the auditor through `dispatch_action` with `id: "sessions_spawn"`. Use the same `args` shape with `taskName: "evidence-auditor"`, `thinking: "high"`, and `runTimeoutSeconds: 900`. Give it the question, every absolute brief path, and the claims that drive the answer. Paste the complete auditor block into its task. Wait with `sessions_yield`, setting `acknowledgment` to say an evidence auditor is checking N claims. Replace N with the actual claim count. After its completion announcement, use `write` yourself to save its full report as `<run>/audit.md` before answering. A missing discovery result is not a reason to replace the auditor with self-check.
+After reading the briefs, spawn the auditor through `dispatch_action` with `id: "sessions_spawn"`. Use the same `args` shape with `taskName: "evidence-auditor"`, `thinking: "high"`, and `runTimeoutSeconds: 900`. Give it the question, every absolute brief path, and the claims that drive the answer. Paste the complete auditor block into its task. Wait by calling `sessions_yield` directly, with `acknowledgment: "The auditor is running; I will report when it finishes."`. After its completion announcement, use `write` yourself to save its full report as `<run>/audit.md` before answering. A missing discovery result is not a reason to replace the auditor with self-check.
 
 ### Evidence rules
 
 Follow these rules for inline research too.
 
 - Search through the MCP search tool `claw-websearch__web_search`. It takes one `query` per call. Make several calls with varied phrasing.
-- If tools are deferred, discover search with `tool_search`. Its dispatch ID is `mcp:claw-websearch:claw-websearch__web_search`. Use `dispatch_action` with that `id` and `args: {"query": "one query"}`.
-- Fetch the original page with `web_fetch` before citing its contents. A search summary and its citations are leads, not evidence.
+- Use `dispatch_action` with `id: "mcp:claw-websearch:claw-websearch__web_search"` and `args: {"query": "one query"}`. Discover schemas with `tool_search` or `tool_describe` when needed.
+- Fetch the original page through `dispatch_action` with `id: "web_fetch"` before citing its contents. A search summary and its citations are leads, not evidence.
 - For a decision-critical or disputed claim, quote the supporting passage from the fetched page. Read it and judge whether it supports the claim.
 - Prefer official docs, source code, specifications and first-party APIs. Use a few strong sources. Flag stale evidence when dates matter.
 - Label findings as evidence, interpretation or inference. Record URLs, contradictions, confidence and missing evidence.
@@ -102,11 +104,12 @@ Paste this whole block into each researcher's task:
 You are the researcher. Answer only the assigned angle. Never spawn sub-agents.
 Never ask the user. Write open questions into your brief for the main agent to raise.
 
-Use claw-websearch__web_search, one query per call. Make several calls with varied phrasing.
-For deferred tools, use tool_search to discover search. Its dispatch_action id is
-mcp:claw-websearch:claw-websearch__web_search, with args {"query":"one query"}.
+Call read and write directly. Fetch through dispatch_action id web_fetch.
+Search through dispatch_action id mcp:claw-websearch:claw-websearch__web_search,
+with args {"query":"one query"}. Make several calls with varied phrasing.
+Use tool_search or tool_describe directly for schemas. Sub-agents have no progress_card or session_status.
 Split your assigned angle into 2 to 4 search questions. Stay within that angle.
-Search summaries are leads. Fetch original pages with web_fetch before relying on them.
+Search summaries are leads. Fetch original pages through dispatch_action id web_fetch before relying on them.
 Prefer primary sources, official docs, source code and first-party APIs.
 For important, disputed, surprising or decision-critical claims, quote the supporting passage.
 Judge whether that passage supports the claim. A URL alone is not evidence.
@@ -152,14 +155,15 @@ You are the evidence auditor. Check the listed claims against their sources.
 Do not redo the research. Never spawn sub-agents. Never ask the user.
 Write open questions in the report for the main agent to raise.
 
-Read every assigned brief with read. Audit only claims that can change the conclusion.
-Fetch each claim's original page with web_fetch, even if a researcher read it.
+Call read and write directly. Audit only claims that can change the conclusion.
+Read every assigned brief with read. Fetch each claim's original page through dispatch_action id web_fetch, even if a researcher read it.
+Sub-agents have no progress_card or session_status.
 Quote the supporting or contradicting passage. Judge support at the claimed certainty.
 A URL or search summary alone is not evidence. Flag weak, stale, secondary or circular sources.
 Search again only to confirm or challenge a specific claim.
-Use claw-websearch__web_search, one query per call, with varied phrasing across calls.
-For deferred search, discover with tool_search. Its dispatch_action id is
-mcp:claw-websearch:claw-websearch__web_search, with args {"query":"one query"}.
+Search through dispatch_action id mcp:claw-websearch:claw-websearch__web_search,
+with args {"query":"one query"}, varying phrasing across calls.
+Use tool_search or tool_describe directly for schemas.
 Keep contradictions and uncertainty visible. If a tool fails, name it and the claims left unchecked.
 
 Return the full report below, not only its conclusion. The main agent saves it as audit.md.
@@ -194,10 +198,11 @@ Make this claim only after a sweep across every angle. Search by constraint, not
 Answer in the conversation with:
 
 1. The direct answer.
-2. Findings with inline source links.
-3. Contradictions and open questions, including those in child reports.
-4. A Sources list that the user can check without opening briefs.
-5. The run folder path, when one exists.
+2. One or two sentences stating the constraints: which the user stated and which you assumed, before the findings.
+3. Findings with inline source links.
+4. Contradictions and open questions, including those in child reports.
+5. A Sources list that the user can check without opening briefs.
+6. The run folder path, when one exists.
 
 Include every candidate that meets all hard constraints. Give a reason for each exclusion, such as discontinued or more expensive without a gain. A ranking that skips a cheaper fit is wrong.
 

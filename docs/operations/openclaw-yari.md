@@ -20,6 +20,7 @@ On 2026-11-11 Simon chose `sessions.others: "write"` for both roles so agent-cre
 Session tools use `tools.sessions.visibility = "agent"` and `tools.agentToAgent.enabled = false`: each agent can access only its own sessions, including same-agent sub-agents.
 
 Both agents share the research skill in `lib/openclaw-skills/research/SKILL.md`, with at most 8 children per parent and a 900-second timeout per researcher or auditor spawn.
+Research scope uses short angle-first child labels and stated-versus-assumed constraints after the final direct answer: pre-spawn skill text, yield acknowledgment, an unsupported system-section override, and an injected workspace AGENTS.md instruction all failed to produce scope text in OpenClaw 2026.11.3.
 
 The gateway has `TasksMax=2048`; the former 256-task limit exhausted under session MCP workers and caused `EAGAIN` on 2026-11-11.
 Session MCP runtimes use `mcp.sessionIdleTtlMs=600000` to release idle stdio servers and their supervisors after 10 minutes, on the next minute sweep.
