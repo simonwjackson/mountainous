@@ -46,9 +46,10 @@
       newNames = map (name: people.${name}.nodeName) (lib.attrNames people);
       # Frozen deployed artifacts are real closure dependencies, not untracked
       # absolute strings. Copy them from Yari before evaluating this placement.
-      legacySystem = builtins.storePath "/nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git";
-      legacyConf = builtins.storePath "/nix/store/30qbz85w5qhckyl8dmj9m294ifyv7f07-etc-nixos-containers-openclaw.conf";
-      legacyTriggers = builtins.storePath "/nix/store/n63mxcv1saygx0b0ypkd01cl6h02nknh-X-Restart-Triggers-container-openclaw";
+      frozenStorePath = path: builtins.appendContext path { ${path}.path = true; };
+      legacySystem = frozenStorePath "/nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git";
+      legacyConf = frozenStorePath "/nix/store/30qbz85w5qhckyl8dmj9m294ifyv7f07-etc-nixos-containers-openclaw.conf";
+      legacyTriggers = frozenStorePath "/nix/store/n63mxcv1saygx0b0ypkd01cl6h02nknh-X-Restart-Triggers-container-openclaw";
       controller = pkgs.writeShellApplication {
         name = "openclaw-profile-control";
         runtimeInputs = [
