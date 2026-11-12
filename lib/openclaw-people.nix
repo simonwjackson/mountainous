@@ -17,7 +17,6 @@ in
     identity = {
       name = "flakey";
       emoji = "❄️";
-      avatar = "avatars/avatar.png";
     };
     mcpServers = {
       claw-calendar.tools = [ "calendar_busy" ];

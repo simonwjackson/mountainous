@@ -18,15 +18,17 @@ let
           trustedProxy = builtins.removeAttrs c.gateway.auth.trustedProxy [ "allowUsers" ];
         };
         roles = c.gateway.roles // {
-          definitions.person = builtins.removeAttrs c.gateway.roles.definitions.person [ "agents" ];
+          definitions = c.gateway.roles.definitions // {
+            person = builtins.removeAttrs c.gateway.roles.definitions.person [ "agents" ];
+          };
         };
         controlUi = builtins.removeAttrs c.gateway.controlUi [ "allowedOrigins" ];
       };
       agents = c.agents // {
-        defaults = builtins.removeAttrs c.agents.defaults [
-          "systemAgent"
-          "sessionStore"
-        ];
+        defaults = c.agents.defaults // {
+          systemAgent = builtins.removeAttrs c.agents.defaults.systemAgent [ "agentId" ];
+          sessionStore = builtins.removeAttrs c.agents.defaults.sessionStore [ "agentId" ];
+        };
         entries.person = builtins.removeAttrs agent [
           "identity"
           "agentDir"
@@ -34,14 +36,32 @@ let
       };
       talk = builtins.removeAttrs c.talk [ "agentId" ];
       mcp = c.mcp // {
-        servers = builtins.removeAttrs c.mcp.servers (lib.attrNames person.mcpServers);
+        servers = builtins.removeAttrs c.mcp.servers (
+          (lib.attrNames person.mcpServers) ++ map (s: s.name) (person.extraMcpServers or [ ])
+        );
         apps = builtins.removeAttrs c.mcp.apps [ "sandboxOrigin" ];
       };
       skills = c.skills // {
-        load.extraDirs = [ (builtins.head c.skills.load.extraDirs) ] ++ (person.extraSkillFolders or [ ]);
+        load = c.skills.load // {
+          extraDirs = [ (builtins.head c.skills.load.extraDirs) ];
+        };
+      };
+      plugins = c.plugins // {
+        allow = lib.filter (id: !(lib.elem id (person.extraPlugins or [ ]))) c.plugins.allow;
       };
       tools = c.tools // {
-        allow = lib.filter (tool: !(lib.hasPrefix "claw-scryer-${person.name}__" tool)) c.tools.allow;
+        allow = lib.filter (
+          tool:
+          !(lib.elem tool (
+            (map (t: "claw-scryer-${person.name}__${t}") [
+              "scryer_search"
+              "scryer_title"
+              "scryer_add"
+              "scryer_monitor"
+            ])
+            ++ (person.extraToolPermissions or [ ])
+          ))
+        ) c.tools.allow;
       };
     };
   # Avoid leaving original dynamic agent entries alongside the normalized one.
@@ -70,6 +90,7 @@ let
     assert !(c.agents.entries.${person.agentId} ? tools);
     assert c.gateway.auth.trustedProxy.allowUsers == [ person.login ];
     assert c.gateway.roles.default == "person";
+    assert lib.attrNames c.gateway.roles.definitions == [ "person" ];
     assert c.gateway.roles.definitions.person.sessions.others == "write";
     assert c.gateway.roles.definitions.person.agents == [ person.agentId ];
     assert !(lib.elem "operator.admin" c.gateway.roles.definitions.person.scopes);
@@ -83,6 +104,7 @@ let
           "claw-websearch"
         ]
         ++ lib.attrNames person.mcpServers
+        ++ map (server: server.name) (person.extraMcpServers or [ ])
       );
     assert c.plugins.entries.session-share.config.share.groups == [ "Shared" ];
     assert c.plugins.entries.session-share.enabled && lib.elem "session-share" c.plugins.allow;
@@ -92,6 +114,8 @@ let
     assert c.mcp.apps.sandboxOrigin == "https://${person.nodeName}.hummingbird-lake.ts.net:8443";
     assert unit.MemoryMax == "8G" && unit.KillMode == "mixed" && unit.TimeoutStopSec == 35;
     assert container.bindMounts."/nix/var/nix/profiles/apps".isReadOnly;
+    assert lib.length c.skills.load.extraDirs == 2 + lib.length (person.extraSkillFolders or [ ]);
+    assert lib.drop 2 c.skills.load.extraDirs == (person.extraSkillFolders or [ ]);
     assert lib.pathExists "${builtins.head c.skills.load.extraDirs}/research/SKILL.md";
     assert lib.pathExists "${builtins.head c.skills.load.extraDirs}/scryer/SKILL.md";
     true;

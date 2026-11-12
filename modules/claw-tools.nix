@@ -20,8 +20,10 @@ in
     { pkgs, lib, ... }:
     let
       rakku = self.nixosConfigurations.rakku.config;
+      containers = self.nixosConfigurations.yari.config.containers;
       mcp =
-        self.nixosConfigurations.yari.config.containers.openclaw.config.services.openclaw-gateway.config.mcp.servers;
+        containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers
+        // containers.claw-laure.config.services.openclaw-gateway.config.mcp.servers;
     in
     {
       checks.claw-tools =

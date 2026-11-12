@@ -43,6 +43,28 @@
     let
       profilePath = config.mountainous.appProfiles.openclaw.profilePath;
       people = import ../lib/openclaw-people.nix;
+      legacyEnabled = config.mountainous.features.openclaw.legacy.enable;
+      sharedBindMounts = {
+        # Bind the directory, not the symlink target: deploy-rs atomically
+        # replaces links here while the container remains running.
+        "/nix/var/nix/profiles/apps" = {
+          hostPath = "/nix/var/nix/profiles/apps";
+          isReadOnly = true;
+        };
+        "/run/host-credentials/front-door" = {
+          hostPath = config.sops.secrets.ai-gateway-key-openclaw-yari.path;
+          isReadOnly = true;
+        };
+        "/run/host-credentials/gateway-token" = {
+          hostPath = config.sops.secrets.openclaw-gateway-token.path;
+          isReadOnly = true;
+        };
+        "/run/host-credentials/oauth-secret" = {
+          hostPath = config.sops.secrets.tailscale-oauth-secret.path;
+          isReadOnly = true;
+        };
+      };
+
       newNames = map (name: people.${name}.nodeName) (lib.attrNames people);
       # Frozen deployed artifacts are real closure dependencies, not untracked
       # absolute strings. Copy them from Yari before evaluating this placement.
@@ -88,11 +110,16 @@
       };
     in
     {
-      options.mountainous.features.openclaw.enable = lib.mkEnableOption "isolated OpenClaw trial" // {
-        default = true;
+      options.mountainous.features.openclaw = {
+        enable = lib.mkEnableOption "isolated per-person OpenClaw gateways" // {
+          default = true;
+        };
+        legacy.enable = lib.mkEnableOption "frozen legacy gateway until Laure's approved final handoff" // {
+          default = true;
+        };
       };
       config = lib.mkIf config.mountainous.features.openclaw.enable {
-        system.extraDependencies = [
+        system.extraDependencies = lib.optionals legacyEnabled [
           legacySystem
           legacyConf
           legacyTriggers
@@ -114,60 +141,45 @@
           ai-gateway-key-openclaw-yari = {
             sopsFile = ../secrets/hosts/yari.yaml;
             mode = "0400";
-            restartUnits = [ "container@openclaw.service" ];
+            restartUnits =
+              (lib.optional legacyEnabled "container@openclaw.service")
+              ++ map (name: "container@${name}.service") newNames;
           };
           openclaw-gateway-token = {
             sopsFile = ../secrets/hosts/yari.yaml;
             mode = "0400";
-            restartUnits = [ "container@openclaw.service" ];
+            restartUnits =
+              (lib.optional legacyEnabled "container@openclaw.service")
+              ++ map (name: "container@${name}.service") newNames;
           };
         };
-        containers = {
-          openclaw = {
-            autoStart = true;
-            enableTun = true;
-            privateNetwork = true;
-            hostAddress = "10.231.0.1";
-            localAddress = "10.231.0.2";
-            bindMounts = {
-              # Bind the directory, not the symlink target: deploy-rs atomically
-              # replaces links here while the container remains running.
-              "/nix/var/nix/profiles/apps" = {
-                hostPath = "/nix/var/nix/profiles/apps";
-                isReadOnly = true;
-              };
-              "/run/host-credentials/front-door" = {
-                hostPath = config.sops.secrets.ai-gateway-key-openclaw-yari.path;
-                isReadOnly = true;
-              };
-              "/run/host-credentials/gateway-token" = {
-                hostPath = config.sops.secrets.openclaw-gateway-token.path;
-                isReadOnly = true;
-              };
-              "/run/host-credentials/oauth-secret" = {
-                hostPath = config.sops.secrets.tailscale-oauth-secret.path;
-                isReadOnly = true;
-              };
+        containers =
+          (lib.optionalAttrs legacyEnabled {
+            openclaw = {
+              autoStart = true;
+              enableTun = true;
+              privateNetwork = true;
+              hostAddress = "10.231.0.1";
+              localAddress = "10.231.0.2";
+              bindMounts = sharedBindMounts;
+              # Frozen until Laure's final handoff. Pinning the system path keeps
+              # the nspawn unit/restart triggers/config byte-identical even as the
+              # shared definition and skills evolve for the new placements.
+              path = lib.mkForce legacySystem;
             };
-            # Frozen until Laure's final handoff. Pinning the system path keeps
-            # the nspawn unit/restart triggers/config byte-identical even as the
-            # shared definition and skills evolve for the new placements.
-            path = lib.mkForce legacySystem;
-            config = import ../lib/openclaw-legacy-container.nix { inherit inputs profilePath; };
-          };
-        }
-        // lib.mapAttrs' (
-          name: person:
-          lib.nameValuePair person.nodeName {
-            autoStart = true;
-            enableTun = true;
-            privateNetwork = true;
-            hostAddress = if name == "simon" then "10.231.1.1" else "10.231.2.1";
-            localAddress = if name == "simon" then "10.231.1.2" else "10.231.2.2";
-            bindMounts = config.containers.openclaw.bindMounts;
-            config = import ../lib/openclaw-container.nix { inherit inputs profilePath person; };
-          }
-        ) people;
+          })
+          // lib.mapAttrs' (
+            name: person:
+            lib.nameValuePair person.nodeName {
+              autoStart = true;
+              enableTun = true;
+              privateNetwork = true;
+              hostAddress = if name == "simon" then "10.231.1.1" else "10.231.2.1";
+              localAddress = if name == "simon" then "10.231.1.2" else "10.231.2.2";
+              bindMounts = sharedBindMounts;
+              config = import ../lib/openclaw-container.nix { inherit inputs profilePath person; };
+            }
+          ) people;
         systemd.services =
           lib.genAttrs (map (name: "container@${name}") newNames) (name: {
             after = [ "sops-install-secrets.service" ];
@@ -179,7 +191,7 @@
               "/var/lib/nixos-containers/${lib.removePrefix "container@" name}"
             ];
           })
-          // {
+          // lib.optionalAttrs legacyEnabled {
             "container@openclaw" = {
               after = [ "sops-install-secrets.service" ];
               serviceConfig = {
@@ -195,7 +207,8 @@
         environment.etc."nixos-containers/openclaw.conf".source = lib.mkForce legacyConf;
         networking.nat = {
           enable = true;
-          internalInterfaces = [ "ve-openclaw" ] ++ map (name: "ve-${name}") newNames;
+          internalInterfaces =
+            (lib.optional legacyEnabled "ve-openclaw") ++ map (name: "ve-${name}") newNames;
           externalInterface = "enp0s6";
         };
         # Retain the whole nspawn root: overlay identity, config, and service state.
@@ -215,7 +228,7 @@
     { pkgs, lib, ... }:
     let
       host = self.nixosConfigurations.yari.config;
-      container = host.containers.openclaw;
+      container = host.containers.claw-simon;
       c = container.config;
       gateway = c.services.openclaw-gateway;
       unit = c.systemd.services.openclaw-gateway.serviceConfig;
@@ -257,36 +270,6 @@
           assert
             gateway.config.gateway.auth.mode == "trusted-proxy" && !gateway.config.gateway.auth.allowTailscale;
           assert gateway.config.gateway.auth.trustedProxy.userHeader == "tailscale-user-login";
-          assert
-            gateway.config.gateway.auth.trustedProxy.allowUsers == [
-              "simon.jackson@gmail.com"
-              "chancerellelaure@gmail.com"
-            ];
-          assert gateway.config.gateway.roles.default == "pending";
-          assert gateway.config.gateway.roles.definitions.pending.scopes == [ ];
-          assert gateway.config.gateway.roles.definitions.simon.agents == [ "main" ];
-          assert gateway.config.gateway.roles.definitions.laure.agents == [ "laure" ];
-          assert lib.all (name: gateway.config.gateway.roles.definitions.${name}.sessions.others == "write") [
-            "simon"
-            "laure"
-          ];
-          assert lib.all
-            (
-              name:
-              gateway.config.gateway.roles.definitions.${name}.scopes == [
-                "operator.read"
-                "operator.write"
-                "operator.approvals"
-                "operator.questions"
-              ]
-            )
-            [
-              "simon"
-              "laure"
-            ];
-          assert lib.all (r: !(lib.elem "operator.admin" r.scopes)) (
-            lib.attrValues gateway.config.gateway.roles.definitions
-          );
           assert lib.elem "/run/tailscale" unit.InaccessiblePaths;
           assert lib.hasInfix "--https=443 http://127.0.0.1:18788" c.systemd.services.claw-tailnet.script;
           assert lib.hasInfix "-tag tag:mountainous -login simon.jackson@gmail.com"
@@ -299,57 +282,13 @@
             "front-door"
             "openai"
           ];
-          # Two agents; both keep a heartbeat (any per-agent block disables the rest).
-          assert
-            lib.attrNames gateway.config.agents.entries == [
-              "laure"
-              "main"
-            ];
-          assert
-            gateway.config.agents.entries.laure.identity == {
-              name = "Snowy";
-              emoji = "❄️";
-              theme = "Calm and clear-headed, a bit dry, and quietly on top of things.";
-              avatar = "avatars/avatar.png";
-            };
           assert gateway.config.agents.ownership == "explicit";
           assert gateway.config.agents.defaults.systemAgent.agentId == "main";
           assert gateway.config.agents.entries.main.workspace == gateway.config.agents.defaults.workspace;
-          assert lib.all (a: a.heartbeat.every == "30m") (lib.attrValues gateway.config.agents.entries);
-          assert
-            gateway.config.agents.entries.main.tools.deny == [
-              "claw-family-calendar__*"
-              "claw-scryer-laure__*"
-            ];
-          assert
-            gateway.config.agents.entries.laure.tools.deny == [
-              "claw-calendar__*"
-              "claw-scryer-simon__*"
-              "basic-react__*"
-              "budget-allocator__*"
-              "system-monitor__*"
-            ];
-          assert
-            gateway.config.mcp.servers.claw-family-calendar.toolFilter.include == [
-              "family_calendar_events"
-            ];
-          assert lib.all
-            (
-              name:
-              let
-                server = gateway.config.mcp.servers.${name};
-              in
-              server.args == [ "--stdio" ]
-              && lib.hasSuffix "/bin/mcp-server-${name}" server.command
-              && !(server ? url)
-            )
-            [
-              "basic-react"
-              "budget-allocator"
-            ];
+          assert gateway.config.agents.entries.main.heartbeat.every == "30m";
           assert (gateway.config.mcp.sessionIdleTtlMs or null) == 600000;
           assert gateway.config.mcp.apps.enabled;
-          assert gateway.config.mcp.apps.sandboxOrigin == "https://claw.hummingbird-lake.ts.net:8443";
+          assert gateway.config.mcp.apps.sandboxOrigin == "https://claw-simon.hummingbird-lake.ts.net:8443";
           assert lib.hasInfix "--advertise-tags=tag:claw" c.systemd.services.claw-tailnet.script;
           assert c.systemd.services.claw-tailnet.serviceConfig.User == "tailscale";
           assert gateway.config.plugins.enabled;
@@ -359,6 +298,7 @@
               "memory-core"
               "openai"
               "web-readability"
+              "session-share"
             ];
           assert gateway.config.tools.profile == "full";
           assert gateway.config.tools.deny == [ "group:runtime" ];
@@ -383,34 +323,25 @@
               "claw-scryer-simon__scryer_title"
               "claw-scryer-simon__scryer_add"
               "claw-scryer-simon__scryer_monitor"
-              "claw-scryer-laure__scryer_search"
-              "claw-scryer-laure__scryer_title"
-              "claw-scryer-laure__scryer_add"
-              "claw-scryer-laure__scryer_monitor"
             ];
           assert !(gateway.config.mcp.servers ? claw-scryer);
-          assert lib.all
-            (
-              username:
-              let
-                server = gateway.config.mcp.servers."claw-scryer-${username}";
-              in
-              server.url == "https://claw-scryer-${username}.hummingbird-lake.ts.net/mcp"
-              && server.transport == "streamable-http"
-              && !(server ? codex)
-              &&
-                server.toolFilter.include == [
-                  "scryer_graphql"
-                  "scryer_search"
-                  "scryer_title"
-                  "scryer_add"
-                  "scryer_monitor"
-                ]
-            )
-            [
-              "simon"
-              "laure"
-            ];
+          assert lib.all (
+            username:
+            let
+              server = gateway.config.mcp.servers."claw-scryer-${username}";
+            in
+            server.url == "https://claw-scryer-${username}.hummingbird-lake.ts.net/mcp"
+            && server.transport == "streamable-http"
+            && !(server ? codex)
+            &&
+              server.toolFilter.include == [
+                "scryer_graphql"
+                "scryer_search"
+                "scryer_title"
+                "scryer_add"
+                "scryer_monitor"
+              ]
+          ) [ "simon" ];
           assert gateway.config.mcp.servers.claw-websearch.transport == "streamable-http";
           assert
             gateway.config.mcp.servers.claw-websearch.url
@@ -420,30 +351,31 @@
             lib.attrValues gateway.config.agents.entries
           );
           assert
-            lib.length gateway.config.skills.load.extraDirs == 1
+            lib.length gateway.config.skills.load.extraDirs == 2
             && lib.pathExists "${lib.head gateway.config.skills.load.extraDirs}/scryer/SKILL.md";
-          assert lib.all (
-            dir: lib.pathExists "${dir}/research/SKILL.md"
-          ) gateway.config.skills.load.extraDirs;
+          assert lib.pathExists "${lib.head gateway.config.skills.load.extraDirs}/research/SKILL.md";
           assert (gateway.config.agents.defaults.subagents.maxChildrenPerAgent or null) == 8;
           assert lib.hasInfix "tell the user the exact error text" (
-            builtins.readFile ../lib/openclaw-skills/research/SKILL.md
+            builtins.readFile ../lib/openclaw-skills/shared/research/SKILL.md
           );
           assert lib.hasInfix "research inline, one angle at a time" (
-            builtins.readFile ../lib/openclaw-skills/research/SKILL.md
+            builtins.readFile ../lib/openclaw-skills/shared/research/SKILL.md
           );
           assert lib.hasInfix "call `sessions_yield` directly" (
-            builtins.readFile ../lib/openclaw-skills/research/SKILL.md
+            builtins.readFile ../lib/openclaw-skills/shared/research/SKILL.md
           );
           assert
-            !lib.hasInfix ''id: "sessions_yield"'' (builtins.readFile ../lib/openclaw-skills/research/SKILL.md);
+            !lib.hasInfix ''id: "sessions_yield"'' (
+              builtins.readFile ../lib/openclaw-skills/shared/research/SKILL.md
+            );
           assert !gateway.config.tools.codeMode.enabled && gateway.config.tools.fs.workspaceOnly;
-          assert host.systemd.services."container@openclaw".serviceConfig.MemoryMax == "8G";
+          assert host.systemd.services."container@claw-simon".serviceConfig.MemoryMax == "8G";
           # Stop limits. The gateway's limit funds one full ordinary stop. The
           # host's limit outlasts it plus one more guest unit at systemd's 90 s.
           assert unit.KillMode == "mixed" && unit.TimeoutStopSec == 35;
           assert
-            host.systemd.services."container@openclaw".serviceConfig.TimeoutStopSec >= unit.TimeoutStopSec + 90;
+            host.systemd.services."container@claw-simon".serviceConfig.TimeoutStopSec
+            >= unit.TimeoutStopSec + 90;
           assert !gateway.config.tools.elevated.enabled;
           assert gateway.config.browser.enabled && gateway.config.browser.headless;
           assert gateway.config.browser.ssrfPolicy.dangerouslyAllowPrivateNetwork;

@@ -1,3 +1,279 @@
+# Per-person OpenClaw on Yari (2026-11-11 Denver)
+
+## Current placement and no-touch boundary
+
+`claw-simon` and `claw-laure` run from **one** `lib/openclaw-container.nix`,
+with all personal inputs in `lib/openclaw-people.nix`. Both resolve the same
+`/nix/var/nix/profiles/apps/openclaw` package profile. Its weekly controller
+restarts and health-checks both gateways and their read-only source node hosts;
+it never restarts the old gateway. The existing Unzen updater still performs
+`openclaw` (which includes the personal-config drift assertion) and real ARM
+`openclaw-config` validation before accepting a package.
+
+| Person | Gateway / node | Agent id retained | Allowed Tailscale login | MCP Apps sandbox |
+| --- | --- | --- | --- | --- |
+| Simon | `https://claw-simon.hummingbird-lake.ts.net` | `main` | `simon.jackson@gmail.com` | same host, HTTPS `:8443` |
+| Laure | `https://claw-laure.hummingbird-lake.ts.net` | `laure` | `chancerellelaure@gmail.com` | same host, HTTPS `:8443` |
+
+Each gateway has only its person's calendar and Scryer endpoints, plus shared
+maps and model-native web search. There are no cross-person tool deny lists or
+roles. The one `person` role has no admin scope. It retains
+`sessions.others = "write"` for same-agent sub-agents and remote read-only
+catalog viewing. Administration stays on the CLI. Skills load
+`lib/openclaw-skills/shared/` plus `simon/` or `laure/` and declared extras.
+Optional personal lists are `extraSkillFolders`, `extraMcpServers` (Nix
+`{ name; value; }` entries), `extraPlugins`, and `extraToolPermissions`.
+`tests/openclaw-people.nix` compares both generated JSON configurations after
+removing only the declared personal fields. An unrelated drift fixture must
+compare unequal. Shell tools, egress policy, models, thinking, front-door key,
+security settings and memory limits remain shared.
+
+**Until Simon explicitly lifts the no-touch constraint, do not stop, restart,
+reconfigure, or retire `container@openclaw`, its gateway, or node `claw`. The
+clock reaching 22:00 is not permission by itself.**
+
+The legacy placement uses its existing frozen system, host container config,
+and restart-trigger artifacts. They are actual dependencies of the new system,
+so garbage collection cannot remove them. The old two-agent source definition
+is no longer duplicated in this repository. Its deployed immutable closure
+remains the backup. Before evaluating this transitional Yari system on a new
+builder, retain these inputs there (the copy is not a build):
+
+```sh
+NIX_SSHOPTS='-F /dev/null' nix copy --from ssh-ng://root@yari --no-check-sigs \
+  /nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git \
+  /nix/store/30qbz85w5qhckyl8dmj9m294ifyv7f07-etc-nixos-containers-openclaw.conf \
+  /nix/store/n63mxcv1saygx0b0ypkd01cl6h02nknh-X-Restart-Triggers-container-openclaw
+```
+
+Before **every** pre-handoff system switch, rebase on the latest origin/cairn,
+build on Yari, check origin has not moved, and use `scripts/openclaw-safe-switch`
+on Yari. It refuses unless the *currently running* legacy unit is byte-identical,
+the container config has the same bytes **and store path**, and the running and
+candidate legacy system and gateway-config store paths are identical. It also
+compares the running gateway's private config bytes, checks no other activation
+runs, and checks old container/gateway process identity and the app profile after
+the switch. Re-check every claw-tools endpoint afterward. Never bypass a failed
+gate with `restartIfChanged = false`. Never run `nix flake check`.
+
+## State boundaries and rollback
+
+OpenClaw 2026.11.3 has no supported per-agent migration of the shared control
+plane. The shared database owns profiles, device tokens, cron receipts and
+routing heads; each `agents/<id>/agent/openclaw-agent.sqlite` owns that agent's
+sessions, transcripts, memory index and board data. Moving just an agent DB is
+not a supported profile/routing migration. Never copy a running SQLite file,
+edit SQLite tables, transplant a seal, invoke `doctor --fix`, or copy pairings
+between these gateways. Do not clone state without a separately approved plan.
+
+The safe plain-file path is `scripts/openclaw-copy-workspace PERSON`, run as
+root on Yari. It copies the old workspace (including persona, Markdown memory,
+research runs and avatars if present), excludes bootstrap and database files,
+keeps the original untouched, backs up any pre-existing target workspace,
+compares bytes, and stops **only the destination** gateway/source long enough
+to run the supported offline `memory index --force`. An EXIT trap restores the
+destination after failure. `memory status` is also offline; live verification
+uses the authenticated `memory.search` gateway RPC. No old database, profiles,
+credentials or device pairings are part of this command.
+
+Simon: his plain workspace has been copied and its memory index rebuilt. The
+live `memory.search` query `Cedar-7319` returns
+`memory/trial-verification.md`, with provider `none` and `fts-only`. His
+07:00 Denver brief is declared on `claw-simon`, with the same prompt. His old
+job `df3d8216-a284-4086-a127-3890019d5cdb` was removed through `cron rm` without
+restarting the old gateway. Its full job declaration is backed up root-only at
+`/var/tmp/claw-split-old-simon-brief.json` on Yari. The frozen old reconciliation
+unit could recreate it only if that old gateway is restarted; do not restart it.
+
+Rollback of this file copy: stop only the destination gateway/source, rename
+its current workspace aside, restore its `workspace.before-copy-*` directory
+if one exists (otherwise start with a fresh workspace), re-index offline, then
+start the destination. The old workspace remains the authoritative backup.
+Historical conversations are not claimed migrated by a workspace-only copy.
+
+## Session Share pairing and proof procedure
+
+Both configs explicitly allow and enable bundled `session-share`, publishing
+only the exact group **Shared**. Source node hosts run as `openclaw`, with the
+same config and state directory as their local gateway, and with exactly:
+
+```
+openclaw.sessions.list.v1,openclaw.sessions.read.v1
+```
+
+No shell, filesystem, worker hosting, MCP server, skills, plugin tool or computer
+command is advertised by these sources. The source units reconnect to the other
+node on 443 using persisted device identity, not ambient local gateway passwords.
+
+Simon must save `tag:claw:443` in the existing `tag:claw` ACL destination list.
+Both gateways need HTTPS reachability to the other before pairing. He must
+also share machine **claw-laure** with `chancerellelaure@gmail.com`; node sharing
+and tailnet ACLs are separate. Do not add a `tag:claw` to human-login mapping.
+
+Mint a private, single-use join URL **on the receiver**, then connect from the
+source as `openclaw`, preserving its state/config environment. A join URL is a
+secret and must not be pasted into this runbook, arguments saved in a service,
+or public logs. Use the installed profile, not npx. Stop only the source's
+`openclaw-session-share` unit during first enrollment. The supported bootstrap
+path is `openclaw connect <join-url> --commands <the-two-commands>` in the
+foreground, then restart the declarative source unit. Inspect the exact device
+id and declared commands before any required approval. Do not configure network
+auto-approval or grant tagged nodes a human identity. The join-code mechanism's
+built-in administrator-authorized bootstrap is distinct from a human login.
+
+The proof must check each direction: one published test conversation opens as
+user/assistant text only and has no continue/archive/terminal action; an
+unshared conversation and a Draft in Shared are absent; moving the published
+conversation out of Shared prevents a new transcript read and removes its row
+on the next catalog refresh. Check viewer access under the non-admin `person`
+role. Laure's real Tailscale sign-in from her own device remains a separate
+morning check; do not impersonate her for tonight's test. Remove all identified
+test conversations via the gateway API before installing Laure's real workspace.
+Do not read any of Laure's old transcript content.
+
+## 22:00 handoff — prepared, NOT executed
+
+Prerequisites: Simon explicitly lifts the old-gateway no-touch constraint;
+Session Share has passed both directions; the chosen state procedure is
+approved; `claw-laure` is shared with Laure; no other activation runs. If any
+prerequisite is missing, leave the old gateway live and stop here. A failed
+Session Share proof blocks the rehearsal and final handoff.
+
+### 1. Final plain-workspace sync, only for the fresh-database choice
+
+The commands below intentionally do not migrate conversations. Do not substitute
+an SQLite clone. If conversation migration remains required, stop and retain the
+old gateway until a supported method or separately approved plan exists.
+
+From the work checkout on Zao:
+
+```sh
+scp -F /dev/null scripts/openclaw-copy-workspace root@yari:/var/tmp/openclaw-copy-workspace
+ssh -F /dev/null root@yari '/var/tmp/openclaw-copy-workspace laure'
+ssh -F /dev/null root@yari 'nixos-container run claw-laure -- openclaw-admin agents list --json'
+```
+
+Verify `laure`, display name **Snowy**, and workspace-relative
+`avatars/avatar.png`; compare the avatar file checksum with the original,
+without opening conversations. Check offline index file counts and gateway
+health. Fresh databases have only the deliberately created new conversations,
+not the old gateway's five Laure sessions. Keep the old session database and
+all old media as the backup. A new Session Share pairing stays on the new
+gateway; never replace its shared database with the old gateway's database.
+
+Rollback: stop only `claw-laure`'s gateway/source, restore the saved destination
+workspace and re-index it, then start both. Leave the old gateway running.
+
+### 2. Enable Laure's 07:00 brief and retire the old placement declaratively
+
+After the explicit no-touch release, from a clean source checkout on Zao:
+
+```sh
+git fetch origin cairn
+git rebase origin/cairn
+sed -i 's/legacy.enable = true/legacy.enable = false/' modules/hosts/yari.nix
+sed -i 's/enableMorningBrief = false/enableMorningBrief = true/' lib/openclaw-people.nix
+git add modules/hosts/yari.nix lib/openclaw-people.nix
+git commit -m 'feat(openclaw): finish Laure handoff and retire legacy gateway'
+git fetch origin cairn
+git rebase origin/cairn
+nix build .#checks.x86_64-linux.openclaw --no-link --max-jobs 1 --cores 1
+nix eval --raw .#nixosConfigurations.yari.config.system.build.toplevel.drvPath
+git push origin HEAD:cairn
+```
+
+Build the ARM checks/system on Yari itself, with builders disabled. Immediately
+before building, fetch/rebase again if origin moved. Retain source SHA and the
+running system SHA; do not switch an older build over another session's deploy:
+
+```sh
+EXPECTED_SOURCE_SHA=$(git rev-parse HEAD)
+RUNNING_SYSTEM=$(ssh -F /dev/null root@yari 'readlink -e /run/current-system')
+DRV=$(nix eval --raw .#nixosConfigurations.yari.config.system.build.toplevel.drvPath)
+CHECK=$(nix eval --raw .#checks.aarch64-linux.openclaw-config.drvPath)
+NIX_SSHOPTS='-F /dev/null' nix copy --derivation --to ssh-ng://root@yari "$DRV" "$CHECK"
+ssh -F /dev/null root@yari "nix build '$CHECK^*' --no-link --max-jobs 1 --cores 2 --option builders '' && nix build '$DRV^*' --no-link --max-jobs 2 --cores 4 --option builders '' --print-out-paths > /var/tmp/openclaw-cutover-system"
+git fetch origin cairn
+test "$(git rev-parse origin/cairn)" = "$EXPECTED_SOURCE_SHA"
+test "$(ssh -F /dev/null root@yari 'readlink -e /run/current-system')" = "$RUNNING_SYSTEM"
+```
+
+**Only after the explicit release**, switch this retirement candidate on Yari.
+Do not use the pre-handoff equality guard for a retirement; it correctly refuses
+removal of the protected old unit. Before switching, inspect the candidate's
+container list: only `claw-simon` and `claw-laure`, and its brief enablement.
+
+```sh
+ssh -F /dev/null root@yari 'bash -se' <<'SH'
+if pgrep -af '[/]switch-to-configuration( |$)'; then exit 1; fi
+candidate=$(cat /var/tmp/openclaw-cutover-system)
+test -f "$candidate/etc/nixos-containers/claw-simon.conf"
+test -f "$candidate/etc/nixos-containers/claw-laure.conf"
+test ! -f "$candidate/etc/systemd/system/container@openclaw.service"
+nix-env --profile /nix/var/nix/profiles/system --set "$candidate"
+"$candidate/bin/switch-to-configuration" switch
+systemctl is-active container@claw-simon container@claw-laure
+! systemctl is-active --quiet container@openclaw
+nixos-container run claw-laure -- openclaw-admin cron list --all --json
+SH
+```
+
+Verify exactly one enabled `morning-brief`, agent `laure`, expression
+`0 7 * * *`, timezone `America/Denver`, zero stagger, and delivery to
+`agent:laure:main`. Recheck both gateways, all six tool endpoints, and the
+unchanged app profile. Do not run the brief manually unless explicitly testing
+its supported read-only prompt. The legacy state directory remains persisted
+as the backup; no filesystem or tailnet identity deletion is part of this switch.
+
+Rollback before any node deletion: inspect and switch the retained previous
+system generation, which reinstates the exact frozen old container. Keep the
+independent OpenClaw app profile at its tested generation. If new gateways have
+received messages after the handoff, retain their state too; rollback does not
+merge histories. Disable the new Laure brief through `cron disable JOB_ID`
+while the old gateway is used, then revert the declarative boolean before the
+next deploy. Reconcile the old Simon brief if rolling him back too:
+
+```sh
+ssh -F /dev/null root@yari 'nixos-container run openclaw -- systemctl restart openclaw-morning-brief'
+```
+
+That command is allowed only **after** the no-touch release. It re-adds the
+original prompt through the old gateway API, without running it immediately.
+
+### 3. Retire the old tailnet name and re-pair devices
+
+After the new addresses and Session Share pass, Simon removes only machine
+**claw** from Tailscale admin. Do not remove `claw-simon`, `claw-laure`, their
+persisted overlay state, or `tag:claw` policy. This remote identity change is a
+separate step; defer it if rollback still needs the old name. Retain old state
+and the old system generation. Restoring a deleted old node can need re-enrollment
+and a new sharing invitation; rollback is simpler before deleting it.
+
+Laure's iPad and phone sign in tomorrow at
+`https://claw-laure.hummingbird-lake.ts.net` as
+`chancerellelaure@gmail.com`; approve only her exact browser/device requests on
+that gateway from the CLI. Check her profile, non-admin role, Snowy/avatar,
+read-only Simon Shared catalog and the 07:00 job. **Her real Tailscale sign-in is
+not verified by an admin CLI test tonight.** If it fails, check the machine share
+and 443/8443 policy first, then the verified login and exact pairing request.
+Do not add Simon's login, broaden the allowlist, or map tags to Laure. Keep her
+old devices and old state until the new sign-in succeeds. If needed, restore
+the old placement from its retained system generation before inviting her back.
+
+Simon's phone node **usu** re-pairs to `claw-simon`: mint a new mobile setup
+profile/QR on `claw-simon` with `openclaw-admin qr`, choose that address in the
+phone, inspect its exact request in `devices list`, approve that request, and
+verify the phone node connects there. Existing `usu` pairing on `claw` does not
+transfer. Retain it until the new pairing works; never copy pairing database
+rows or expand the two-command Session Share sources for phone capabilities.
+
+---
+
+# Historical one-gateway runbook and deployment evidence
+
+The sections below describe the superseded two-agent placement. Do not use their
+restart/deploy commands while the live legacy gateway is protected.
+
 # OpenClaw trial on Yari
 
 ## Decision: one gateway, two agents (2026-11-11)

@@ -278,7 +278,7 @@ in
                 toolFilter.include = [ "web_search" ];
               };
             }
-            // (person.extraMcpServers or { });
+            // lib.listToAttrs (person.extraMcpServers or [ ]);
           apps = {
             enabled = true;
             sandboxPort = 18790;
