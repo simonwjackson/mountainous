@@ -348,17 +348,17 @@
         "nixpkgs": "ebay-nixpkgs"
       },
       "locked": {
-        "lastModified": 1794516136,
-        "narHash": "sha256-JFTWjuYeaLsK4ScyT13/mth47SGET21HzUfUuNIclmU=",
+        "lastModified": 1794520408,
+        "narHash": "sha256-KRzhTSMZY1MoiQTnZvQfOeqSMYPbIdyGq8osdtc8F38=",
         "ref": "main",
-        "rev": "416f6fc2d7876b45871d721548f5ee5e6f1257a6",
-        "revCount": 31,
+        "rev": "1bbffa36ba768e60929892a4bd4e449cc8dca5ba",
+        "revCount": 32,
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ebay"
       },
       "original": {
         "ref": "main",
-        "rev": "416f6fc2d7876b45871d721548f5ee5e6f1257a6",
+        "rev": "1bbffa36ba768e60929892a4bd4e449cc8dca5ba",
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ebay"
       }
