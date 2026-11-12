@@ -33,6 +33,8 @@ printf 'VERIFIED legacy system closure (both): %s\nVERIFIED legacy gateway confi
 legacy_incarnation=$(systemctl show container@openclaw -p MainPID -p InvocationID -p ActiveEnterTimestampMonotonic)
 gateway_incarnation=$(nixos-container run openclaw -- systemctl show openclaw-gateway -p MainPID -p InvocationID -p ActiveEnterTimestampMonotonic)
 app_profile=$(readlink -e /nix/var/nix/profiles/apps/openclaw)
+# Every gateway that might restart must finish its current turns first.
+"$candidate/sw/bin/openclaw-wait-idle" claw-simon claw-laure
 # Recheck after the probes. Do not reset a newer independent deployment.
 test "$(readlink -e /run/current-system)" = "$running"
 if pgrep -af '[/]switch-to-configuration( |$)'; then exit 1; fi

@@ -12,6 +12,23 @@
 let
   package = import ./openclaw-package.nix { inherit pkgs inputs; };
   identityProxy = import ./claw-identity-proxy.nix { inherit pkgs; };
+  # Native catalog limits, approved by Simon and probed through openclaw@yari.
+  # contextTokens is an active-input budget, not the model's native window.
+  chatModelLimits = {
+    "claude-opus-5-5" = {
+      contextWindow = 1000000;
+      maxTokens = 128000;
+    };
+    "gpt-6.1-sol" = {
+      contextWindow = 500000;
+      maxTokens = 128000;
+      contextTokens = 272000;
+    };
+    "gemini-3.8-flash-high" = {
+      contextWindow = 1048576;
+      maxTokens = 65536;
+    };
+  };
   # The Scryer MCP App's tools (packages/media-tsnet-proxy/scryer_app.go).
   scryerAppTools = [
     "scryer_search"
@@ -177,8 +194,8 @@ in
           };
           # One non-admin person; same-agent sub-agents need sessions.others=write.
           roles = {
-            default = "person";
-            definitions.person = {
+            default = person.roleName;
+            definitions.${person.roleName} = {
               sessions.others = "write";
               agents = [ person.agentId ];
               scopes = [
@@ -207,13 +224,13 @@ in
               fallbacks = [ "openai/gpt-image-2" ];
             };
             model.primary = "front-door/claude-opus-5-5";
-            workspace = "/var/lib/openclaw/workspace";
+            workspace = person.workspacePath;
             systemAgent.agentId = person.agentId;
             sessionStore.agentId = person.agentId;
           };
           entries.${person.agentId} = {
             identity = person.identity;
-            workspace = "/var/lib/openclaw/workspace";
+            workspace = person.workspacePath;
             agentDir = "/var/lib/openclaw/agents/${person.agentId}/agent";
             heartbeat.every = "30m";
           };
@@ -228,15 +245,19 @@ in
             api = "openai-completions";
             models =
               map
-                (id: {
-                  inherit id;
-                  name = id;
-                  input = [
-                    "text"
-                    "image"
-                  ];
-                  reasoning = true;
-                })
+                (
+                  id:
+                  {
+                    inherit id;
+                    name = id;
+                    input = [
+                      "text"
+                      "image"
+                    ];
+                    reasoning = true;
+                  }
+                  // chatModelLimits.${id}
+                )
                 [
                   "claude-opus-5-5"
                   "gpt-6.1-sol"
@@ -278,7 +299,29 @@ in
                 toolFilter.include = [ "web_search" ];
               };
             }
-            // lib.listToAttrs (person.extraMcpServers or [ ]);
+            // lib.listToAttrs (
+              map (
+                server:
+                if server ? bundledDemoTool then
+                  let
+                    demo = import ./openclaw-demo.nix {
+                      inherit pkgs inputs;
+                      node = package.runtimeNode;
+                      name = server.name;
+                      tool = server.bundledDemoTool;
+                    };
+                  in
+                  {
+                    inherit (server) name;
+                    value = {
+                      command = "${demo}/bin/mcp-server-${server.name}";
+                      args = [ "--stdio" ];
+                    };
+                  }
+                else
+                  server
+              ) (person.extraMcpServers or [ ])
+            );
           apps = {
             enabled = true;
             sandboxPort = 18790;
@@ -345,7 +388,10 @@ in
             lib.filter (name: lib.hasPrefix "claw-scryer-" name) (lib.attrNames person.mcpServers)
           )
           ++ (person.extraToolPermissions or [ ]);
-          deny = [ "group:runtime" ];
+          deny = [
+            "group:runtime"
+            "web_search"
+          ];
           sessions.visibility = "agent";
           agentToAgent.enabled = false;
           codeMode.enabled = false;
@@ -437,9 +483,7 @@ in
       script = ''
         FRONT_DOOR_API_KEY="$(cat "$CREDENTIALS_DIRECTORY/front-door")"
         export FRONT_DOOR_API_KEY
-        exec ${profilePath}/bin/openclaw node run --host claw-${
-          if person.name == "simon" then "laure" else "simon"
-        }.hummingbird-lake.ts.net --port 443 --tls --commands openclaw.sessions.list.v1,openclaw.sessions.read.v1
+        exec ${profilePath}/bin/openclaw node run --host ${person.peerNodeName}.hummingbird-lake.ts.net --port 443 --tls --commands openclaw.sessions.list.v1,openclaw.sessions.read.v1
       '';
       serviceConfig = {
         User = "openclaw";

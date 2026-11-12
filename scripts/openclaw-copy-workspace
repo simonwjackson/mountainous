@@ -12,6 +12,7 @@ if [[ $person == laure ]]; then source+=-laure; fi
 target=/var/lib/nixos-containers/claw-$person/var/lib/openclaw/workspace
 [[ -d $source ]]
 systemctl is-active --quiet "container@claw-$person"
+/run/current-system/sw/bin/openclaw-wait-idle "claw-$person"
 backup=
 restore_gateway() {
   result=$?

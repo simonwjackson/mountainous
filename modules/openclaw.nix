@@ -42,7 +42,7 @@
     }:
     let
       profilePath = config.mountainous.appProfiles.openclaw.profilePath;
-      people = import ../lib/openclaw-people.nix;
+      people = import ../lib/openclaw-instances.nix { inherit legacyEnabled; };
       legacyEnabled = config.mountainous.features.openclaw.legacy.enable;
       sharedBindMounts = {
         # Bind the directory, not the symlink target: deploy-rs atomically
@@ -65,19 +65,23 @@
         };
       };
 
-      newNames = map (name: people.${name}.nodeName) (lib.attrNames people);
+      newNames = map (name: people.${name}.containerName) (lib.attrNames people);
       # Frozen deployed artifacts are real closure dependencies, not untracked
       # absolute strings. Copy them from Yari before evaluating this placement.
       frozenStorePath = path: builtins.appendContext path { ${path}.path = true; };
       legacySystem = frozenStorePath "/nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git";
       legacyConf = frozenStorePath "/nix/store/30qbz85w5qhckyl8dmj9m294ifyv7f07-etc-nixos-containers-openclaw.conf";
       legacyTriggers = frozenStorePath "/nix/store/n63mxcv1saygx0b0ypkd01cl6h02nknh-X-Restart-Triggers-container-openclaw";
+      idleCheck = pkgs.writeScriptBin "openclaw-wait-idle" (
+        "#!${pkgs.python3}/bin/python3\n" + builtins.readFile ../scripts/openclaw-wait-idle.py
+      );
       controller = pkgs.writeShellApplication {
         name = "openclaw-profile-control";
         runtimeInputs = [
           pkgs.nixos-container
           pkgs.systemd
           pkgs.coreutils
+          idleCheck
         ];
         text = ''
           if [[ $# != 1 || "$1" != restart-and-check ]]; then exit 2; fi
@@ -85,6 +89,7 @@
           # placements resolve this ONE app profile at process startup.
           for container in ${lib.concatStringsSep " " newNames}; do
             systemctl is-active --quiet "container@$container.service"
+            openclaw-wait-idle "$container"
             nixos-container run "$container" -- systemctl restart openclaw-gateway.service
             ready() {
               nixos-container run "$container" -- systemctl is-active --quiet openclaw-gateway.service &&
@@ -119,12 +124,15 @@
         };
       };
       config = lib.mkIf config.mountainous.features.openclaw.enable {
-        system.extraDependencies = lib.optionals legacyEnabled [
+        system.extraDependencies = [
           legacySystem
           legacyConf
           legacyTriggers
         ];
-        environment.systemPackages = [ controller ];
+        environment.systemPackages = [
+          controller
+          idleCheck
+        ];
         security.sudo.extraRules = [
           {
             users = [ "app-deploy" ];
@@ -170,12 +178,24 @@
           })
           // lib.mapAttrs' (
             name: person:
-            lib.nameValuePair person.nodeName {
+            lib.nameValuePair person.containerName {
               autoStart = true;
               enableTun = true;
               privateNetwork = true;
-              hostAddress = if name == "simon" then "10.231.1.1" else "10.231.2.1";
-              localAddress = if name == "simon" then "10.231.1.2" else "10.231.2.2";
+              hostAddress =
+                if name == "simon" then
+                  "10.231.1.1"
+                else if legacyEnabled then
+                  "10.231.2.1"
+                else
+                  "10.231.0.1";
+              localAddress =
+                if name == "simon" then
+                  "10.231.1.2"
+                else if legacyEnabled then
+                  "10.231.2.2"
+                else
+                  "10.231.0.2";
               bindMounts = sharedBindMounts;
               config = import ../lib/openclaw-container.nix { inherit inputs profilePath person; };
             }
@@ -212,10 +232,9 @@
           externalInterface = "enp0s6";
         };
         # Retain the whole nspawn root: overlay identity, config, and service state.
-        environment.persistence."/permafrost".directories = [
-          "/var/lib/nixos-containers/openclaw"
-        ]
-        ++ map (name: "/var/lib/nixos-containers/${name}") newNames;
+        environment.persistence."/permafrost".directories = lib.unique (
+          [ "/var/lib/nixos-containers/openclaw" ] ++ map (name: "/var/lib/nixos-containers/${name}") newNames
+        );
         assertions = [
           {
             assertion = config.networking.hostName == "yari";
@@ -301,7 +320,11 @@
               "session-share"
             ];
           assert gateway.config.tools.profile == "full";
-          assert gateway.config.tools.deny == [ "group:runtime" ];
+          assert
+            gateway.config.tools.deny == [
+              "group:runtime"
+              "web_search"
+            ];
           assert gateway.config.tools.sessions.visibility == "agent";
           assert !gateway.config.tools.agentToAgent.enabled;
           assert
@@ -381,6 +404,21 @@
           assert gateway.config.browser.ssrfPolicy.dangerouslyAllowPrivateNetwork;
           assert gateway.config.agents.defaults.thinkingDefault == "medium";
           assert lib.all (
+            m: m ? contextWindow && m ? maxTokens && m.contextWindow > 0 && m.maxTokens > 0
+          ) gateway.config.models.providers.front-door.models;
+          assert
+            (lib.findFirst (
+              m: m.id == "claude-opus-5-5"
+            ) null gateway.config.models.providers.front-door.models).contextWindow == 1000000;
+          assert
+            !(
+              lib.findFirst (m: m.id == "claude-opus-5-5") null gateway.config.models.providers.front-door.models
+                ? contextTokens
+            );
+          assert
+            (lib.findFirst (m: m.id == "gpt-6.1-sol") null gateway.config.models.providers.front-door.models)
+            .contextTokens == 272000;
+          assert lib.all (
             m:
             m.reasoning
             &&
@@ -452,10 +490,15 @@
                 new.environment.etc."openclaw/openclaw.json".source
               }\n${new.services.openclaw-gateway.package}/bin/openclaw config validate"
             )
-            [
-              "claw-simon"
-              "claw-laure"
-            ]
+            (
+              map (p: p.containerName) (
+                lib.attrValues (
+                  import ../lib/openclaw-instances.nix {
+                    legacyEnabled = host.mountainous.features.openclaw.legacy.enable;
+                  }
+                )
+              )
+            )
           }
           touch $out
         '';

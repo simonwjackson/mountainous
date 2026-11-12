@@ -1465,8 +1465,7 @@ Evidence:
 - All three chat models declare text/image input and reasoning, with thinking
   default medium. Real chat-completions requests with `reasoning_effort=medium`
   returned HTTP 200 for all three. This proves acceptance, not the provider's
-  internal reasoning behavior. Native context/output limits were not verified;
-  no contextWindow or maxTokens override is set.
+  internal reasoning behavior. Explicit limits were approved on 2026-11-11: Opus contextWindow 1,000,000 / maxTokens 128,000, without a contextTokens cap; Sol 500,000 / 128,000 with contextTokens 272,000; Gemini 1,048,576 / 65,536. Separate front-door probes using openclaw@yari accepted 698,431 prompt tokens on Opus with max_tokens=128000 (HTTP 200), 542,301 on Sol, and 760,099 on Gemini. Sol/Gemini native windows come from CLIProxyAPI's model list; the probes establish large-input acceptance, not a maximum-window measurement. Opus's uncapped input and Sol's 272,000 budget follow installed docs/providers/anthropic.md and docs/providers/openai/setup.md. Earlier unconfigured custom-provider defaults were only 128,000 context and 32,768 output.
 - Images use `agents.defaults.mediaModels.image`, with
   `openai/gemini-3.1-flash-image` primary and `openai/gpt-image-2` fallback. The
   openai provider points at the same front door's `/v1/images` dialect. The installed

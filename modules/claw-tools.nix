@@ -21,9 +21,14 @@ in
     let
       rakku = self.nixosConfigurations.rakku.config;
       containers = self.nixosConfigurations.yari.config.containers;
+      laureContainer =
+        if self.nixosConfigurations.yari.config.mountainous.features.openclaw.legacy.enable then
+          "claw-laure"
+        else
+          "openclaw";
       mcp =
         containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers
-        // containers.claw-laure.config.services.openclaw-gateway.config.mcp.servers;
+        // containers.${laureContainer}.config.services.openclaw-gateway.config.mcp.servers;
     in
     {
       checks.claw-tools =

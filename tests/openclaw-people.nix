@@ -2,9 +2,11 @@
 # This allowlist names every permitted difference. A new unlisted difference fails.
 { lib, host }:
 let
-  people = import ../lib/openclaw-people.nix;
+  people = import ../lib/openclaw-instances.nix {
+    legacyEnabled = host.mountainous.features.openclaw.legacy.enable;
+  };
   configs = lib.mapAttrs (
-    _: person: host.containers.${person.nodeName}.config.services.openclaw-gateway.config
+    _: person: host.containers.${person.containerName}.config.services.openclaw-gateway.config
   ) people;
   normalize =
     person: c:
@@ -17,21 +19,27 @@ let
         auth = c.gateway.auth // {
           trustedProxy = builtins.removeAttrs c.gateway.auth.trustedProxy [ "allowUsers" ];
         };
-        roles = c.gateway.roles // {
-          definitions = c.gateway.roles.definitions // {
-            person = builtins.removeAttrs c.gateway.roles.definitions.person [ "agents" ];
+        roles =
+          (builtins.removeAttrs c.gateway.roles [
+            "default"
+            "definitions"
+          ])
+          // {
+            definitions = (builtins.removeAttrs c.gateway.roles.definitions [ person.roleName ]) // {
+              person = builtins.removeAttrs c.gateway.roles.definitions.${person.roleName} [ "agents" ];
+            };
           };
-        };
         controlUi = builtins.removeAttrs c.gateway.controlUi [ "allowedOrigins" ];
       };
       agents = c.agents // {
-        defaults = c.agents.defaults // {
+        defaults = (builtins.removeAttrs c.agents.defaults [ "workspace" ]) // {
           systemAgent = builtins.removeAttrs c.agents.defaults.systemAgent [ "agentId" ];
           sessionStore = builtins.removeAttrs c.agents.defaults.sessionStore [ "agentId" ];
         };
         entries.person = builtins.removeAttrs agent [
           "identity"
           "agentDir"
+          "workspace"
         ];
       };
       talk = builtins.removeAttrs c.talk [ "agentId" ];
@@ -81,7 +89,7 @@ let
   valid =
     name: person:
     let
-      container = host.containers.${person.nodeName};
+      container = host.containers.${person.containerName};
       c = configs.${name};
       unit = container.config.systemd.services.openclaw-gateway.serviceConfig;
       node = container.config.systemd.services.openclaw-session-share;
@@ -89,14 +97,21 @@ let
     assert lib.attrNames c.agents.entries == [ person.agentId ];
     assert !(c.agents.entries.${person.agentId} ? tools);
     assert c.gateway.auth.trustedProxy.allowUsers == [ person.login ];
-    assert c.gateway.roles.default == "person";
-    assert lib.attrNames c.gateway.roles.definitions == [ "person" ];
-    assert c.gateway.roles.definitions.person.sessions.others == "write";
-    assert c.gateway.roles.definitions.person.agents == [ person.agentId ];
-    assert !(lib.elem "operator.admin" c.gateway.roles.definitions.person.scopes);
+    assert c.gateway.roles.default == person.roleName;
+    assert lib.attrNames c.gateway.roles.definitions == [ person.roleName ];
+    assert c.gateway.roles.definitions.${person.roleName}.sessions.others == "write";
+    assert c.gateway.roles.definitions.${person.roleName}.agents == [ person.agentId ];
+    assert !(lib.elem "operator.admin" c.gateway.roles.definitions.${person.roleName}.scopes);
     assert c.agents.entries.${person.agentId}.identity == person.identity;
+    assert c.agents.entries.${person.agentId}.workspace == person.workspacePath;
+    assert c.agents.defaults.workspace == person.workspacePath;
     assert
-      c.tools.deny == [ "group:runtime" ] && !c.tools.elevated.enabled && !c.tools.codeMode.enabled;
+      c.tools.deny == [
+        "group:runtime"
+        "web_search"
+      ]
+      && !c.tools.elevated.enabled
+      && !c.tools.codeMode.enabled;
     assert
       lib.attrNames c.mcp.servers == lib.sort builtins.lessThan (
         [

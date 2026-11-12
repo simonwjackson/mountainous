@@ -12,6 +12,9 @@ in
   simon = {
     name = "simon";
     nodeName = "claw-simon";
+    containerName = "claw-simon";
+    workspacePath = "/var/lib/openclaw/workspace";
+    roleName = "person";
     agentId = "main"; # Preserve stored session keys during the controlled move.
     login = "simon.jackson@gmail.com";
     identity = {
@@ -22,12 +25,25 @@ in
       claw-calendar.tools = [ "calendar_busy" ];
       claw-scryer-simon.tools = scryerTools;
     };
+    extraMcpServers = [
+      {
+        name = "basic-react";
+        bundledDemoTool = "get-time";
+      }
+      {
+        name = "budget-allocator";
+        bundledDemoTool = "get-budget-data";
+      }
+    ];
     morningBriefPrompt = builtins.readFile ./openclaw-morning-brief.md;
     enableMorningBrief = true;
   };
   laure = {
     name = "laure";
-    nodeName = "claw-laure";
+    nodeName = "claw";
+    containerName = "openclaw";
+    workspacePath = "/var/lib/openclaw/workspace-laure";
+    roleName = "laure";
     agentId = "laure";
     login = "chancerellelaure@gmail.com";
     identity = {
@@ -41,7 +57,7 @@ in
       claw-scryer-laure.tools = scryerTools;
     };
     morningBriefPrompt = builtins.readFile ./openclaw-morning-brief-laure.md;
-    # Enable only at the final 22:00 handoff. No duplicate rehearsal brief.
+    # Prepared only. Keep disabled: an unsolicited new brief would break continuity.
     enableMorningBrief = false;
   };
 }
