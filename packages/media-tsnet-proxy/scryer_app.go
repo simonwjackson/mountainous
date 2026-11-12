@@ -17,6 +17,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 //go:embed scryer-view/dist/media.html
@@ -35,7 +37,9 @@ func scryerViewMeta(visibility ...string) map[string]any {
 }
 
 // scryerAppTools are listed after scryer_graphql, which stays unchanged.
-func scryerAppTools() []any {
+// libraryNote, when not empty, is appended to scryer_search's description: the
+// account's library names as Scryer lists them now, so the model can name one.
+func scryerAppTools(libraryNote string) []any {
 	// Annotations are honest hints a host may use to skip a confirmation prompt:
 	// reads are read-only; add and monitor change only monitoring, are repeatable,
 	// and never delete or reach outside Scryer.
@@ -49,7 +53,7 @@ func scryerAppTools() []any {
 		return map[string]any{"name": name, "description": description, "inputSchema": json.RawMessage(schema), "annotations": hints, "_meta": scryerViewMeta(visibility...)}
 	}
 	return []any{
-		tool("scryer_search", "Search Scryer's metadata providers for movies, series and anime by name, and show the results as cards with library state (in library, monitored, on disk). Use it to identify the exact title; same names in different years are common. The person can add or monitor from the card, and the card asks which library when there is more than one. The reply lists the libraries this account can add to and which one the card suggests (the person's own by default). When the person said who it is for (the family, the kids, someone else), pass `library` with words from that library's name so the card suggests it instead.",
+		tool("scryer_search", "Search Scryer's metadata providers for movies, series and anime by name, and show the results as cards with library state (in library, monitored, on disk). Use it to identify the exact title; same names in different years are common. The person can add or monitor from the card, and the card asks which library when there is more than one. The reply lists the libraries this account can add to and which one the card suggests (the person's own by default). When the person said who it is for (the family, the kids, someone else), pass `library` with words from that library's name so the card suggests it instead."+libraryNote,
 			`{"type":"object","properties":{"query":{"type":"string","minLength":1,"maxLength":200},"library":{"type":"string","minLength":1,"maxLength":100,"description":"Optional. Words from the name of the library to suggest on the card, for example the shared family library. Omit to suggest the person's own."}},"required":["query"],"additionalProperties":false}`, "model", "app"),
 		tool("scryer_title", "Show one library title as a card: seasons, what is monitored, what is on disk. The person can monitor or unmonitor seasons and episodes from the card. titleId is Scryer's title id.",
 			`{"type":"object","properties":{"titleId":{"type":"string","minLength":1,"maxLength":100}},"required":["titleId"],"additionalProperties":false}`, "model", "app"),
@@ -198,6 +202,42 @@ type scryerApp struct {
 	client *scryerClient
 	// The Scryer origin that serves /images/... posters, e.g. https://scryer.example.ts.net.
 	origin string
+
+	noteMu   sync.Mutex
+	note     string
+	noteTime time.Time
+}
+
+// libraryNote names the account's libraries for the tool description. It is read
+// from Scryer and kept for a minute. If Scryer does not answer in time, the
+// description goes out without it; the search reply lists the libraries anyway.
+func (a *scryerApp) libraryNote(ctx context.Context) string {
+	a.noteMu.Lock()
+	defer a.noteMu.Unlock()
+	if a.note != "" && time.Since(a.noteTime) < time.Minute {
+		return a.note
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	byFacet, err := a.manageable(ctx)
+	if err != nil {
+		return ""
+	}
+	parts := []string{}
+	for _, facet := range []string{"MOVIE", "SERIES", "ANIME"} {
+		names := []string{}
+		for _, l := range byFacet[facet] {
+			names = append(names, l.Name)
+		}
+		if len(names) > 0 {
+			parts = append(parts, facetKind[facet]+": "+strings.Join(names, ", "))
+		}
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	a.note, a.noteTime = " This account's libraries now: "+strings.Join(parts, "; ")+".", time.Now()
+	return a.note
 }
 
 func (a *scryerApp) poster(path *string) any {

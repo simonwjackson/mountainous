@@ -160,7 +160,7 @@ func scryerHandler(s *scryerClient, tailnetClient func(*http.Request) bool) http
 			result = map[string]any{"tools": append([]any{map[string]any{
 				"name": "scryer_graphql", "description": "Account-scoped Scryer GraphQL. Read the live schema. Mutations are allowed; confirm destructive actions. No uploads or downloads. Do not retry mutations after timeouts.",
 				"inputSchema": json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","minLength":1},"variables":{"type":"object"}},"required":["query"],"additionalProperties":false}`),
-			}}, scryerAppTools()...)}
+			}}, scryerAppTools(app.libraryNote(r.Context()))...)}
 		case "resources/list":
 			result = map[string]any{"resources": []any{app.resource()}}
 		case "resources/read":

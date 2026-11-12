@@ -170,6 +170,8 @@ func TestScryerBoundary(t *testing.T) {
 	if !strings.Contains(w.Body.String(), `"resources":{}`) || strings.Contains(w.Body.String(), "prompts") {
 		t.Fatal("unexpected capabilities")
 	}
+	// tools/list reads the account's library names for a description; that is allowed.
+	calls, logins := f.calls, f.logins
 	for _, body := range []string{
 		`{"jsonrpc":"2.0","id":1,"method":"prompts/list"}`,
 		`{"jsonrpc":"2.0","id":1,"method":"resources/read"}`,
@@ -188,7 +190,7 @@ func TestScryerBoundary(t *testing.T) {
 			t.Fatal("invalid request accepted")
 		}
 	}
-	if f.calls != 0 || f.logins != 0 {
+	if f.calls != calls || f.logins != logins {
 		t.Fatal("denied request reached Scryer")
 	}
 	outsider := scryerHandler(newScryerClient("http://127.0.0.1:1", "admin", f.password), func(*http.Request) bool { return false })

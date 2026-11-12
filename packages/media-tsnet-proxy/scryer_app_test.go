@@ -512,6 +512,32 @@ func TestScryerAddGoesOnlyWhereTheAccountMayAdd(t *testing.T) {
 	}
 }
 
+// The model learns the library names from the tool description, read from Scryer.
+func TestScryerSearchDescriptionNamesTheAccountsLibraries(t *testing.T) {
+	describe := func(h http.Handler) string {
+		for _, tool := range rpc(t, h, "tools/list", nil).Result.Tools {
+			if tool["name"] == "scryer_search" {
+				return tool["description"].(string)
+			}
+		}
+		t.Fatal("no scryer_search")
+		return ""
+	}
+	_, h := handlerAs(t, "laure", "")
+	if d := describe(h); !strings.Contains(d, "This account's libraries now: movie: Family Movies, Laure Movies; series: Family Series, Laure Series; anime: Anime.") || strings.Contains(d, "Simon") {
+		t.Fatalf("description: %s", d)
+	}
+	_, h = handlerAs(t, "pat", plainLibraries)
+	if d := describe(h); !strings.Contains(d, "movie: Kids Movies, Movies; series: Shows.") {
+		t.Fatalf("description: %s", d)
+	}
+	// Scryer down: the tools are still listed, without the names.
+	down := scryerHandler(newScryerClient("http://127.0.0.1:1", "pat", "pw"), func(*http.Request) bool { return true })
+	if d := describe(down); strings.Contains(d, "libraries now") || len(rpc(t, down, "tools/list", nil).Result.Tools) != 5 {
+		t.Fatalf("description without Scryer: %s", d)
+	}
+}
+
 // No library or person name may be written into the endpoint: it must work for any Scryer.
 func TestScryerAppNamesNoLibraryOrPerson(t *testing.T) {
 	source, err := os.ReadFile("scryer_app.go")

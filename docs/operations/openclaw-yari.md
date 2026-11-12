@@ -805,7 +805,10 @@ the shared libraries, not Laure's, although his account is an app admin.
 The card proposes one library, in this order: the one the request named
 (`scryer_search {library: "…"}`, words from a library name, which the agent
 passes when the person says who it is for), the one named after the account,
-Scryer's default for that kind, the only one. With several libraries, **Add**
+Scryer's default for that kind, the only one. So that the agent can name a
+library at the first try, `tools/list` appends the account's current library
+names to `scryer_search`'s description (read from Scryer, kept for a minute,
+left out if Scryer does not answer in 5 seconds). With several libraries, **Add**
 and **Monitor** open a panel with the proposal selected, and the confirm
 button names the library. With one library (Anime here) the card does not ask.
 `scryer_add` takes that `libraryId`; without one it adds only when the answer
