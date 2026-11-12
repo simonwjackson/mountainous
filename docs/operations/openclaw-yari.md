@@ -1897,8 +1897,9 @@ Rakku or roll back to a Yari configuration that changes Laure's container.
 
 ### eBay deployment evidence (2026-11-12 UTC)
 
-Implementation `a8f8a9f6` landed on `cairn`. Both hosts run it. No secret value,
-eBay source file, package profile or Laure conversation was changed or read.
+Implementation `a8f8a9f6` landed on `cairn`. Both hosts run it. No secret value
+was changed. The eBay repository and signed app profile were unchanged.
+No Laure conversation was read.
 
 | Host | Generation | Running system | Built on |
 | --- | --- | --- | --- |
