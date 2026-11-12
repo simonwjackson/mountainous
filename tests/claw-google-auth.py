@@ -161,7 +161,7 @@ class AssistantRpcContracts(unittest.TestCase):
 
 
 class ConsentContracts(unittest.TestCase):
-    def test_desktop_import_and_only_readonly_calendar_scope(self):
+    def test_desktop_import_and_only_readonly_calendar_and_gmail_scopes(self):
         with tempfile.TemporaryDirectory() as home:
             env = {
                 **os.environ,
@@ -203,7 +203,7 @@ class ConsentContracts(unittest.TestCase):
                     "add",
                     "fixture@example.com",
                     "--services",
-                    "calendar",
+                    "calendar,gmail",
                     "--readonly",
                     "--remote",
                     "--step",
@@ -222,11 +222,13 @@ class ConsentContracts(unittest.TestCase):
                     "openid",
                     "https://www.googleapis.com/auth/userinfo.email",
                     "https://www.googleapis.com/auth/calendar.readonly",
+                    "https://www.googleapis.com/auth/gmail.readonly",
                 },
             )
             text = json.dumps(payload)
             self.assertIn("https://www.googleapis.com/auth/calendar.readonly", text)
-            self.assertNotIn("gmail", text)
+            for write_scope in ("gmail.modify", "gmail.send", "gmail.compose", "gmail.settings", "mail.google.com"):
+                self.assertNotIn(write_scope, text)
             self.assertNotIn('"https://www.googleapis.com/auth/calendar"', text)
             self.assertNotIn("calendar.events", text)
 

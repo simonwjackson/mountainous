@@ -56,7 +56,7 @@ The old `/var/tmp/claw-google-auth/start` is obsolete. Do not use it.
 
 On the first run, enter the intended Google account's email once. The wizard
 then asks whether you are ready **before** making the short-lived authorization
-URL. Open that URL, select the same account, and approve Calendar read-only
+URL. Open that URL, select the same account, and approve Calendar and Gmail read-only
 consent. The browser cannot reach Rakku's loopback callback. Copy the complete
 callback URL from the address bar into the wizard's hidden prompt. Do not put
 it in chat, logs, or shell history.
@@ -75,11 +75,15 @@ To change accounts, run `sudo -u pi-simon nano` on that file on Rakku, change
 only `GOG_ACCOUNT`, then run `sudo claw-google-auth`. Do not add a systemd
 override or a second account selection in Nix.
 
-The wizard requests `calendar.readonly` and gog's required identity scopes
-(`email`, `openid`, `userinfo.email`). It requests no Gmail or Calendar write
-scope. Existing Gmail polling remains unauthorized; it does not prevent
-Calendar reads. Reauthorizing an existing account replaces its saved grant;
-this command does not preserve a previous Gmail/write grant.
+The wizard requests `calendar.readonly`, `gmail.readonly` and gog's required
+identity scopes (`email`, `openid`, `userinfo.email`). It requests no Gmail or
+Calendar write scope. Gmail read is a restricted scope, so Google shows an
+unverified-app screen; choose Advanced, then continue. The Gmail API must be
+enabled in the client project. The 15-minute Gmail poll is off
+(`GOOGLE_POLL_DISABLED = "1"` in `modules/hosts/rakku.nix`) until OpenClaw's
+mail endpoint exists (assistant core ADR 0021); `mail_list` and `mail_read`
+still work. Reauthorizing an existing account replaces its saved grant; this
+command does not preserve a previous write grant.
 
 The launcher restarts only `assistant-app-simon-google`, waits for its listener,
 and compares real busy blocks for today (America/Denver) from the loopback
