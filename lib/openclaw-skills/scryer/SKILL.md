@@ -16,18 +16,20 @@ A reply can hold `data` and `errors` together. Always read `.errors[].message` a
 
 ## Show cards
 Two tools draw interactive cards in the chat. Prefer them when the person wants to find, compare or look at media:
-- `scryer_search {query}`: search results as tiles, with library state and **Add for me**, **Add for family** and **Monitor** buttons. Use it to tell same-named titles apart (remakes, US and UK versions).
+- `scryer_search {query, library?}`: search results as tiles, with library state and **Add** / **Monitor** buttons. Use it to tell same-named titles apart (remakes, US and UK versions). When there is more than one library for that kind, the card asks which one and proposes one. The reply lists the libraries and marks the proposal.
 - `scryer_title {titleId}`: one library title with its seasons, what is monitored and what is on disk, with **Monitor** / **Unmonitor** per season and per episode. `titleId` is Scryer's title id (from `scryer_search` results or `titles`).
 
-You do not see the card, and you do not see what the person presses. Each button changes Scryer at an exact scope and then re-reads it; the card shows only what Scryer reports. If the person says they pressed something, read the state again with `scryer_graphql` before you describe it. The cards never delete or restore; those stay in chat under the rules below. Both tools return the same data as JSON, so you can answer from it too.
+You do not see the card, and you do not see what the person presses. Each button changes Scryer at an exact scope and then re-reads it; the card shows only what Scryer reports. If the person says they pressed something, read the state again with `scryer_graphql` before you describe it. The cards never delete or restore; those stay in chat under the rules below. Both tools also return a short text summary, so you can answer from it too.
 
-## Choose the owner before adding
-- “For me” or no owner named means `library: "mine"`: Simon Movies/Simon Series for main, Laure Movies/Laure Series for laure.
-- “For the family”, “for the kids”, “for all of us” or “to watch together” means `library: "family"`: Family Movies/Family Series.
-- Anime always goes to Anime, regardless of owner wording.
-- The card's `scryer_add` resolves these names from `libraries(facet:, permission: MANAGE_TITLES)` and always sends `libraryId`. For chat GraphQL adds, do the same lookup and pass the exact `libraryId` to `addTitle`. Never omit it: Scryer's default is Family, not the person's library. If the matching library is absent, stop and report it; do not fall back.
+## Choose the library before adding
+Scryer can hold several libraries for one kind of media: often one per person and one shared. Do not assume names or a count; they differ between households. The libraries this account can add to come from Scryer: `scryer_search` lists them in its reply, and in chat you read them with `{me{libraryPermissions{libraryId permissions}} libraries(permission: MANAGE_TITLES){id name facet isDefault}}`.
+- Nobody named, or “for me”: the person's own library. This is what the card proposes by default, so call `scryer_search` without `library`.
+- The person says who it is for (“for the kids”, “for the family”, “for all of us”, “to watch together”): find the library that fits in the list, usually the shared one, and pass words from its name as `library`, for example `{"query":"Bluey","library":"family"}`. The card then proposes that library. If the reply says the hint matched no library, search again with words from a listed name.
+- If you cannot tell which library fits, ask in chat before you search. Say which library the card proposes when you show it, so the person can pick another.
+- One library for that kind: there is nothing to choose, and the card does not ask.
+- The card's buttons send the chosen `libraryId`. For chat GraphQL adds, pass the exact `libraryId` to `addTitle` yourself. Never omit it: Scryer's default library may not be the person's own. If no listed library fits, stop and report it; do not fall back.
 - Never act on another person's library, even if the account can see it. Treat `UNAUTHORIZED` or `NOT_FOUND` on another person's library as the separation working. Do not retry with other credentials or another endpoint.
-- A title already in a library stays there. Do not move it to satisfy an add request. Report its current library and ask in chat if the requested owner differs.
+- A title already in a library stays there. Do not move it to satisfy an add request. Report its current library and ask in chat if the requested one differs.
 - Always say which library was used, including after a card action. Read `libraryName` from the title; do not claim the intended library if Scryer reports a different one.
 
 ## Discover the schema

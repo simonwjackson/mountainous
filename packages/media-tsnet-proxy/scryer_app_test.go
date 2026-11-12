@@ -19,12 +19,20 @@ import (
 // gqlFixture answers the operations the app tools send, from a tiny library:
 // one series (two seasons, specials) and one movie. It records every mutation.
 type gqlFixture struct {
-	mu             sync.Mutex
-	mutations      []string
-	inputs         []map[string]any
-	missingLibrary bool
-	failNext       string // a mutation name that returns a GraphQL error once
+	mu        sync.Mutex
+	mutations []string
+	inputs    []map[string]any
+	libraries string // the libraries(permission: MANAGE_TITLES) reply; empty means the household fixture
+	username  string // the account that signed in
+	failNext  string // a mutation name that returns a GraphQL error once
 }
+
+// Three owners, as in the household this was built for. Tests also run other shapes:
+// nothing in the code may depend on these names.
+const householdLibraries = `[{"id":"sm","name":"Simon Movies","slug":"simon-movies","facet":"MOVIE","isDefault":false},{"id":"ss","name":"Simon Series","slug":"simon-series","facet":"SERIES","isDefault":false},{"id":"lm","name":"Laure Movies","slug":"laure-movies","facet":"MOVIE","isDefault":false},{"id":"ls","name":"Laure Series","slug":"laure-series","facet":"SERIES","isDefault":false},{"id":"fm","name":"Family Movies","slug":"movies","facet":"MOVIE","isDefault":true},{"id":"fs","name":"Family Series","slug":"series","facet":"SERIES","isDefault":true},{"id":"anime","name":"Anime","slug":"anime","facet":"ANIME","isDefault":true}]`
+
+// A different household: one library per kind plus a kids library, and no library named after anyone.
+const plainLibraries = `[{"id":"m","name":"Movies","slug":"movies","facet":"MOVIE","isDefault":true},{"id":"k","name":"Kids Movies","slug":"kids-movies","facet":"MOVIE","isDefault":false},{"id":"s","name":"Shows","slug":"shows","facet":"SERIES","isDefault":true}]`
 
 const fixtureTitle = `{"id":"t1","name":"Curb Your Enthusiasm","libraryName":"Simon Series","facet":"SERIES","monitored":true,"monitorType":null,"year":2000,"overview":"Larry.","posterUrl":"/images/media/abc/w250","network":"HBO","contentStatus":"Ended","metadataFetchedAt":"2026-11-10T00:00:00Z",
 "mediaFiles":[{"episodeId":"e1","sizeBytes":3000000000,"qualityLabel":"1080p","role":"primary"}],
@@ -49,17 +57,28 @@ func (f *gqlFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	q := body.Query
 	switch {
 	case strings.Contains(q, "login(input:"):
+		if i, ok := body.Variables["i"].(map[string]any); ok {
+			f.username, _ = i["username"].(string)
+		}
 		fmt.Fprintf(w, `{"data":{"login":{"token":"tok","expiresAt":%q}}}`, time.Now().Add(time.Hour).Format(time.RFC3339Nano))
-	case strings.Contains(q, "libraries(facet:"):
+	case strings.Contains(q, "libraries("):
 		if !strings.Contains(q, "permission:MANAGE_TITLES") {
 			w.WriteHeader(400)
 			return
 		}
-		if f.missingLibrary {
-			fmt.Fprint(w, `{"data":{"libraries":[]}}`)
-			return
+		list := f.libraries
+		if list == "" {
+			list = householdLibraries
 		}
-		fmt.Fprint(w, `{"data":{"libraries":[{"id":"sm","name":"Simon Movies","facet":"MOVIE"},{"id":"ss","name":"Simon Series","facet":"SERIES"},{"id":"lm","name":"Laure Movies","facet":"MOVIE"},{"id":"ls","name":"Laure Series","facet":"SERIES"},{"id":"fm","name":"Family Movies","facet":"MOVIE"},{"id":"fs","name":"Family Series","facet":"SERIES"},{"id":"anime","name":"Anime","facet":"ANIME"}]}}`)
+		// As in Scryer: explicit grants for a person's own and the shared libraries.
+		// An app-wide admin still gets every library in the list itself.
+		grants := map[string]string{"simon": "sm ss fm fs anime", "laure": "lm ls fm fs anime"}[f.username]
+		permissions := []string{}
+		for _, id := range strings.Fields(grants) {
+			permissions = append(permissions, fmt.Sprintf(`{"libraryId":%q,"permissions":["VIEW","MANAGE_TITLES"]}`, id))
+		}
+		permissions = append(permissions, `{"libraryId":"view-only","permissions":["VIEW"]}`)
+		fmt.Fprintf(w, `{"data":{"me":{"libraryPermissions":[%s]},"libraries":%s}}`, strings.Join(permissions, ","), list)
 	case strings.Contains(q, "searchMetadataMulti"):
 		fmt.Fprint(w, `{"data":{"searchMetadataMulti":{
 		 "movies":[{"tvdbId":"","tmdbId":109445,"name":"Frozen","year":2013,"status":"Released","overview":"Sisters.","runtimeMinutes":102,"posterUrl":"/images/media/f/w250","popularity":9},
@@ -93,6 +112,15 @@ func (f *gqlFixture) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		f.mutations = append(f.mutations, name)
 		input, _ := body.Variables["i"].(map[string]any)
 		f.inputs = append(f.inputs, input)
+		allowed := map[string][]string{"setTitleMonitored": {"titleId", "monitored"}, "setCollectionMonitored": {"collectionId", "monitored"}, "setEpisodeMonitored": {"episodeId", "monitored"}}
+		if fields, ok := allowed[name]; ok {
+			for key := range input {
+				if !strings.Contains(" "+strings.Join(fields, " ")+" ", " "+key+" ") {
+					fmt.Fprintf(w, `{"data":null,"errors":[{"message":"unknown field %s"}]}`, key)
+					return
+				}
+			}
+		}
 		if f.failNext == name {
 			f.failNext = ""
 			fmt.Fprint(w, `{"data":null,"errors":[{"message":"Scryer refused the change"}]}`)
@@ -374,48 +402,126 @@ func TestScryerViewMatchesItsSources(t *testing.T) {
 	}
 }
 
-func TestScryerAddResolvesLibrary(t *testing.T) {
-	for _, tc := range []struct{ owner, key, id, name string }{
-		{"", "movie:tmdb:999", "sm", "Simon Movies"},
-		{"mine", "series:tvdb:999", "ss", "Simon Series"},
-		{"family", "movie:tmdb:999", "fm", "Family Movies"},
-		{"family", "series:tvdb:999", "fs", "Family Series"},
-		{"mine", "anime:tvdb:999", "anime", "Anime"},
-		{"family", "anime:tvdb:999", "anime", "Anime"},
+func handlerAs(t *testing.T, username, libraries string) (*gqlFixture, http.Handler) {
+	t.Helper()
+	f := &gqlFixture{libraries: libraries}
+	server := httptest.NewServer(f)
+	t.Cleanup(server.Close)
+	return f, scryerHandler(newScryerClient(server.URL, username, "pw-secret"), func(*http.Request) bool { return true })
+}
+
+func choices(t *testing.T, r toolReply, kind string) []string {
+	t.Helper()
+	out := []string{}
+	for _, item := range r.Result.StructuredContent["libraries"].(map[string]any)[kind].([]any) {
+		l := item.(map[string]any)
+		name := l["name"].(string)
+		if l["suggested"] == true {
+			name += "*"
+		}
+		out = append(out, name)
+	}
+	return out
+}
+
+func TestScryerSearchProposesLibrariesFromTheAccount(t *testing.T) {
+	for _, tc := range []struct {
+		name, username, libraries, hint string
+		movie, series, anime            string
+		unmatched                       bool
+	}{
+		{name: "own library first", username: "simon", movie: "[Simon Movies* Family Movies]", series: "[Simon Series* Family Series]", anime: "[Anime*]"},
+		{name: "another account, same code", username: "laure", movie: "[Laure Movies* Family Movies]", series: "[Laure Series* Family Series]", anime: "[Anime*]"},
+		{name: "the request named the family", username: "laure", hint: "family", movie: "[Family Movies* Laure Movies]", series: "[Family Series* Laure Series]", anime: "[Anime*]"},
+		{name: "kind words in a hint are ignored", username: "simon", hint: "the Family movies library", movie: "[Family Movies* Simon Movies]", series: "[Family Series* Simon Series]", anime: "[Anime*]"},
+		{name: "a hint that names no library changes nothing and says so", username: "laure", hint: "kids", movie: "[Laure Movies* Family Movies]", series: "[Laure Series* Family Series]", anime: "[Anime*]", unmatched: true},
+		{name: "no grants (a plain admin): every manageable library; a name that only contains the username is not that person's", username: "sim", movie: "[Family Movies* Laure Movies Simon Movies]", series: "[Family Series* Laure Series Simon Series]", anime: "[Anime*]"},
+		{name: "no personal libraries: Scryer's default", username: "pat", libraries: plainLibraries, movie: "[Movies* Kids Movies]", series: "[Shows*]", anime: "[]"},
+		{name: "no personal libraries, hint", username: "pat", libraries: plainLibraries, hint: "kids", movie: "[Kids Movies* Movies]", series: "[Shows*]", anime: "[]"},
 	} {
-		t.Run(tc.owner+tc.key, func(t *testing.T) {
-			f, h := appHandler(t)
-			r := call(t, h, "scryer_add", map[string]any{"key": tc.key, "name": "Test", "monitorType": "NONE", "library": tc.owner})
-			if r.Result.IsError || r.Error != nil || len(f.inputs) != 1 || f.inputs[0]["libraryId"] != tc.id {
-				t.Fatalf("routing: %+v inputs %v", r, f.inputs)
+		t.Run(tc.name, func(t *testing.T) {
+			_, h := handlerAs(t, tc.username, tc.libraries)
+			args := map[string]any{"query": "Curb"}
+			if tc.hint != "" {
+				args["library"] = tc.hint
 			}
-			if r.Result.StructuredContent["done"].(map[string]any)["libraryName"] != tc.name {
-				t.Fatal("missing chosen library")
+			r := call(t, h, "scryer_search", args)
+			if r.Result.IsError || r.Error != nil {
+				t.Fatalf("search: %+v", r)
+			}
+			got := fmt.Sprint(choices(t, r, "movie"), choices(t, r, "series"), choices(t, r, "anime"))
+			if want := tc.movie + " " + tc.series + " " + tc.anime; got != want {
+				t.Fatalf("choices\n got %s\nwant %s", got, want)
+			}
+			_, unmatched := r.Result.StructuredContent["libraryHintUnmatched"]
+			if unmatched != tc.unmatched {
+				t.Fatalf("unmatched hint flag = %v", unmatched)
+			}
+			// The model's copy names the choices and the suggestion, and stays short.
+			text := r.Result.Content[0].Text
+			if !strings.Contains(text, "(suggested)") || len(text) > 4000 || strings.Contains(text, "overview") {
+				t.Fatalf("model text: %q", text)
 			}
 		})
 	}
 }
-func TestScryerAddMissingLibraryDoesNotWrite(t *testing.T) {
-	f, h := appHandler(t)
-	f.missingLibrary = true
-	r := call(t, h, "scryer_add", map[string]any{"key": "movie:tmdb:999", "name": "Test", "monitorType": "NONE"})
-	if !r.Result.IsError || !strings.Contains(r.Result.Content[0].Text, "Simon Movies") || len(f.mutations) != 0 {
-		t.Fatalf("missing library: %+v", r)
+
+func TestScryerAddGoesOnlyWhereTheAccountMayAdd(t *testing.T) {
+	for _, tc := range []struct {
+		name, username, libraries, key, libraryID string
+		wantID, wantName, wantError               string
+	}{
+		{name: "the chosen library", username: "laure", key: "movie:tmdb:999", libraryID: "fm", wantID: "fm", wantName: "Family Movies"},
+		{name: "an admin can reach another person's library, but was not granted it", username: "simon", key: "series:tvdb:999", libraryID: "ls", wantError: "cannot add to that library"},
+		{name: "nor the other way round", username: "laure", key: "movie:tmdb:999", libraryID: "sm", wantError: "cannot add to that library"},
+		{name: "none named: the account's own", username: "simon", key: "series:tvdb:999", wantID: "ss", wantName: "Simon Series"},
+		{name: "none named, other account", username: "laure", key: "movie:tmdb:999", wantID: "lm", wantName: "Laure Movies"},
+		{name: "one library for the kind needs no choice", username: "laure", key: "anime:tvdb:999", wantID: "anime", wantName: "Anime"},
+		{name: "one library, other household", username: "pat", libraries: plainLibraries, key: "series:tvdb:999", wantID: "s", wantName: "Shows"},
+		{name: "several and none is the account's: ask, never guess the default", username: "pat", libraries: plainLibraries, key: "movie:tmdb:999", wantError: "Choose a library: Kids Movies, Movies"},
+		{name: "a library of another kind", username: "simon", key: "movie:tmdb:999", libraryID: "ss", wantError: "cannot add to that library"},
+		{name: "a library the account cannot manage", username: "simon", key: "movie:tmdb:999", libraryID: "elsewhere", wantError: "cannot add to that library"},
+		{name: "no library for the kind", username: "pat", libraries: plainLibraries, key: "anime:tvdb:999", wantError: "cannot add anime titles"},
+		{name: "no libraries at all", username: "pat", libraries: "[]", key: "movie:tmdb:999", wantError: "cannot add movie titles"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f, h := handlerAs(t, tc.username, tc.libraries)
+			args := map[string]any{"key": tc.key, "name": "Test", "monitorType": "NONE"}
+			if tc.libraryID != "" {
+				args["libraryId"] = tc.libraryID
+			}
+			r := call(t, h, "scryer_add", args)
+			if tc.wantError != "" {
+				if !r.Result.IsError || !strings.Contains(r.Result.Content[0].Text, tc.wantError) || len(f.mutations) != 0 {
+					t.Fatalf("want error %q and no write: %+v %v", tc.wantError, r, f.mutations)
+				}
+				return
+			}
+			if r.Result.IsError || r.Error != nil || len(f.inputs) != 1 || f.inputs[0]["libraryId"] != tc.wantID {
+				t.Fatalf("routing: %+v inputs %v", r, f.inputs)
+			}
+			if r.Result.StructuredContent["done"].(map[string]any)["libraryName"] != tc.wantName {
+				t.Fatal("the reply must name the library")
+			}
+		})
 	}
-	f.missingLibrary = false
-	r = call(t, h, "scryer_add", map[string]any{"key": "movie:tmdb:999", "name": "Test", "monitorType": "NONE", "library": "laure"})
-	if !r.Result.IsError || len(f.mutations) != 0 {
-		t.Fatal("accepted another owner")
+	// The old owner words are not part of the contract any more.
+	_, h := handlerAs(t, "simon", "")
+	if r := call(t, h, "scryer_add", map[string]any{"key": "movie:tmdb:999", "name": "Test", "monitorType": "NONE", "library": "family"}); r.Error == nil || r.Error.Code != -32602 {
+		t.Fatal("unknown argument accepted")
 	}
 }
 
-func TestScryerLaureAddsToHerOwnLibrary(t *testing.T) {
-	f := &gqlFixture{}
-	server := httptest.NewServer(f)
-	defer server.Close()
-	h := scryerHandler(newScryerClient(server.URL, "laure", "pw-secret"), func(*http.Request) bool { return true })
-	r := call(t, h, "scryer_add", map[string]any{"key": "series:tvdb:999", "name": "Test", "monitorType": "NONE"})
-	if r.Result.IsError || len(f.inputs) != 1 || f.inputs[0]["libraryId"] != "ls" {
-		t.Fatalf("Laure routing: %+v inputs %v", r, f.inputs)
+// No library or person name may be written into the endpoint: it must work for any Scryer.
+func TestScryerAppNamesNoLibraryOrPerson(t *testing.T) {
+	source, err := os.ReadFile("scryer_app.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, word := range []string{"Simon", "Laure", "Family", "Household", "\"mine\"", "\"family\""} {
+		code := regexp.MustCompile(`(?m)//.*$`).ReplaceAllString(string(source), "")
+		if strings.Contains(code, word) {
+			t.Fatalf("scryer_app.go names %s outside a comment", word)
+		}
 	}
 }

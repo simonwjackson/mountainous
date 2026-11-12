@@ -74,10 +74,31 @@ function episode(v) {
   };
 }
 
+/**
+ * Where an add can go, per kind: the libraries the signed-in Scryer account may
+ * add to, with the one the endpoint proposes. The view knows no library names
+ * and no owners; it draws this list as it comes.
+ */
+export function libraryChoices(v) {
+  const out = {};
+  for (const kind of KINDS) {
+    const list = Array.isArray(v?.[kind]) ? v[kind] : [];
+    out[kind] = list.filter((l) => str(l?.id) && str(l?.name)).map((l) => ({ id: l.id, name: str(l.name), suggested: l.suggested === true }));
+  }
+  return out;
+}
+/**
+ * The library an add would use: the person's pick, else the proposal, else the
+ * only one. Undefined means the person must choose first.
+ */
+export function chosenLibrary(list, pickedId) {
+  return list.find((l) => l.id === pickedId) ?? list.find((l) => l.suggested) ?? (list.length === 1 ? list[0] : undefined);
+}
+
 /** Reads a tool's structuredContent. Unknown shapes become { view: "unknown" }. */
 export function classify(sc) {
   if (sc?.view === "search")
-    return { view: "search", query: str(sc.query) ?? "", results: (Array.isArray(sc.results) ? sc.results : []).map(candidate).filter(Boolean) };
+    return { view: "search", query: str(sc.query) ?? "", results: (Array.isArray(sc.results) ? sc.results : []).map(candidate).filter(Boolean), libraries: libraryChoices(sc.libraries) };
   if (sc?.view === "title" && sc.title && str(sc.title.id)) {
     const t = sc.title;
     const seasons = (Array.isArray(sc.seasons) ? sc.seasons : [])

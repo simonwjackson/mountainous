@@ -9,7 +9,7 @@ import { App, applyDocumentTheme, applyHostFonts, applyHostStyleVariables } from
 import { plan } from "./plan.js";
 import { mediaGrid, pixelSvg } from "./pixel.js";
 import {
-  KIND_WORDS, SCOPES, classify, failureText, formatSize, libraryBadges, mark, metaLine, plural, sameNames,
+  KIND_WORDS, SCOPES, chosenLibrary, classify, failureText, formatSize, libraryBadges, mark, metaLine, plural, sameNames,
   scopeLabel, scopeWords, seasonName, seasonSummary, shortDate, titleSummary, years,
 } from "./model.js";
 
@@ -30,7 +30,9 @@ const s = {
   writing: undefined, // { key, label } of the one write in flight
   errors: new Map(), // control key -> failure text
   blocked: false, // the host refused the view's own tool calls
-  choosing: undefined, // key of the tile or title whose scope choice is open
+  choosing: undefined, // key of the tile or title whose choice panel is open
+  intent: undefined, // what the open panel on a search tile is for: "add" or "monitor"
+  picked: new Map(), // tile key -> library id the person picked (else the proposal)
   open: new Set(), // season numbers open in the full view
   polledSince: undefined, pollTimer: undefined, checkedAt: undefined,
   badPosters: new Set(), // posters that failed to load: the pixel kind stands in
@@ -283,14 +285,47 @@ function scopeChoice(key, { titleId, candidateKey, current, inLibrary, monitored
   return `<div class="choice" role="group" aria-label="Monitor which episodes?"><p class="choice-q">Monitor which episodes?</p><div class="choice-opts">${opts}${seasons}${stop}<button class="btn quiet" data-act="cancel">Cancel</button></div></div>`;
 }
 
+/** The libraries this account can add this kind of title to, as the endpoint listed them. */
+const libraryList = (c) => s.data?.libraries?.[c.kind] ?? [];
+/**
+ * The panel for a result that is not in a library yet. It proposes a library (the
+ * endpoint's suggestion, selected until the person picks another) and, for a
+ * series being monitored, asks which episodes. Nothing is added until the person
+ * presses a button that names what will happen.
+ */
+function addChoice(c) {
+  const key = c.key, list = libraryList(c), lib = chosenLibrary(list, s.picked.get(key));
+  const off = Boolean(s.writing) || s.blocked;
+  const libraries = list.length > 1
+    ? `<div class="choice-part" role="group" aria-label="Which library?"><p class="choice-q">Which library?</p><div class="choice-opts">${list.map((l) =>
+        `<button class="btn pick" data-act="pick" data-key="${esc(key)}:lib:${esc(l.id)}" data-choose="${esc(key)}" data-lib="${esc(l.id)}" aria-pressed="${l.id === lib?.id}" ${off ? "disabled" : ""}>${esc(l.name)}</button>`).join("")}</div></div>`
+    : "";
+  const where = lib ? (list.length > 1 ? ` to ${lib.name}` : "") : "";
+  const data = (type) => ({ cand: key, type, lib: lib?.id, err: key });
+  const need = list.length > 1 && !lib; // several libraries and no proposal: pick first
+  let action;
+  if (s.intent === "add")
+    action = `<div class="choice-opts">${need ? "" : writeButton({ key: `${key}:go`, act: "add", label: `Add${where}`, busyLabel: "Adding…", primary: true, data: data("NONE") })}<button class="btn quiet" data-act="cancel">Cancel</button></div>`;
+  else if (c.kind === "movie")
+    action = `<div class="choice-opts">${need ? "" : writeButton({ key: `${key}:go`, act: "add", label: `Add${where} and monitor`, busyLabel: "Adding…", primary: true, data: data("ALL_EPISODES") })}<button class="btn quiet" data-act="cancel">Cancel</button></div>`;
+  else
+    action = `<div class="choice-part" role="group" aria-label="Monitor which episodes?"><p class="choice-q">Monitor which episodes?${where ? ` <span class="choice-where">Adds${esc(where)}.</span>` : ""}</p><div class="choice-opts">${need ? "" : SCOPES.map((o) =>
+        writeButton({ key: `${key}:${o.type}`, act: "add", label: o.label, busyLabel: "Adding…", data: data(o.type) })).join("")
+        + writeButton({ key: `${key}:seasons`, act: "add-pick", label: "Choose seasons", busyLabel: "Adding…", data: data("NONE") })}<button class="btn quiet" data-act="cancel">Cancel</button></div></div>`;
+  return `<div class="choice">${libraries}${need ? `<p class="choice-q">Pick a library first.</p>` : ""}${action}</div>`;
+}
+
 // ---------- search tiles ----------
 function tileActions(c) {
   const lib = c.library, key = c.key;
   if (!lib) {
-    const monitor = c.kind === "movie"
-      ? writeButton({ key: `${key}:monitor`, act: "add", label: "Monitor", busyLabel: "Adding…", data: { cand: key, type: "ALL_EPISODES", err: key }, aria: `Add and monitor ${c.name}` })
-      : `<button class="btn" data-act="choose" data-key="${esc(key)}:choose" data-choose="${esc(key)}" ${s.writing || s.blocked ? "disabled" : ""} aria-expanded="${s.choosing === key}" aria-label="Monitor ${esc(c.name)}">Monitor</button>`;
-    const add = [ ["mine", "Add for me"], ["family", "Add for family"] ].map(([library, label]) => writeButton({ key: `${key}:add:${library}`, act: "add", label, busyLabel: "Adding…", data: { cand: key, type: "NONE", library, err: key }, aria: `${label}: ${c.name} without monitoring` })).join("");
+    // One Add and one Monitor. Each opens the panel when there is something to decide:
+    // which library (more than one for this kind) or which episodes (a series).
+    const ask = (intent, label, aria) => `<button class="btn" data-act="ask" data-intent="${intent}" data-key="${esc(key)}:${intent}" data-choose="${esc(key)}" ${s.writing || s.blocked ? "disabled" : ""} aria-expanded="${s.choosing === key && s.intent === intent}" aria-label="${esc(aria)}">${label}</button>`;
+    const direct = (intent, label, type, aria) => writeButton({ key: `${key}:${intent}`, act: "add", label, busyLabel: "Adding…", data: { cand: key, type, err: key }, aria });
+    const many = libraryList(c).length > 1;
+    const monitor = many || c.kind !== "movie" ? ask("monitor", "Monitor", `Add and monitor ${c.name}`) : direct("monitor", "Monitor", "ALL_EPISODES", `Add and monitor ${c.name}`);
+    const add = many ? ask("add", "Add", `Add ${c.name} without monitoring`) : direct("add", "Add", "NONE", `Add ${c.name} without monitoring`);
     return monitor + add;
   }
   const open = `<button class="btn" data-act="open" data-key="${esc(key)}:open" data-title="${esc(lib.titleId)}" data-name="${esc(c.name)}">Open</button>`;
@@ -310,7 +345,7 @@ function tile(c, twin) {
     </div>
     <div class="tile-body">${badges(libraryBadges(c.library, c.kind))}${overview(c.overview, 2)}</div>
     <div class="tile-actions">${tileActions(c)}</div>
-    ${s.choosing === c.key ? `<div class="tile-extra">${scopeChoice(c.key, { titleId: c.library?.titleId, candidateKey: c.key, current: c.library?.monitorType, inLibrary: Boolean(c.library), monitored: c.library?.monitored })}</div>` : ""}
+    ${s.choosing === c.key ? `<div class="tile-extra">${c.library ? scopeChoice(c.key, { titleId: c.library.titleId, candidateKey: c.key, current: c.library.monitorType, inLibrary: true, monitored: c.library.monitored }) : addChoice(c)}</div>` : ""}
     ${s.errors.has(c.key) ? `<div class="tile-extra">${errorLine(c.key)}</div>` : ""}
   </div></article>`;
 }
@@ -482,17 +517,23 @@ root.addEventListener("click", (e) => {
   if (!b || b.disabled) return;
   const d = b.dataset;
   switch (d.act) {
-    case "choose": s.choosing = s.choosing === d.choose ? undefined : d.choose; render(); break;
+    case "choose": s.choosing = s.choosing === d.choose ? undefined : d.choose; s.intent = undefined; render(); break;
+    case "ask": {
+      const same = s.choosing === d.choose && s.intent === d.intent;
+      s.choosing = same ? undefined : d.choose; s.intent = same ? undefined : d.intent;
+      render();
+      break;
+    }
+    case "pick": s.picked.set(d.choose, d.lib); render(); break;
     case "cancel": s.choosing = undefined; render(); break;
     case "add": {
-      s.choosing = undefined;
-      write(d.key, d.err, "scryer_add", addArgs(d.cand, d.type, d.library), intoTile(d.cand));
+      // The panel stays open while the add runs, so the pressed button says "Adding…".
+      write(d.key, d.err, "scryer_add", addArgs(d.cand, d.type, d.lib), (fresh) => { s.choosing = s.intent = undefined; intoTile(d.cand)(fresh); });
       break;
     }
     case "add-pick": {
       // A new show with chosen seasons: add it unmonitored, then open its card to choose.
-      s.choosing = undefined;
-      write(d.key, d.err, "scryer_add", addArgs(d.cand, "NONE"), (fresh) => { intoTile(d.cand)(fresh); queueMicrotask(() => openTitle(fresh.title.id, fresh.title.name)); });
+      write(d.key, d.err, "scryer_add", addArgs(d.cand, "NONE", d.lib), (fresh) => { s.choosing = s.intent = undefined; intoTile(d.cand)(fresh); queueMicrotask(() => openTitle(fresh.title.id, fresh.title.name)); });
       break;
     }
     case "scope": {
@@ -521,9 +562,10 @@ root.addEventListener("click", (e) => {
   }
 });
 /** The add tool names the result by its key; the name and year go with it as labels. */
-function addArgs(key, monitorType, library = "mine") {
+function addArgs(key, monitorType, libraryId) {
   const c = s.data?.results?.find((r) => r.key === key);
-  return { key, library, name: c?.name ?? key, ...(c?.year !== undefined ? { year: c.year } : {}), monitorType };
+  // Without an id the endpoint uses the only library, or refuses and lists the choices.
+  return { key, ...(libraryId ? { libraryId } : {}), name: c?.name ?? key, ...(c?.year !== undefined ? { year: c.year } : {}), monitorType };
 }
 // A poster that does not load (offline, outside the tailnet, CSP) falls back to the pixel kind.
 root.addEventListener("error", (e) => {

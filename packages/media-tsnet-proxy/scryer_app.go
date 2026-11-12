@@ -49,12 +49,12 @@ func scryerAppTools() []any {
 		return map[string]any{"name": name, "description": description, "inputSchema": json.RawMessage(schema), "annotations": hints, "_meta": scryerViewMeta(visibility...)}
 	}
 	return []any{
-		tool("scryer_search", "Search Scryer's metadata providers for movies, series and anime by name, and show the results as cards with library state (in library, monitored, on disk). Use it to identify the exact title; same names in different years are common. The person can add or monitor from the card.",
-			`{"type":"object","properties":{"query":{"type":"string","minLength":1,"maxLength":200}},"required":["query"],"additionalProperties":false}`, "model", "app"),
+		tool("scryer_search", "Search Scryer's metadata providers for movies, series and anime by name, and show the results as cards with library state (in library, monitored, on disk). Use it to identify the exact title; same names in different years are common. The person can add or monitor from the card, and the card asks which library when there is more than one. The reply lists the libraries this account can add to and which one the card suggests (the person's own by default). When the person said who it is for (the family, the kids, someone else), pass `library` with words from that library's name so the card suggests it instead.",
+			`{"type":"object","properties":{"query":{"type":"string","minLength":1,"maxLength":200},"library":{"type":"string","minLength":1,"maxLength":100,"description":"Optional. Words from the name of the library to suggest on the card, for example the shared family library. Omit to suggest the person's own."}},"required":["query"],"additionalProperties":false}`, "model", "app"),
 		tool("scryer_title", "Show one library title as a card: seasons, what is monitored, what is on disk. The person can monitor or unmonitor seasons and episodes from the card. titleId is Scryer's title id.",
 			`{"type":"object","properties":{"titleId":{"type":"string","minLength":1,"maxLength":100}},"required":["titleId"],"additionalProperties":false}`, "model", "app"),
-		tool("scryer_add", "Add one search result to your own or the Family library at an exact monitoring scope. Anime always goes to Anime.",
-			`{"type":"object","properties":{"key":{"type":"string","minLength":1,"maxLength":100},"name":{"type":"string","minLength":1,"maxLength":300},"year":{"type":"integer"},"library":{"enum":["mine","family"],"default":"mine"},"monitorType":{"enum":["NONE","ALL_EPISODES","FUTURE_EPISODES","MISSING_AND_FUTURE_EPISODES"]}},"required":["key","name","monitorType"],"additionalProperties":false}`, "app"),
+		tool("scryer_add", "The card's Add and Monitor buttons: add one search result to one library at an exact monitoring scope. libraryId is one of the libraries scryer_search listed for that kind.",
+			`{"type":"object","properties":{"key":{"type":"string","minLength":1,"maxLength":100},"name":{"type":"string","minLength":1,"maxLength":300},"year":{"type":"integer"},"libraryId":{"type":"string","minLength":1,"maxLength":100},"monitorType":{"enum":["NONE","ALL_EPISODES","FUTURE_EPISODES","MISSING_AND_FUTURE_EPISODES"]}},"required":["key","name","monitorType"],"additionalProperties":false}`, "app"),
 		tool("scryer_monitor", "The card's Monitor and Unmonitor buttons: change monitoring of one title, one season, or named episodes, then read the title again.",
 			`{"type":"object","properties":{"titleId":{"type":"string","minLength":1,"maxLength":100},"monitorType":{"enum":["NONE","ALL_EPISODES","FUTURE_EPISODES","MISSING_AND_FUTURE_EPISODES"]},"seasonNumber":{"type":"integer","minimum":0},"episodeIds":{"type":"array","items":{"type":"string","minLength":1,"maxLength":100},"minItems":1,"maxItems":100},"monitored":{"type":"boolean"}},"required":["titleId"],"additionalProperties":false}`, "app"),
 	}
@@ -241,7 +241,7 @@ func monitorTypeOf(t *string) any {
 	return *t
 }
 
-func (a *scryerApp) search(ctx context.Context, query string) (map[string]any, error) {
+func (a *scryerApp) search(ctx context.Context, query, libraryHint string) (map[string]any, error) {
 	var found struct {
 		Multi struct {
 			Movies []searchItem `json:"movies"`
@@ -319,7 +319,17 @@ func (a *scryerApp) search(ctx context.Context, query string) (map[string]any, e
 		}
 		results = append(results, r)
 	}
-	return map[string]any{"view": "search", "query": query, "results": results}, nil
+	// Where an add can go, and which library the card proposes first.
+	byFacet, err := a.manageable(ctx)
+	if err != nil {
+		return nil, err
+	}
+	choices, hintMatched := libraryChoices(byFacet, a.client.username, libraryHint)
+	view := map[string]any{"view": "search", "query": query, "results": results, "libraries": choices}
+	if strings.TrimSpace(libraryHint) != "" && !hintMatched {
+		view["libraryHintUnmatched"] = libraryHint
+	}
+	return view, nil
 }
 
 func hydration(facet string, fetchedAt *string) string {
@@ -409,55 +419,214 @@ func deref(s *string) string {
 
 var allowedScopes = map[string]bool{"NONE": true, "ALL_EPISODES": true, "FUTURE_EPISODES": true, "MISSING_AND_FUTURE_EPISODES": true}
 
-// Resolve only among libraries the authenticated account can manage. Never fall
-// back to Scryer's default (Family) when a personal library is missing.
-func (a *scryerApp) addLibrary(ctx context.Context, facet, owner string) (string, string, error) {
-	if owner == "" {
-		owner = "mine"
-	}
-	if owner != "mine" && owner != "family" {
-		return "", "", appError{"Library must be mine or family."}
-	}
-	name := "Anime"
-	if facet != "ANIME" {
-		prefix := "Family"
-		if owner == "mine" {
-			username := a.client.username
-			if username == "" {
-				return "", "", appError{"Scryer account username is missing."}
-			}
-			prefix = strings.ToUpper(username[:1]) + username[1:]
-		}
-		suffix := " Movies"
-		if facet == "SERIES" {
-			suffix = " Series"
-		}
-		name = prefix + suffix
-	}
-	var result struct {
-		Libraries []struct{ ID, Name, Facet string }
-	}
-	// The facet is from kindFacet, never caller-provided GraphQL text.
-	query := fmt.Sprintf(`query{libraries(facet:%s,permission:MANAGE_TITLES){id name facet}}`, facet)
-	if err := a.client.gql(ctx, query, nil, &result); err != nil {
-		return "", "", err
-	}
-	for _, library := range result.Libraries {
-		if library.Name == name && library.Facet == facet && library.ID != "" {
-			return library.ID, name, nil
-		}
-	}
-	return "", "", appError{fmt.Sprintf("No manageable Scryer library named %q for %s; nothing was added.", name, facet)}
+// ---------- libraries ----------
+//
+// Nothing about libraries is fixed here: no names, no count, no owner list. The
+// choices are whatever Scryer lets the signed-in account add titles to, and the
+// suggestion is derived from that account's own name. On a Scryer with one
+// library per kind there is no choice and no question.
+
+type scryerLibrary struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Slug      string `json:"slug"`
+	Facet     string `json:"facet"`
+	IsDefault bool   `json:"isDefault"`
 }
 
-func (a *scryerApp) add(ctx context.Context, key, name string, year *int, monitorType, owner string) (map[string]any, error) {
+const librariesQuery = `query{me{libraryPermissions{libraryId permissions}} libraries(permission:MANAGE_TITLES){id name slug facet isDefault}}`
+
+// manageable lists the libraries a card may add to, by facet, by name: those the
+// account was explicitly granted MANAGE_TITLES on. An app-wide admin can reach
+// every library, including other people's; the grants say which are meant for
+// this account. An account with no grant on any listed library (a plain admin on
+// a simple install) gets everything Scryer lets it manage.
+func (a *scryerApp) manageable(ctx context.Context) (map[string][]scryerLibrary, error) {
+	var result struct {
+		Me *struct {
+			LibraryPermissions []struct {
+				LibraryID   string   `json:"libraryId"`
+				Permissions []string `json:"permissions"`
+			} `json:"libraryPermissions"`
+		} `json:"me"`
+		Libraries []scryerLibrary `json:"libraries"`
+	}
+	if err := a.client.gql(ctx, librariesQuery, nil, &result); err != nil {
+		return nil, err
+	}
+	granted := map[string]bool{}
+	if result.Me != nil {
+		for _, grant := range result.Me.LibraryPermissions {
+			for _, permission := range grant.Permissions {
+				if permission == "MANAGE_TITLES" {
+					granted[grant.LibraryID] = true
+				}
+			}
+		}
+	}
+	anyGranted := false
+	for _, l := range result.Libraries {
+		anyGranted = anyGranted || granted[l.ID]
+	}
+	byFacet := map[string][]scryerLibrary{}
+	for _, l := range result.Libraries {
+		if l.ID != "" && l.Name != "" && facetKind[l.Facet] != "" && (granted[l.ID] || !anyGranted) {
+			byFacet[l.Facet] = append(byFacet[l.Facet], l)
+		}
+	}
+	for _, list := range byFacet {
+		sort.SliceStable(list, func(i, j int) bool { return strings.ToLower(list[i].Name) < strings.ToLower(list[j].Name) })
+	}
+	return byFacet, nil
+}
+
+var wordSplit = regexp.MustCompile(`[^\p{L}\p{N}]+`)
+
+func words(s string) []string {
+	out := []string{}
+	for _, w := range wordSplit.Split(strings.ToLower(s), -1) {
+		if w != "" {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+func hasAllWords(l scryerLibrary, want []string) bool {
+	have := map[string]bool{}
+	for _, w := range append(words(l.Name), words(l.Slug)...) {
+		have[w] = true
+	}
+	for _, w := range want {
+		if !have[w] {
+			return false
+		}
+	}
+	return len(want) > 0
+}
+
+// ownLibrary is the one library of a facet named after the account ("Simon
+// Movies" or slug simon-movies for the account simon). None or several: no answer.
+func ownLibrary(list []scryerLibrary, username string) (scryerLibrary, bool) {
+	var found []scryerLibrary
+	for _, l := range list {
+		if hasAllWords(l, words(username)) {
+			found = append(found, l)
+		}
+	}
+	if len(found) == 1 {
+		return found[0], true
+	}
+	return scryerLibrary{}, false
+}
+
+// hintedLibrary is the one library whose name holds every word of the hint. Words
+// that name the kind, not the owner ("movies", "series", "library"), are ignored.
+func hintedLibrary(list []scryerLibrary, hint string) (scryerLibrary, bool) {
+	generic := map[string]bool{"the": true, "library": true, "libraries": true, "movie": true, "movies": true, "film": true, "films": true, "series": true, "show": true, "shows": true, "tv": true, "anime": true}
+	want := []string{}
+	for _, w := range words(hint) {
+		if !generic[w] {
+			want = append(want, w)
+		}
+	}
+	var found []scryerLibrary
+	for _, l := range list {
+		if hasAllWords(l, want) {
+			found = append(found, l)
+		}
+	}
+	if len(found) == 1 {
+		return found[0], true
+	}
+	return scryerLibrary{}, false
+}
+
+// suggest picks the library a card proposes first: the one the request named,
+// else the account's own, else Scryer's default for the kind, else the only one.
+// It is a proposal; the person confirms it on the card.
+func suggest(list []scryerLibrary, username, hint string) string {
+	if l, ok := hintedLibrary(list, hint); ok {
+		return l.ID
+	}
+	if l, ok := ownLibrary(list, username); ok {
+		return l.ID
+	}
+	for _, l := range list {
+		if l.IsDefault {
+			return l.ID
+		}
+	}
+	if len(list) == 1 {
+		return list[0].ID
+	}
+	return ""
+}
+
+// libraryChoices is the view's list per kind, suggested first.
+func libraryChoices(byFacet map[string][]scryerLibrary, username, hint string) (map[string]any, bool) {
+	out := map[string]any{}
+	hintMatched := false
+	for facet, kind := range facetKind {
+		list := byFacet[facet]
+		pick := suggest(list, username, hint)
+		if _, ok := hintedLibrary(list, hint); ok {
+			hintMatched = true
+		}
+		choices := []any{}
+		for _, first := range []bool{true, false} {
+			for _, l := range list {
+				if (l.ID == pick) == first {
+					choices = append(choices, map[string]any{"id": l.ID, "name": l.Name, "suggested": l.ID == pick})
+				}
+			}
+		}
+		out[kind] = choices
+	}
+	return out, hintMatched
+}
+
+// addTarget is where an add goes. A named library must be one the account can
+// manage for this kind. With none named, only an unambiguous answer is used: the
+// single library, or the account's own. It never guesses a shared default.
+func (a *scryerApp) addTarget(ctx context.Context, facet, libraryID string) (scryerLibrary, error) {
+	byFacet, err := a.manageable(ctx)
+	if err != nil {
+		return scryerLibrary{}, err
+	}
+	list := byFacet[facet]
+	if len(list) == 0 {
+		return scryerLibrary{}, appError{"This Scryer account cannot add " + strings.ToLower(facet) + " titles to any library; nothing was added."}
+	}
+	if libraryID != "" {
+		for _, l := range list {
+			if l.ID == libraryID {
+				return l, nil
+			}
+		}
+		return scryerLibrary{}, appError{"This Scryer account cannot add to that library; nothing was added."}
+	}
+	if len(list) == 1 {
+		return list[0], nil
+	}
+	if l, ok := ownLibrary(list, a.client.username); ok {
+		return l, nil
+	}
+	names := []string{}
+	for _, l := range list {
+		names = append(names, l.Name)
+	}
+	return scryerLibrary{}, appError{"Choose a library: " + strings.Join(names, ", ") + ". Nothing was added."}
+}
+
+func (a *scryerApp) add(ctx context.Context, key, name string, year *int, monitorType, libraryID string) (map[string]any, error) {
 	m := keyPattern.FindStringSubmatch(key)
 	if m == nil || !allowedScopes[monitorType] || strings.TrimSpace(name) == "" {
 		return nil, appError{"That result cannot be added from the card."}
 	}
 	kind, source, id := m[1], m[2], m[3]
 	facet := kindFacet[kind]
-	libraryID, libraryName, err := a.addLibrary(ctx, facet, owner)
+	target, err := a.addTarget(ctx, facet, libraryID)
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +652,7 @@ func (a *scryerApp) add(ctx context.Context, key, name string, year *int, monito
 			return view, nil
 		}
 	}
-	input := map[string]any{"name": name, "facet": facet, "libraryId": libraryID, "monitored": monitorType != "NONE", "tags": []string{}}
+	input := map[string]any{"name": name, "facet": facet, "libraryId": target.ID, "monitored": monitorType != "NONE", "tags": []string{}}
 	if year != nil {
 		input["year"] = *year
 	}
@@ -512,7 +681,7 @@ func (a *scryerApp) add(ctx context.Context, key, name string, year *int, monito
 		return nil, err
 	}
 	view := a.titleView(read, added.AddTitle.MetadataHydrationState == "PENDING")
-	view["done"] = map[string]any{"action": "add", "libraryName": libraryName}
+	view["done"] = map[string]any{"action": "add", "libraryName": target.Name}
 	return view, nil
 }
 
@@ -546,7 +715,7 @@ func (a *scryerApp) monitor(ctx context.Context, args monitorArgs) (map[string]a
 				return nil, err
 			}
 		}
-		if err := a.client.gql(ctx, `mutation($i:SetTitleMonitoredInput!){setTitleMonitored(input:$i){id}}`, map[string]any{"i": map[string]any{"titleId": t.ID, "libraryName": t.LibraryName, "monitored": on}}, &struct{}{}); err != nil {
+		if err := a.client.gql(ctx, `mutation($i:SetTitleMonitoredInput!){setTitleMonitored(input:$i){id}}`, map[string]any{"i": map[string]any{"titleId": t.ID, "monitored": on}}, &struct{}{}); err != nil {
 			return nil, err
 		}
 	case args.SeasonNumber != nil:
@@ -603,12 +772,13 @@ func (a *scryerApp) call(ctx context.Context, name string, raw json.RawMessage) 
 	switch name {
 	case "scryer_search":
 		var args struct {
-			Query string `json:"query"`
+			Query   string `json:"query"`
+			Library string `json:"library"`
 		}
-		if strict(&args) != nil || strings.TrimSpace(args.Query) == "" || len(args.Query) > 200 {
+		if strict(&args) != nil || strings.TrimSpace(args.Query) == "" || len(args.Query) > 200 || len(args.Library) > 100 {
 			return nil, errInvalidArgs
 		}
-		return a.search(ctx, strings.TrimSpace(args.Query))
+		return a.search(ctx, strings.TrimSpace(args.Query), args.Library)
 	case "scryer_title":
 		var args struct {
 			TitleID string `json:"titleId"`
@@ -623,16 +793,16 @@ func (a *scryerApp) call(ctx context.Context, name string, raw json.RawMessage) 
 		return a.titleView(t, false), nil
 	case "scryer_add":
 		var args struct {
-			Library     string `json:"library"`
+			LibraryID   string `json:"libraryId"`
 			Key         string `json:"key"`
 			Name        string `json:"name"`
 			Year        *int   `json:"year"`
 			MonitorType string `json:"monitorType"`
 		}
-		if strict(&args) != nil || len(args.Name) > 300 {
+		if strict(&args) != nil || len(args.Name) > 300 || len(args.LibraryID) > 100 {
 			return nil, errInvalidArgs
 		}
-		return a.add(ctx, args.Key, args.Name, args.Year, args.MonitorType, args.Library)
+		return a.add(ctx, args.Key, args.Name, args.Year, args.MonitorType, args.LibraryID)
 	case "scryer_monitor":
 		var args monitorArgs
 		if strict(&args) != nil || args.TitleID == "" || len(args.EpisodeIDs) > 100 {
@@ -655,4 +825,127 @@ func originOf(graphqlURL string) string {
 		return ""
 	}
 	return u.Scheme + "://" + u.Host
+}
+
+// ---------- the model's copy ----------
+
+// modelText is the short text the model reads. The card draws from the full
+// structuredContent; a host may cut long text, so this stays a summary.
+func modelText(view map[string]any) string {
+	var b strings.Builder
+	str := func(v any) string {
+		switch x := v.(type) {
+		case string:
+			return x
+		case *string:
+			return deref(x)
+		case *int:
+			if x != nil {
+				return strconv.Itoa(*x)
+			}
+		}
+		return ""
+	}
+	switch view["view"] {
+	case "search":
+		results, _ := view["results"].([]any)
+		fmt.Fprintf(&b, "Scryer search %q: %d results. The person sees them as a card with Add and Monitor buttons; you do not see what they press.\n", view["query"], len(results))
+		if libs, ok := view["libraries"].(map[string]any); ok {
+			b.WriteString("Libraries this account can add to (the card asks when there is more than one, and proposes the one marked suggested):\n")
+			for _, kind := range []string{"movie", "series", "anime"} {
+				names := []string{}
+				list, _ := libs[kind].([]any)
+				for _, item := range list {
+					l, _ := item.(map[string]any)
+					name := fmt.Sprint(l["name"])
+					if l["suggested"] == true {
+						name += " (suggested)"
+					}
+					names = append(names, name)
+				}
+				if len(names) == 0 {
+					names = []string{"none"}
+				}
+				fmt.Fprintf(&b, "- %s: %s\n", kind, strings.Join(names, ", "))
+			}
+		}
+		if hint, ok := view["libraryHintUnmatched"].(string); ok {
+			fmt.Fprintf(&b, "The library hint %q matched no single library name above, so the card suggests the default. Search again with words from one of those names.\n", hint)
+		}
+		for i, item := range results {
+			r, _ := item.(map[string]any)
+			fmt.Fprintf(&b, "%d. %s (%s", i+1, r["name"], r["kind"])
+			if y := str(r["year"]); y != "" {
+				b.WriteString(", " + y)
+			}
+			b.WriteString(")")
+			if lib, ok := r["library"].(map[string]any); ok {
+				state := "not monitored"
+				if lib["monitored"] == true {
+					state = "monitored"
+				}
+				fmt.Fprintf(&b, ": in %s, titleId %s, %s", lib["libraryName"], lib["titleId"], state)
+				if d, ok := lib["onDisk"].(map[string]int); ok {
+					fmt.Fprintf(&b, ", %d of %d on disk", d["have"], d["total"])
+				}
+			} else {
+				b.WriteString(": not in a library")
+			}
+			b.WriteString("\n")
+		}
+	case "title":
+		t, _ := view["title"].(map[string]any)
+		state := "not monitored"
+		if t["monitored"] == true {
+			state = "monitored"
+		}
+		fmt.Fprintf(&b, "Scryer title card: %s (%s", t["name"], t["kind"])
+		if y := str(t["year"]); y != "" {
+			b.WriteString(", " + y)
+		}
+		fmt.Fprintf(&b, "), titleId %s, library %s, %s", t["id"], t["libraryName"], state)
+		if mt, ok := t["monitorType"].(string); ok {
+			b.WriteString(", scope " + mt)
+		}
+		if t["hydration"] == "pending" {
+			b.WriteString(". Scryer is still reading its episodes")
+		}
+		b.WriteString(".\n")
+		if done, ok := view["done"].(map[string]any); ok {
+			fmt.Fprintf(&b, "Done: %s", done["action"])
+			if n, ok := done["libraryName"].(string); ok && n != "" {
+				b.WriteString(" in " + n)
+			}
+			b.WriteString(".\n")
+		}
+		if movie, ok := view["movie"].(map[string]any); ok {
+			if movie["onDisk"] == true {
+				b.WriteString("On disk.\n")
+			} else {
+				b.WriteString("Not on disk.\n")
+			}
+		}
+		seasons, _ := view["seasons"].([]any)
+		for _, item := range seasons {
+			s, _ := item.(map[string]any)
+			episodes, _ := s["episodes"].([]any)
+			disk, monitored := 0, 0
+			for _, e := range episodes {
+				ep, _ := e.(map[string]any)
+				if ep["onDisk"] == true {
+					disk++
+				}
+				if ep["monitored"] == true {
+					monitored++
+				}
+			}
+			name := fmt.Sprintf("Season %v", s["number"])
+			if s["number"] == 0 {
+				name = "Specials"
+			}
+			fmt.Fprintf(&b, "%s: %d episodes, %d on disk, %d monitored\n", name, len(episodes), disk, monitored)
+		}
+		b.WriteString("For single episodes, read the title with scryer_graphql.\n")
+	}
+	return b.String()
 }

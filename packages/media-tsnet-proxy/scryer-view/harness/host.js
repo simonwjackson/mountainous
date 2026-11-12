@@ -20,7 +20,7 @@ const q = new URLSearchParams(location.search);
 const frame = document.getElementById("frame");
 const seen = document.getElementById("seen");
 let mode = q.get("mode") === "fullscreen" ? "fullscreen" : "inline";
-const knobs = Object.fromEntries(["delay", "fail", "hydrate"].filter((k) => q.has(k)).map((k) => [k, q.get(k)]));
+const knobs = Object.fromEntries(["delay", "fail", "hydrate", "home", "as"].filter((k) => q.has(k)).map((k) => [k, q.get(k)]));
 if (q.get("theme")) document.documentElement.style.colorScheme = q.get("theme");
 
 // The fake claw-scryer runs in this page, so the harness is static files.

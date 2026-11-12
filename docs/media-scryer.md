@@ -288,12 +288,16 @@ endpoint loads the admin password. The old `claw-scryer` unit is retired.
 Its saved tsnet identity is retained for rollback, but has no listener.
 The new identities enroll with fleet OAuth and `tag:claw-tools`.
 
-OpenClaw adds default to the caller's Movies/Series library (`mine`).
-“Family”, “kids”, “all of us” and “watch together” route to Family (`family`).
-Anime always routes to Anime. The app resolves only libraries returned with
-`MANAGE_TITLES` and always passes `libraryId`; a missing match is an error,
-never a fallback to the default Family library. Cards show the library name
-and offer Add for me / Add for family. Existing titles are not moved.
+OpenClaw's Scryer card asks which library an add goes to and proposes the
+caller's own (the library named after the signed-in Scryer account). When the
+person says it is for the family or the kids, the agent passes that to
+`scryer_search` and the card proposes the Family library instead; the person
+confirms either way. Anime has one library, so the card does not ask. The
+choices are the libraries the account was granted `MANAGE_TITLES` on, read from
+Scryer at the time; no library or person name is in the endpoint or the view,
+so a new library or account needs no code change. An add always passes
+`libraryId`, and never falls back to the default Family library. Cards show the
+library name. Existing titles are not moved.
 
 Jellyfin: `simonwjackson` and `laure` each see only their own Movies and TV
 (their choice, 2026-11-11); `family` sees only Family Movies and TV. No

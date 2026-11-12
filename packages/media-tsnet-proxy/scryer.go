@@ -202,8 +202,7 @@ func scryerHandler(s *scryerClient, tailnetClient func(*http.Request) bool) http
 						result = map[string]any{"content": []any{map[string]string{"type": "text", "text": string(text)}}, "isError": true}
 						break
 					}
-					text, _ := json.Marshal(view)
-					result = map[string]any{"content": []any{map[string]string{"type": "text", "text": string(text)}}, "structuredContent": view, "isError": false}
+					result = map[string]any{"content": []any{map[string]string{"type": "text", "text": modelText(view)}}, "structuredContent": view, "isError": false}
 				}
 				break
 			}

@@ -796,10 +796,21 @@ are bounded to 4 MiB, upstream requests to 30 seconds and tool calls to 60.
 Redirects are disabled. HTTPS peer verification, no LAN listener and no Funnel
 remain unchanged.
 
-Adds resolve `mine` (default) or `family` against
-`libraries(facet:, permission: MANAGE_TITLES)`, then pass `libraryId` explicitly.
-Anime always resolves to Anime. Missing libraries fail without a write.
-Cards show `libraryName`, with Add for me and Add for family actions.
+Library choice is read from Scryer, not written into the endpoint: the code
+holds no library or person name (a Go test and a view test both check this).
+A card offers the libraries the signed-in account holds an explicit
+`MANAGE_TITLES` grant on; an account with no grants (a plain admin on a simple
+install) gets every library it can manage. So Simon's card offers his own and
+the shared libraries, not Laure's, although his account is an app admin.
+The card proposes one library, in this order: the one the request named
+(`scryer_search {library: "…"}`, words from a library name, which the agent
+passes when the person says who it is for), the one named after the account,
+Scryer's default for that kind, the only one. With several libraries, **Add**
+and **Monitor** open a panel with the proposal selected, and the confirm
+button names the library. With one library (Anime here) the card does not ask.
+`scryer_add` takes that `libraryId`; without one it adds only when the answer
+is unambiguous, and else refuses and lists the choices. An id the account was
+not granted fails without a write. Cards show `libraryName`.
 Existing titles are shown in their current library, never moved by an add.
 See the Owners section of `docs/media-scryer.md` for routing words.
 
@@ -879,7 +890,7 @@ served by each account-scoped endpoint and draws two card shapes:
 
 - **Search tiles** after `scryer_search {query}`: each result with its poster
   (or the kind in pixel art), kind, year, network or runtime, library badges,
-  and **Add for me** / **Add for family** / **Monitor**. A series asks which episodes first: all, future,
+  and **Add** / **Monitor**. With more than one library for the kind, both ask which library first and propose one. A series asks which episodes: all, future,
   missing and future, or chosen seasons.
 - **Title card** after `scryer_title {titleId}`: one mark per episode for each
   season (on disk, wanted, upcoming, not monitored), the whole-show scope, and

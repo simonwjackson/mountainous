@@ -27,9 +27,18 @@ scryer_title, scryer_add, scryer_monitor
                     monitored, monitorType?, hydration }, seasons: [{ number, episodes: [{ id, number, name?,
                     airDate?: YYYY-MM-DD, monitored, onDisk, file?: { quality, sizeBytes } }] }],
                     movie?: { onDisk, file? }, done?: { action, libraryName? } }
-scryer_add     <- { key, name, year?, library?: mine|family (default mine), monitorType: NONE|ALL_EPISODES|FUTURE_EPISODES|MISSING_AND_FUTURE_EPISODES }
+scryer_search  <- { query, library?: words from a library name to propose instead of the account's own }
+scryer_add     <- { key, name, year?, libraryId?: one id from `libraries` for that kind, monitorType: NONE|ALL_EPISODES|FUTURE_EPISODES|MISSING_AND_FUTURE_EPISODES }
 scryer_monitor <- { titleId, monitorType }  |  { titleId, seasonNumber, monitored }  |  { titleId, episodeIds, monitored }
 ```
+
+A search also carries `libraries: { movie|series|anime: [{ id, name, suggested }] }`:
+where this Scryer account may add each kind, proposal first. The view knows no
+library names. With one library it adds directly; with several, Add and Monitor
+open a panel that shows the proposal selected and names the library on the
+confirm button. `scryer_add` without `libraryId` works only when the answer is
+unambiguous (one library, or one named after the account); else it refuses and
+lists the choices.
 
 `monitorType` is null when Scryer has none recorded (common); the view then
 words the scope from the monitored flags. Posters are absolute https URLs on
@@ -64,5 +73,6 @@ Harness parameters: `drawing` (a key of `harness/drawings.json`), `mode`
 view's own calls, `hydrate=stuck`, `blocked=1` (the host refuses the view's
 calls, as OpenClaw's session policy did), `hold=1`, `error=1`, `press=<css>`
 (click after load, `|` between several), `nofull=1`, `still=1`, and
-`openclaw=1` (frame sizing as OpenClaw 2026.11.3 does it, including its
+`home=three|one|plain|nopick` and `as=<account>` (the fixture household and who is
+signed in), and `openclaw=1` (frame sizing as OpenClaw 2026.11.3 does it, including its
 150 px full-screen fault).

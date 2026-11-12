@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFile } from "node:fs/promises";
 import { EPISODE_TABLE_MIN_WIDTH, INLINE_RESULTS, INLINE_SEASONS, PIN_MIN_HEIGHT, TWO_COLUMN_MIN_WIDTH, plan } from "../src/plan.js";
-import { classify, failureText, libraryBadges, mark, metaLine, safePoster, sameNames, seasonSummary, years } from "../src/model.js";
+import { chosenLibrary, libraryChoices, classify, failureText, libraryBadges, mark, metaLine, safePoster, sameNames, seasonSummary, years } from "../src/model.js";
 import { createFake } from "../harness/fake-scryer.mjs";
 
 const frame = (o) => ({ view: "search", mode: "inline", width: 400, height: undefined, canFullscreen: true, count: 10, ...o });
@@ -107,10 +108,35 @@ test("cards retain and name the library returned by Scryer", () => {
   assert.equal(libraryBadges(search.results[0].library, "movie")[0].text, "Laure Movies");
 });
 
-test("the preview add actions preserve personal, family and anime routing", async () => {
-  for (const [key, library, expected] of [["tmdb:841", "mine", "Simon Movies"], ["tmdb:841", "family", "Family Movies"], ["tvdb:357888", "family", "Anime"]]) {
-    const api = createFake();
-    const result = (await api.call("scryer_add", {key, library, monitorType: "NONE"})).structuredContent;
-    assert.equal(result.title.libraryName, expected);
-  }
+test("the view draws whatever libraries the endpoint lists, and knows no names", async () => {
+  const none = classify({ view: "search", results: [] });
+  assert.deepEqual(none.libraries, { movie: [], series: [], anime: [] }, "an older endpoint without the list still draws");
+  const some = libraryChoices({ movie: [{ id: "a", name: "Alpha", suggested: true }, { id: "b", name: "Beta" }, { name: "no id" }], series: "nonsense" });
+  assert.deepEqual(some.movie.map((l) => [l.id, l.suggested]), [["a", true], ["b", false]]);
+  assert.deepEqual(some.series, []);
+  // The proposal holds until the person picks; a pick that is not in the list is ignored.
+  assert.equal(chosenLibrary(some.movie).id, "a");
+  assert.equal(chosenLibrary(some.movie, "b").id, "b");
+  assert.equal(chosenLibrary(some.movie, "gone").id, "a");
+  assert.equal(chosenLibrary([{ id: "x", name: "Only", suggested: false }]).id, "x", "one library needs no proposal");
+  assert.equal(chosenLibrary([{ id: "x", name: "X", suggested: false }, { id: "y", name: "Y", suggested: false }]), undefined, "several and no proposal: the person must pick");
+  const src = await readFile(new URL("../src/app.js", import.meta.url), "utf8") + await readFile(new URL("../src/model.js", import.meta.url), "utf8");
+  for (const word of ["Simon", "Laure", "Family", "\"mine\"", "\"family\""]) assert.ok(!src.includes(word), `the view must not name ${word}`);
+});
+
+test("the fake proposes by account and by hint, for any household", async () => {
+  const names = (sc, kind) => sc.libraries[kind].map((l) => l.name + (l.suggested ? "*" : ""));
+  const search = async (args, knobs) => (await createFake().call("scryer_search", { query: "Dune", ...args }, knobs)).structuredContent;
+  assert.deepEqual(names(await search({}, {}), "movie"), ["Simon Movies*", "Family Movies"]);
+  assert.deepEqual(names(await search({}, { as: "laure" }), "series"), ["Laure Series*", "Family Series"]);
+  assert.deepEqual(names(await search({ library: "family" }, { as: "laure" }), "movie"), ["Family Movies*", "Laure Movies"]);
+  assert.deepEqual(names(await search({}, { home: "one", as: "pat" }), "movie"), ["Movies*"]);
+  assert.deepEqual(names(await search({}, { home: "nopick", as: "pat" }), "movie"), ["Downstairs Movies", "Upstairs Movies"]);
+  // An add goes to the named library, and to no other.
+  const api = createFake();
+  const list = (await api.call("scryer_search", { query: "Dune" }, { as: "laure" })).structuredContent.libraries.movie;
+  const added = (await api.call("scryer_add", { key: "tmdb:841", monitorType: "NONE", libraryId: list.find((l) => l.name === "Family Movies").id }, { as: "laure" })).structuredContent;
+  assert.equal(added.title.libraryName, "Family Movies");
+  assert.equal((await createFake().call("scryer_add", { key: "tmdb:841", monitorType: "NONE", libraryId: "lib-movie-nope" }, {})).isError, true);
+  assert.equal((await createFake().call("scryer_add", { key: "tmdb:841", monitorType: "NONE" }, { home: "nopick" })).isError, true, "several and no proposal: nothing is added");
 });

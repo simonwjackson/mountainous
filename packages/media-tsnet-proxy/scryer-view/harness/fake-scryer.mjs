@@ -4,7 +4,8 @@
 //
 // Knobs (per request, from the harness page's query): delay=<ms> for the view's
 // own calls, fail=<tool> (that tool returns the endpoint's transport error and
-// changes nothing), hydrate=stuck (a pending title never finishes).
+// changes nothing), hydrate=stuck (a pending title never finishes), home=<fixture
+// household> and as=<account> (which libraries exist and whose is proposed).
 
 const TODAY = "2026-11-11";
 const day = (base, plusDays) => new Date(Date.parse(`${base}T00:00:00Z`) + plusDays * 864e5).toISOString().slice(0, 10);
@@ -121,8 +122,38 @@ export function createFake() {
   }
   const fold = (s) => s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+  /**
+   * Fixture households (knob home=...). The view must draw any of them: it knows
+   * no library names. `as` is the signed-in account (knob as=..., default simon).
+   *   three   a library per person plus a shared one (default)
+   *   one     one library per kind: no question is asked
+   *   plain   several, none named after the account: Scryer's default is proposed
+   *   nopick  several, no default and none the account's: the person must pick
+   */
+  const HOMES = {
+    three: { movie: ["Simon Movies", "Family Movies", "Laure Movies"], series: ["Simon Series", "Family Series", "Laure Series"], anime: ["Anime"], default: "Family", people: ["simon", "laure"] },
+    one: { movie: ["Movies"], series: ["Shows"], anime: ["Anime"] },
+    plain: { movie: ["Movies", "Kids Movies", "Documentaries with a rather long library name"], series: ["Shows", "Kids Shows"], anime: ["Anime"], default: "" },
+    nopick: { movie: ["Upstairs Movies", "Downstairs Movies"], series: ["Upstairs Shows", "Downstairs Shows"], anime: ["Anime"] },
+  };
+  function libraries(knobs, hint) {
+    const home = HOMES[knobs.home] ?? HOMES.three, as = (knobs.as ?? "simon").toLowerCase();
+    const has = (name, word) => name.toLowerCase().split(/[^a-z0-9]+/).includes(word);
+    const out = {};
+    for (const kind of ["movie", "series", "anime"]) {
+      // As the endpoint does from Scryer's grants: an account is offered the shared libraries and its own.
+      const names = (home[kind] ?? []).filter((n) => !(home.people ?? []).some((p) => p !== as && has(n, p)));
+      const hinted = hint ? names.filter((n) => has(n, hint.toLowerCase())) : [];
+      const own = names.filter((n) => has(n, as));
+      const dflt = home.default === undefined ? [] : names.filter((n) => (home.default ? has(n, home.default.toLowerCase()) : n === names[0]));
+      const pick = hinted.length === 1 ? hinted[0] : own.length === 1 ? own[0] : dflt[0] ?? (names.length === 1 ? names[0] : undefined);
+      out[kind] = [...names.filter((n) => n === pick), ...names.filter((n) => n !== pick).sort()].map((n) => ({ id: `lib-${kind}-${n.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, name: n, suggested: n === pick }));
+    }
+    return out;
+  }
+
   const tools = {
-    scryer_search({ query }) {
+    scryer_search({ query, library }, knobs = {}) {
       const q = fold(String(query ?? "").trim());
       const results = q ? CATALOG.filter((c) => fold(c.name).includes(q)) : [];
       return {
@@ -132,6 +163,7 @@ export function createFake() {
           seasons: c.seasons ? c.seasons.filter((s) => s.number !== 0).length : null, runtimeMinutes: c.runtime ?? null, overview: c.overview ?? null, poster: null,
           library: byKey(c.key) ? summary(byKey(c.key)) : null,
         })),
+        libraries: libraries(knobs, library),
       };
     },
     scryer_title({ titleId }, knobs) {
@@ -139,15 +171,19 @@ export function createFake() {
       if (!t) throw new Error(`No title with id ${titleId}.`);
       return readTitle(t, knobs);
     },
-    scryer_add({ key, monitorType, library = "mine" }, knobs) {
+    scryer_add({ key, monitorType, libraryId }, knobs = {}) {
       const c = cat(key);
       if (!c) throw new Error(`Scryer has no search result ${key}.`);
       let t = byKey(key);
       if (!t) {
-        t = { id: `t-new-${next++}`, key, libraryName: c.kind === "anime" ? "Anime" : `${library === "family" ? "Family" : "Simon"} ${c.kind === "movie" ? "Movies" : "Series"}`, monitorType: monitorType ?? "NONE", hydration: c.kind === "movie" ? "ready" : "pending", reads: 0, eps: new Map() };
+        const list = libraries(knobs)[c.kind];
+        const target = libraryId ? list.find((l) => l.id === libraryId) : list.length === 1 ? list[0] : list.find((l) => l.suggested && knobs.home !== "plain");
+        if (libraryId && !target) throw new Error("This Scryer account cannot add to that library; nothing was added.");
+        if (!target) throw new Error(`Choose a library: ${list.map((l) => l.name).join(", ")}. Nothing was added.`);
+        t = { id: `t-new-${next++}`, key, libraryName: target.name, monitorType: monitorType ?? "NONE", hydration: c.kind === "movie" ? "ready" : "pending", reads: 0, eps: new Map() };
         lib.set(t.id, t);
       }
-      return { ...readTitle(t, knobs), done: { action: "add" } };
+      return { ...readTitle(t, knobs), done: { action: "add", libraryName: t.libraryName } };
     },
     scryer_monitor({ titleId, monitorType, seasonNumber, episodeIds, monitored }, knobs) {
       const t = lib.get(titleId);
