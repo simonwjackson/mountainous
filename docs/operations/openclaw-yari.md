@@ -1844,7 +1844,7 @@ tailnet identity state.
 ## eBay MCP (2026-11-12)
 
 Simon's read-only eBay product service is placed on Rakku. The flake input
-`ebay` pins `416f6fc2d7876b45871d721548f5ee5e6f1257a6`. No buying, listing
+`ebay` pins `1bbffa36ba768e60929892a4bd4e449cc8dca5ba`. No buying, listing
 changes, replies, Best Offer responses or buyer data are exposed.
 
 - `ebay-server.service`: `127.0.0.1:3191`, POST `/mcp`. This port was free
@@ -1972,3 +1972,79 @@ wiring without changing Laure's config. Prefer reverting the feature and
 redeploying if later generations contain unrelated work. Keep both existing
 eBay secrets and the saved proxy identity. Evidence and copied Nix-shebang
 scripts are under `/tmp/claw-ebay-evidence/` on Zao.
+
+
+### eBay card polish deployment evidence (2026-11-12 UTC)
+
+Implementation `8134cc4d` pins eBay `1bbffa36ba768e60929892a4bd4e449cc8dca5ba`
+and tells Simon's model to answer in one or two sentences without repeating the
+card's rows. The cards sort comparable delivered prices with exact integer minor
+units, retain requested time sorts, and omit absent Best Offer status. Only the
+`ebay` lock node changed; every other lock node is byte-for-byte unchanged.
+
+| Host | Generation | Running system | Built on |
+| --- | --- | --- | --- |
+| Rakku | **144** | `/nix/store/lgqk9xrd7apz7ck10xisdx69rc68azxf-nixos-system-rakku-26.11.20260923.4975466` | root@unzen, copied through Zao as root |
+| Yari | **42** | `/nix/store/63ggdbwsfxpazwkms2x3y6s8xjk2dxh7-nixos-system-yari-26.11.20260923.4975466` | Yari, remote builders disabled |
+
+Rebased on latest origin/cairn and checked target switches before each host
+build; Simon had zero unfinished agent runs before Yari builds and activation.
+Concurrent `73a8ebf3` arrived after Rakku activation. Rebased before Yari activation
+and proved its toplevel drvPath still matched the built candidate. This Rakku
+generation does not include that separate Google-auth change. Neither host rebooted.
+Rakku restarted only ebay-server; the proxy PID/start time, Home Assistant,
+Z-Wave, ai-gateway and three Pi assistants stayed unchanged. All 15 tsnet units
+are active. Home Assistant returned HTTP 200; Z-Wave passed handshake/version.
+Yari restarted only Simon's container. His gateway is active, health `ok=true`,
+zero automatic restarts, started **22:02:45 UTC**. The new skill's deployed text
+matches the reply instructions and the skill is eligible and enabled.
+
+Passed: all **27 view tests**, build byte check, JavaScript syntax checks,
+Rust fmt/clippy (warnings denied), all **28 Rust tests**, and eBay `nix build`.
+Re-shot all six screenshots with the running harness and inspected them; stopped
+the harness afterward. The browser harness verified default/price headers,
+newest/endingSoonest preservation, and quiet absent Best Offer status.
+Passed the five focused x86 checks (`claw-ebay`, `claw-tools`, `tailnet-names`,
+`openclaw`, `openclaw-people`), both host evaluations, native ARM
+`openclaw-config`, Nix formatting and whitespace checks. No aggregate check ran.
+
+From the real OpenClaw user inside claw-simon, verified TLS: initialize, exactly
+**two read-only tools**, exactly two resources, both views' MIME/CSP/stamp and
+full content SHA256, unknown-tool refusal, and one listings read (count **3**).
+Metadata passed again after Yari switched; all six other claw endpoint tool lists
+passed. `openclaw-admin mcp list` includes claw-ebay-simon. The real CLI catalog
+probe with empty throwaway client state and exact deployed config discovers
+exactly `claw-ebay-simon__ebay_listings` and `claw-ebay-simon__ebay_search`,
+resources enabled, no diagnostics. Throwaway state was removed.
+
+The served pages match the pinned committed bytes:
+
+- Source stamp: `344f971094ccfd14a3b301b04089a2f1456b7dacd797dee85add26482aceb80c`.
+- Search HTML SHA256: `29106f947144a7de2bb924f1f790c5b1808f0a0460cf83749e21e2d35edd6e3d`.
+- Listings HTML SHA256: `0fba3efa761082c4867fdb90587d1da06ccfe292f8383fe5d3aa15fb547f4e74`.
+
+Exactly **2 eBay HTTP attempts**, one OAuth and one Trading, appear in the new
+server invocation journal. One read tool call; no retry, no search, no write,
+no buyer tags. No other live eBay calls were made by this deployment.
+
+Laure's live/candidate container unit and container config compare byte-identical;
+container-config store path, gateway-config store path and system closure are
+identical. Before/after evidence files compare byte-identical, including:
+
+- Container PID **1462903**, started **04:38:53 UTC**, InvocationID
+  `16c35f6d73314cb798339be98ab5dfad`.
+- Gateway PID **391**, started **04:38:53 UTC**, InvocationID
+  `5dbd700ddc1f4214b772e5a0522652ff`.
+- Unit SHA256 `ac5290d73d6d3d8372a9691f8a43d899d302ba4a9186f1ea54dd8c05abe39727`.
+- Container config SHA256 `2924b0618f171b3d20cff34c21d502f07ead760f2236083a15baddc0b3edc1ff`.
+- Gateway config SHA256 `00c26526158088baba45a8499389bee708ace3be8194b84778ff3f0b573a3ac9`.
+- System `/nix/store/z4mglka9jzbr1yssdkjnxwy0ipgylhw2-nixos-system-claw-26.11pre-git`;
+  signed app profile unchanged. No Laure conversation was read or run created.
+
+Evidence and copied Nix-shebang scripts: `/tmp/ebay-polish-evidence/` on Zao.
+Live OpenClaw chat rendering and model adherence to the new brevity instruction
+were not exercised; the harness and deployed resources were checked directly.
+A host that omits tool input cannot preserve a requested time sort; this limit
+is documented in the eBay contract and view README.
+Rollback, after inspecting concurrent changes: Rakku **143**, Yari **41**.
+These restore the previous cards/skill without changing Laure's configuration.
