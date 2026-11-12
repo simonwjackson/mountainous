@@ -44,6 +44,11 @@
       profilePath = config.mountainous.appProfiles.openclaw.profilePath;
       people = import ../lib/openclaw-people.nix;
       newNames = map (name: people.${name}.nodeName) (lib.attrNames people);
+      # Frozen deployed artifacts are real closure dependencies, not untracked
+      # absolute strings. Copy them from Yari before evaluating this placement.
+      legacySystem = builtins.storePath "/nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git";
+      legacyConf = builtins.storePath "/nix/store/30qbz85w5qhckyl8dmj9m294ifyv7f07-etc-nixos-containers-openclaw.conf";
+      legacyTriggers = builtins.storePath "/nix/store/n63mxcv1saygx0b0ypkd01cl6h02nknh-X-Restart-Triggers-container-openclaw";
       controller = pkgs.writeShellApplication {
         name = "openclaw-profile-control";
         runtimeInputs = [
@@ -86,6 +91,11 @@
         default = true;
       };
       config = lib.mkIf config.mountainous.features.openclaw.enable {
+        system.extraDependencies = [
+          legacySystem
+          legacyConf
+          legacyTriggers
+        ];
         environment.systemPackages = [ controller ];
         security.sudo.extraRules = [
           {
@@ -141,7 +151,7 @@
             # Frozen until Laure's final handoff. Pinning the system path keeps
             # the nspawn unit/restart triggers/config byte-identical even as the
             # shared definition and skills evolve for the new placements.
-            path = lib.mkForce "/nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git";
+            path = lib.mkForce legacySystem;
             config = import ../lib/openclaw-legacy-container.nix { inherit inputs profilePath; };
           };
         }
@@ -176,8 +186,7 @@
                 TimeoutStopSec = 180;
               };
               unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/openclaw" ];
-              unitConfig."X-Restart-Triggers" =
-                lib.mkForce "/nix/store/n63mxcv1saygx0b0ypkd01cl6h02nknh-X-Restart-Triggers-container-openclaw";
+              unitConfig."X-Restart-Triggers" = lib.mkForce legacyTriggers;
             };
           };
         # Preserve the actual historical artifacts, not merely their text:
@@ -221,6 +230,7 @@
           assert import ../tests/openclaw-people.nix { inherit lib host; };
           pkgs.runCommand "openclaw-people-drift" { } "touch $out";
         openclaw =
+          assert import ../tests/openclaw-people.nix { inherit lib host; };
           assert
             self.deploy.nodes.yari.profiles.openclaw.profilePath == "/nix/var/nix/profiles/apps/openclaw";
           assert !(self.deploy.nodes.rakku.profiles ? openclaw);

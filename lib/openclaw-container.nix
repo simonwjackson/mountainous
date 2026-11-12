@@ -154,6 +154,7 @@ in
           mode = "local";
           bind = "loopback";
           port = 18789;
+          publicOrigin = origin;
           # Per-person sign-in. claw-tailnet's own `tailscale serve` deletes any
           # client Tailscale-User-* headers and sets the WhoIs login (none for
           # tagged nodes). OpenClaw gets no tailscaled access (InaccessiblePaths).
@@ -427,17 +428,23 @@ in
         "openclaw-gateway.service"
         "claw-tailnet.service"
       ];
-      unitConfig.ConditionPathExists = "/var/lib/openclaw/node.json";
       environment = {
         HOME = "/var/lib/openclaw";
         OPENCLAW_STATE_DIR = "/var/lib/openclaw";
         OPENCLAW_CONFIG_PATH = "/etc/openclaw/openclaw.json";
         OPENCLAW_NIX_MODE = "1";
       };
+      script = ''
+        FRONT_DOOR_API_KEY="$(cat "$CREDENTIALS_DIRECTORY/front-door")"
+        export FRONT_DOOR_API_KEY
+        exec ${profilePath}/bin/openclaw node run --host claw-${
+          if person.name == "simon" then "laure" else "simon"
+        }.hummingbird-lake.ts.net --port 443 --tls --commands openclaw.sessions.list.v1,openclaw.sessions.read.v1
+      '';
       serviceConfig = {
         User = "openclaw";
         Group = "openclaw";
-        ExecStart = "${profilePath}/bin/openclaw node run --commands openclaw.sessions.list.v1,openclaw.sessions.read.v1";
+        LoadCredential = [ "front-door:/run/host-credentials/front-door" ];
         Restart = "always";
         RestartSec = 10;
         UMask = "0077";
