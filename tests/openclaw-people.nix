@@ -135,6 +135,11 @@ let
     assert lib.pathExists "${builtins.head c.skills.load.extraDirs}/scryer/SKILL.md";
     true;
 in
+assert (import ../lib/openclaw-people.nix).laure.login == "chancerellelaure@gmail.com";
+assert (import ../lib/openclaw-people.nix).laure.containerName == "openclaw";
+assert (import ../lib/openclaw-people.nix).laure.nodeName == "claw";
+assert (import ../lib/openclaw-people.nix).laure.roleName == "laure";
+assert !(import ../lib/openclaw-people.nix).laure.enableMorningBrief;
 assert same;
 # Prove the drift comparison rejects a change outside the personal allowlist.
 assert common != normalized people.laure (configs.laure // { discovery.mdns.mode = "all"; });

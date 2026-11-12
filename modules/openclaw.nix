@@ -247,6 +247,10 @@
     { pkgs, lib, ... }:
     let
       host = self.nixosConfigurations.yari.config;
+      productionHost =
+        (self.nixosConfigurations.yari.extendModules {
+          modules = [ ({ lib, ... }: { mountainous.features.openclaw.legacy.enable = lib.mkForce false; }) ];
+        }).config;
       container = host.containers.claw-simon;
       c = container.config;
       gateway = c.services.openclaw-gateway;
@@ -261,8 +265,18 @@
         openclaw-people =
           assert import ../tests/openclaw-people.nix { inherit lib host; };
           pkgs.runCommand "openclaw-people-drift" { } "touch $out";
+        openclaw-in-place =
+          assert import ../tests/openclaw-people.nix {
+            inherit lib;
+            host = productionHost;
+          };
+          pkgs.runCommand "openclaw-in-place-drift" { } "touch $out";
         openclaw =
           assert import ../tests/openclaw-people.nix { inherit lib host; };
+          assert import ../tests/openclaw-people.nix {
+            inherit lib;
+            host = productionHost;
+          };
           assert
             self.deploy.nodes.yari.profiles.openclaw.profilePath == "/nix/var/nix/profiles/apps/openclaw";
           assert !(self.deploy.nodes.rakku.profiles ? openclaw);

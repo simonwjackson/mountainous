@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Root on Yari, AFTER the destination is healthy. No human login impersonation.
+set -euo pipefail
+if [[ $# != 3 ]]; then
+  echo 'Usage: openclaw-pair-source SOURCE_CONTAINER RECEIVER_CONTAINER RECEIVER_NODE' >&2
+  exit 2
+fi
+source=$1
+receiver=$2
+node=$3
+for name in "$source" "$receiver" "$node"; do
+  [[ $name =~ ^[a-zA-Z0-9-]+$ ]] || exit 2
+done
+umask 077
+install -d -m 0700 /var/lib/openclaw-pairing
+json=/var/lib/openclaw-pairing/join-$receiver.json
+nixos-container run "$receiver" -- openclaw-admin devices join-code --json > "$json"
+join=$(jq -er .joinUrl "$json")
+[[ $join == https://$node.hummingbird-lake.ts.net/j/* ]]
+state=/var/lib/nixos-containers/$source/var/lib/openclaw
+printf '%s\n' "$join" > "$state/.session-share-join"
+chown 992:998 "$state/.session-share-join"
+source_ip=$(nixos-container run "$source" -- tailscale status --json | jq -er '.Self.TailscaleIPs[0]')
+nixos-container run "$source" -- systemctl stop openclaw-session-share
+# The service shell, not this root shell, must expand CREDENTIALS_DIRECTORY.
+# shellcheck disable=SC2016
+nixos-container run "$source" -- systemd-run --unit=session-share-enroll --collect \
+  --property=User=openclaw --property=Group=openclaw \
+  --property=WorkingDirectory=/var/lib/openclaw \
+  --property=LoadCredential=front-door:/run/host-credentials/front-door \
+  --setenv=HOME=/var/lib/openclaw --setenv=OPENCLAW_STATE_DIR=/var/lib/openclaw \
+  --setenv=OPENCLAW_CONFIG_PATH=/etc/openclaw/openclaw.json --setenv=OPENCLAW_NIX_MODE=1 \
+  /bin/sh -c 'FRONT_DOOR_API_KEY="$(/run/current-system/sw/bin/cat "$CREDENTIALS_DIRECTORY/front-door")"; export FRONT_DOOR_API_KEY; exec /nix/var/nix/profiles/apps/openclaw/bin/openclaw connect --target-file /var/lib/openclaw/.session-share-join --commands openclaw.sessions.list.v1,openclaw.sessions.read.v1 --display-name "Read-only Session Share source"'
+# The single-use administrator bootstrap approves its exact two-command surface.
+# Do not enable network auto-approval or approve unrelated pending devices.
+deadline=$((SECONDS + 120))
+until nixos-container run "$receiver" -- openclaw-admin nodes list --json | jq -e --arg ip "$source_ip" \
+  '[.paired[] | select(.remoteIp == $ip and .connected == true and .sessionHost == false and .caps == ["openclaw-sessions"] and .commands == ["openclaw.sessions.list.v1","openclaw.sessions.read.v1"])] | length == 1' >/dev/null; do
+  if (( SECONDS >= deadline )); then
+    echo 'Pairing did not reach the exact approved command surface; inspect the transient enrollment unit' >&2
+    exit 1
+  fi
+  sleep 2
+done
+nixos-container run "$source" -- systemctl stop session-share-enroll
+nixos-container run "$source" -- systemctl start openclaw-session-share
+printf 'Paired %s -> %s with exactly read-only session list/read; declarative source restarted\n' "$source" "$receiver"
