@@ -7,6 +7,9 @@
   };
 
   inputs = {
+    # Keep upstream's nixpkgs: Unzen already built these exact store paths.
+    sparkyfitness.url = "github:CodeWithCJ/SparkyFitness/59a812e5d7c091bbb97f18c859ca1e51d82df679";
+
     # Release packaging and its locked npm closure; ARM uses our runtime below.
     nix-openclaw = {
       url = "github:openclaw/nix-openclaw/412fc9f978072eac48c4dfe8cc77181e077696a6";

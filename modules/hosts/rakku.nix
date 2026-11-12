@@ -19,6 +19,7 @@ in
       "home-exit-node"
       "cliproxyapi"
       "logbook"
+      "sparkyfitness"
       "tailnet-names"
       "claw-tools"
       "claw-scryer"
@@ -81,6 +82,46 @@ in
         # NeededForUsers decrypts before /etc's persisted file links are set up.
         # This filesystem is mounted in stage 1, so the key exists on cold boot.
         sops.age.sshKeyPaths = lib.mkForce [ "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key" ];
+        # Logbook is retired in favour of SparkyFitness; data stays at /var/lib/logbook.
+        systemd.services.logbook = {
+          wantedBy = lib.mkForce [ ];
+          # The old app-only deploy controller explicitly calls systemctl start.
+          unitConfig.RefuseManualStart = true;
+        };
+        systemd.services.logbook-tsnet = {
+          wantedBy = lib.mkForce [ ];
+          wants = lib.mkForce [ "network-online.target" ];
+          unitConfig.RefuseManualStart = true;
+        };
+        # Secret rotation must not start the retired backend either.
+        sops.templates."logbook-oura-client.json".restartUnits = lib.mkForce [ ];
+        sops.templates."logbook-withings-client.json".restartUnits = lib.mkForce [ ];
+
+        # PostgreSQL is new on Rakku and serves only SparkyFitness (~130 MiB idle).
+        systemd.services.postgresql.serviceConfig = {
+          MemoryHigh = "256M";
+          MemoryMax = "512M";
+        };
+        # Upstream app.listen(PORT) binds wildcard. An earlier nft input hook
+        # blocks direct API access even when tailscaled ACCEPTs before nixos-fw.
+        # Keep the existing iptables firewall; this table guards only this port.
+        networking.firewall.extraCommands = ''
+          ${pkgs.nftables}/bin/nft -f - <<'EOF'
+          add table inet sparkyfitness
+          add chain inet sparkyfitness input { type filter hook input priority -10; policy accept; }
+          flush chain inet sparkyfitness input
+          add rule inet sparkyfitness input iifname != "lo" tcp dport ${toString config.services.sparkyfitness.port} reject
+          EOF
+        '';
+        networking.firewall.extraStopCommands = ''
+          ${pkgs.nftables}/bin/nft delete table inet sparkyfitness 2>/dev/null || true
+        '';
+        # Do not run the wildcard-bound API without its ingress guard.
+        systemd.services.sparkyfitness = {
+          bindsTo = [ "firewall.service" ];
+          after = [ "firewall.service" ];
+          partOf = [ "firewall.service" ];
+        };
         mountainous.serviceApps.groceries = (import ../../lib/groceries-service.nix { inherit pkgs; }) // {
           input = "groceries";
           port = 4382;
@@ -503,7 +544,10 @@ in
         systemd.services.assistant-app-simon-google.serviceConfig.EnvironmentFile = [
           "-/var/lib/pi-assistant-simon/apps/google/.config/gogcli/.calendar-signin.env"
         ];
-        environment.systemPackages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.claw-google-auth ];
+        environment.systemPackages = [
+          pkgs.nftables # Inspect the early input guard for the wildcard-bound backend.
+          self.packages.${pkgs.stdenv.hostPlatform.system}.claw-google-auth
+        ];
         sops.secrets.pi-assistant-brave-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
