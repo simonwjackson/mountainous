@@ -830,6 +830,30 @@ checking the previous generation's contents. This re-enables the old admin
 endpoint and is a security regression; use only to recover service. Do not
 reboot or remove any Scryer, OpenClaw or tsnet state.
 
+### Library choice deployment evidence (2026-11-12 UTC)
+
+- Commits `58b7dcd2` (library choice, `setTitleMonitored` fix, short model
+  text) and `3b685dec` (library names in the tool description) on `cairn`.
+  Rakku generations **141** (`7r4jii5l`) and **142** (`w3filqik`), built on
+  Unzen and copied through Zao; only `media-tsnet-proxy` changed, all tsnet
+  proxies restarted, Home Assistant, ai-gateway and the pi-assistants did not.
+  Yari generation **36** (`gf7wxfby`, skill text only, no package change), built
+  on Yari; `openclaw-profile-control restart-and-check` passed afterwards.
+- Passed: Go tests under the race detector, the `claw-scryer` check, the x86
+  `openclaw` evaluation, ARM `openclaw-config`, and the view's 14 Node tests.
+- Live, read-only, as each account: simon is offered Simon and Family libraries
+  (not Laure's, although his account can manage them), laure is offered Laure
+  and Family; each gets the own library proposed, `library: "family"` proposes
+  Family, a hint that names no library is reported, and Anime has one choice.
+- In a new Draft conversation of `main`: "get Paddington 2 for the kids" made
+  one `scryer_search` with the family hint. The card's Add panel showed Family
+  Movies selected, Simon Movies as the other choice, and the button "Add to
+  Family Movies". The button was not pressed: an add is undone only by a
+  delete. No title was added and nothing in Scryer changed.
+- During the test another session restarted the gateway and then the container.
+  After a restart OpenClaw shows old cards as "Send a message to interact
+  again"; the next reply draws a working card.
+
 ### Account endpoints deployment evidence (2026-11-11 UTC)
 
 - Commit `b0b6f323` on `cairn`. Rakku generation **140**
