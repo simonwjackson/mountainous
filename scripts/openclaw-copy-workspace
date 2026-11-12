@@ -12,13 +12,26 @@ if [[ $person == laure ]]; then source+=-laure; fi
 target=/var/lib/nixos-containers/claw-$person/var/lib/openclaw/workspace
 [[ -d $source ]]
 systemctl is-active --quiet "container@claw-$person"
-# A consistent second copy catches files changed during the first pass. No
-# --delete: the live original and previous target files remain recoverable.
-if [[ -d $target ]]; then cp -a "$target" "$target.before-copy-$(date -u +%Y%m%dT%H%M%SZ)"; fi
-install -d -o 992 -g 998 -m 0700 "$target"
-if [[ -f $target/BOOTSTRAP.md ]]; then
-  mv "$target/BOOTSTRAP.md" "$target/BOOTSTRAP.md.before-copy-$(date -u +%Y%m%dT%H%M%SZ)"
+backup=
+restore_gateway() {
+  result=$?
+  if [[ $result != 0 && -n $backup ]]; then
+    if [[ -d $target ]]; then mv "$target" "$target.failed-copy-$(date -u +%Y%m%dT%H%M%SZ)"; fi
+    mv "$backup" "$target"
+  fi
+  nixos-container run "claw-$person" -- systemctl start openclaw-gateway openclaw-session-share
+  return "$result"
+}
+trap restore_gateway EXIT
+# Stop only the destination. The original workspace and gateway stay live.
+nixos-container run "claw-$person" -- systemctl stop openclaw-session-share openclaw-gateway
+if [[ -d $target ]]; then
+  backup="$target.before-copy-$(date -u +%Y%m%dT%H%M%SZ)"
+  mv "$target" "$backup"
 fi
+install -d -o 992 -g 998 -m 0700 "$target"
+# A fresh destination prevents bootstrap/test files surviving a rehearsal or
+# final sync. No --delete: previous files live in the reversible backup above.
 rsync -a --safe-links --exclude='*.sqlite*' --exclude='*.db*' --exclude=BOOTSTRAP.md "$source/" "$target/"
 rsync -a --safe-links --exclude='*.sqlite*' --exclude='*.db*' --exclude=BOOTSTRAP.md "$source/" "$target/"
 # Compare bytes, not mtimes. Print counts, never contents or transcript text.
@@ -28,12 +41,7 @@ if [[ -n $drift ]]; then
   exit 1
 fi
 printf 'Verified workspace bytes copied for %s; source retained: %s\n' "$person" "$source"
-# Rebuild derived memory from the copied Markdown using the supported command.
-restore_gateway() {
-  nixos-container run "claw-$person" -- systemctl start openclaw-gateway openclaw-session-share
-}
-trap restore_gateway EXIT
-nixos-container run "claw-$person" -- systemctl stop openclaw-session-share openclaw-gateway
+# Rebuild derived memory through the supported exclusive-offline command.
 nixos-container run "claw-$person" -- openclaw-admin memory index --force
 nixos-container run "claw-$person" -- openclaw-admin memory status --json
 restore_gateway
