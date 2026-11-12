@@ -251,7 +251,14 @@
       host = self.nixosConfigurations.yari.config;
       productionHost =
         (self.nixosConfigurations.yari.extendModules {
-          modules = [ ({ lib, ... }: { mountainous.features.openclaw.legacy.enable = lib.mkForce false; }) ];
+          modules = [
+            (
+              { lib, ... }:
+              {
+                mountainous.features.openclaw.legacy.enable = lib.mkForce false;
+              }
+            )
+          ];
         }).config;
       container = host.containers.claw-simon;
       c = container.config;
@@ -368,6 +375,8 @@
               "claw-scryer-simon__scryer_title"
               "claw-scryer-simon__scryer_add"
               "claw-scryer-simon__scryer_monitor"
+              "claw-ebay-simon__ebay_search"
+              "claw-ebay-simon__ebay_listings"
             ];
           assert !(gateway.config.mcp.servers ? claw-scryer);
           assert lib.all (
@@ -435,7 +444,7 @@
           assert
             !(
               lib.findFirst (m: m.id == "claude-opus-5-5") null gateway.config.models.providers.front-door.models
-                ? contextTokens
+              ? contextTokens
             );
           assert
             (lib.findFirst (m: m.id == "gpt-6.1-sol") null gateway.config.models.providers.front-door.models)

@@ -22,6 +22,7 @@ in
       "tailnet-names"
       "claw-tools"
       "claw-scryer"
+      "claw-ebay"
       "claw-websearch"
       "decision-gateway"
       "ai-gateway-staging"

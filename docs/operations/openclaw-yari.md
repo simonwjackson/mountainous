@@ -1840,3 +1840,55 @@ Rakku's advertisement. SOUL.md and cron history are persistent state, not system
 closure contents; a system rollback does not undo them. Restore only the saved
 SOUL.md backup if Simon wants that wording reverted. Do not delete service or
 tailnet identity state.
+
+## eBay MCP (2026-11-12)
+
+Simon's read-only eBay product service is placed on Rakku. The flake input
+`ebay` pins `416f6fc2d7876b45871d721548f5ee5e6f1257a6`. No buying, listing
+changes, replies, Best Offer responses or buyer data are exposed.
+
+- `ebay-server.service`: `127.0.0.1:3191`, POST `/mcp`. This port was free
+  before deployment. DynamicUser, strict filesystem protection, read-only temp
+  filesystems, no state directory, restart on failure. Access tokens stay in
+  memory. Systemd LoadCredential reuses `ebay-api-env` and `ebay-refresh-token`;
+  the server reads `CREDENTIALS_DIRECTORY`. No secret values were changed.
+- `tsnet-proxy-claw-ebay-simon.service` serves
+  `https://claw-ebay-simon.hummingbird-lake.ts.net/mcp`, enrolled with only
+  `tag:claw-tools`. Its saved tsnet identity is retained across restarts.
+- The filter permits only `ebay_search`, `ebay_listings`, `initialize`, `ping`,
+  `tools/list`, `resources/list`, and `resources/read` for exactly
+  `ui://ebay/search.html` and `ui://ebay/listings.html`. It acknowledges
+  `notifications/initialized` locally. Lists are filtered; unknown tools,
+  methods, URIs, batches and non-tailnet peers fail closed. The proxy uses
+  session-less MCP 2025 versions. No general HTTP proxy or write route exists.
+- Only `claw-simon` receives the server, the two `toolFilter.include` entries,
+  the two exact projected `tools.allow` names, and the Simon-only eBay skill.
+  No approval override: the tools' read-only hints apply. Laure's `openclaw`
+  container must retain its exact system path, config bytes and start time.
+
+Focused checks: `claw-ebay`, `claw-tools`, `tailnet-names`, `openclaw`,
+`openclaw-people`; evaluate both host toplevel drvPaths. Run ARM
+`openclaw-config` on Yari. Never run an aggregate flake check. Before each build,
+rebase on latest `origin/cairn`, check no target switch is running, and on Yari
+check Simon's audit events for unfinished agent runs. Build Rakku on Unzen,
+copy the closure through Zao as root, then switch without reboot. Yari builds
+itself. Compare Laure's container config and system path before switching.
+
+Verify as the OpenClaw user inside `claw-simon`: initialize, exactly two tools
+with read-only hints, resource listing, and reads of both real views (first
+line `<!-- ebay-view source-sha256:`; MIME `text/html;profile=mcp-app`, image
+CSP `https://i.ebayimg.com`). One `ebay_listings {limit:3}` call must succeed;
+print only its count. Refuse an unknown tool without reaching eBay. Keep live
+HTTP attempts within the approved budget; reads/listing of MCP metadata use
+no eBay calls. Check the server journal's static client operation events for
+an exact HTTP attempt count. Check all other claw endpoints, Home Assistant
+and Z-Wave. After Yari switches, check gateway health, `openclaw-admin mcp list`
+and its tool catalog; prove Laure's config and container start time unchanged.
+The browser UI test is a separate Simon/parent check.
+
+To remove: delete the `claw-ebay` Rakku layer, Simon's server and exact tool
+permissions, and his eBay skill; deploy both hosts in the same order. Then
+remove the feature and input if unused. Retain the two shared secrets and
+saved tsnet identity. For emergency rollback, inspect the previous generation
+for concurrent changes before `nixos-rebuild switch --rollback`; do not reboot
+Rakku or roll back to a Yari configuration that changes Laure's container.

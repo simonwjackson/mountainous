@@ -342,6 +342,58 @@
         "type": "github"
       }
     },
+    "ebay": {
+      "inputs": {
+        "crane": "ebay-crane",
+        "nixpkgs": "ebay-nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1794516136,
+        "narHash": "sha256-JFTWjuYeaLsK4ScyT13/mth47SGET21HzUfUuNIclmU=",
+        "ref": "main",
+        "rev": "416f6fc2d7876b45871d721548f5ee5e6f1257a6",
+        "revCount": 31,
+        "type": "git",
+        "url": "ssh://git@github.com/simonwjackson/ebay"
+      },
+      "original": {
+        "ref": "main",
+        "rev": "416f6fc2d7876b45871d721548f5ee5e6f1257a6",
+        "type": "git",
+        "url": "ssh://git@github.com/simonwjackson/ebay"
+      }
+    },
+    "ebay-crane": {
+      "locked": {
+        "lastModified": 1793836618,
+        "narHash": "sha256-TREenflwEjxOSq292FYwbc3kEm7TDRtXCZRNWEdjBmg=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "79fd63528501446749c09f08cad486a58c7d173e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
+    "ebay-nixpkgs": {
+      "locked": {
+        "lastModified": 1793876309,
+        "narHash": "sha256-Wojg9lIH/hDH91iDVH2/EPw8oDSpxjxhXONbU1yf4Zg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "f9a75f41be3a74eab55d3a7679d34ad6cc0da977",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "fixedsys-src": {
       "flake": false,
       "locked": {
@@ -1702,6 +1754,7 @@
         "chicagoflf-src": "chicagoflf-src",
         "deploy-rs": "deploy-rs",
         "disko": "disko",
+        "ebay": "ebay",
         "fixedsys-src": "fixedsys-src",
         "flake-parts": "flake-parts",
         "gogcli-aarch64-linux-src": "gogcli-aarch64-linux-src",

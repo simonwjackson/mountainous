@@ -199,11 +199,15 @@ func main() {
 	oauthSecret := flag.String("oauth-secret-file", "", "OAuth secret file")
 	tags := flag.String("tags", "tag:mountainous", "Comma-separated enrollment tags")
 	mcpTools := flag.String("mcp-tools", "", "Enable restricted stateless MCP endpoint with these comma-separated tool names")
+	mcpResources := flag.String("mcp-resources", "", "Exact comma-separated resource URIs for a filtered MCP endpoint")
 	scryerUsername := flag.String("scryer-username", "admin", "Scryer account username")
 	scryerPassword := flag.String("scryer-password-file", "", "Serve account-scoped Scryer MCP using this credential file and the backend GraphQL URL")
 	webSearchKey := flag.String("websearch-key-file", "", "Serve model-native web search MCP using this gateway credential and the backend Responses URL")
 	webSearchModel := flag.String("websearch-model", "gpt-6.1-sol", "Fixed model for native web search")
 	flag.Parse()
+	if *mcpResources != "" && *mcpTools == "" {
+		log.Fatal("MCP resources require filtered tools")
+	}
 	backendURL, err := url.Parse(*backend)
 	if err != nil || backendURL.Host == "" || backendURL.User != nil ||
 		(backendURL.Scheme != "http" && backendURL.Scheme != "https") {
@@ -290,7 +294,7 @@ func main() {
 			}
 			handler = scryerHandler(newScryerClient(backendURL.String(), *scryerUsername, strings.TrimSuffix(string(password), "\n")), verifyPeer)
 		} else {
-			handler = mcpHandler(backendURL, strings.Split(*mcpTools, ","), verifyPeer)
+			handler = mcpResourceHandler(backendURL, strings.Split(*mcpTools, ","), strings.FieldsFunc(*mcpResources, func(r rune) bool { return r == ',' }), verifyPeer)
 		}
 	}
 	server := &http.Server{Handler: handler, ReadHeaderTimeout: 15 * time.Second}

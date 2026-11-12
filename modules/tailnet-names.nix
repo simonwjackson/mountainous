@@ -137,10 +137,15 @@
                 default = "gpt-6.1-sol";
                 description = "Fixed granted model for native web search.";
               };
+              mcpResources = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
+                description = "Exact UI resource URI allowlist for filtered MCP. Empty denies resource methods.";
+              };
               mcpTools = lib.mkOption {
                 type = lib.types.nullOr (lib.types.nonEmptyListOf (lib.types.strMatching "[a-zA-Z0-9_-]+"));
                 default = null;
-                description = "When set, serve only these stateless MCP tools, with tailnet peer verification. Empty allowlists are invalid, not an unrestricted proxy. All other MCP methods except initialize and tools/list are denied.";
+                description = "When set, serve only these stateless MCP tools, with tailnet peer verification. Empty allowlists are invalid, not an unrestricted proxy. Only initialize, ping, tools/list, allowed tools/call and explicitly listed resource reads/listing are served.";
               };
             };
           }
@@ -152,6 +157,10 @@
       config = lib.mkIf (names != { }) {
         assertions =
           lib.mapAttrsToList (name: cfg: {
+            assertion = cfg.mcpResources == [ ] || cfg.mcpTools != null;
+            message = "${name}: MCP resources require filtered tools.";
+          }) names
+          ++ lib.mapAttrsToList (name: cfg: {
             assertion =
               lib.length (
                 lib.filter (v: v != null) [
@@ -205,6 +214,9 @@
                 + lib.optionalString (
                   cfg.mcpTools != null
                 ) " -mcp-tools ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpTools)}"
+                + lib.optionalString (
+                  cfg.mcpResources != [ ]
+                ) " -mcp-resources ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpResources)}"
                 +
                   lib.optionalString (cfg.scryerPasswordFile != null)
                     " -scryer-password-file %d/scryer-password -scryer-username ${lib.escapeShellArg cfg.scryerUsername}"

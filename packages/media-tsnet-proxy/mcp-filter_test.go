@@ -102,3 +102,68 @@ func TestMCPMapsBoundary(t *testing.T) {
 		}
 	}
 }
+
+// An upstream that grows write tools or resources cannot widen this endpoint.
+func TestMCPEbayViewsBoundary(t *testing.T) {
+	calls := 0
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		var request mcpRequest
+		json.NewDecoder(r.Body).Decode(&request)
+		w.Header().Set("Content-Type", "application/json")
+		result := map[string]any{}
+		switch request.Method {
+		case "initialize":
+			result = map[string]any{"protocolVersion": "2025-11-25", "serverInfo": map[string]any{"name": "ebay"}, "capabilities": map[string]any{"prompts": map[string]any{}}}
+		case "tools/list":
+			result["tools"] = []any{map[string]any{"name": "ebay_search"}, map[string]any{"name": "ebay_listings"}, map[string]any{"name": "ebay_buy"}}
+		case "resources/list":
+			result["resources"] = []any{map[string]any{"uri": "ui://ebay/search.html"}, map[string]any{"uri": "ui://ebay/listings.html"}, map[string]any{"uri": "ui://other/secrets"}}
+			result["nextCursor"] = "secret"
+		case "resources/read":
+			result["contents"] = []any{map[string]any{"uri": "ui://ebay/search.html", "mimeType": "text/html;profile=mcp-app", "text": "<!-- ebay-view source-sha256: test -->", "_meta": map[string]any{"ui": map[string]any{"csp": map[string]any{"resourceDomains": []string{"https://i.ebayimg.com"}}}}}}
+		}
+		json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1, "result": result})
+	}))
+	defer backend.Close()
+	target, _ := url.Parse(backend.URL)
+	handler := mcpResourceHandler(target, []string{"ebay_search", "ebay_listings"}, []string{"ui://ebay/search.html", "ui://ebay/listings.html"}, func(*http.Request) bool { return true })
+	send := func(method, params string) string {
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest("POST", "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"`+method+`","params":`+params+`}`)))
+		return w.Body.String()
+	}
+	for _, uri := range []string{"ui://ebay/../secrets", "ui://other/secrets", "ui://ebay/write.html", "ui://ebay/search.html?secret=1"} {
+		before := calls
+		if !strings.Contains(send("resources/read", `{"uri":"`+uri+`"}`), `"code":-32601`) || calls != before {
+			t.Fatal("unlisted resource forwarded")
+		}
+	}
+	for _, method := range []string{"resources/subscribe", "prompts/list", "ebay/write"} {
+		before := calls
+		if !strings.Contains(send(method, `{}`), `"code":-32601`) || calls != before {
+			t.Fatal("unlisted method forwarded")
+		}
+	}
+	before := calls
+	if !strings.Contains(send("tools/call", `{"name":"ebay_buy"}`), `"code":-32601`) || calls != before {
+		t.Fatal("write forwarded")
+	}
+	if got := send("initialize", `{}`); !strings.Contains(got, "resources") || strings.Contains(got, "prompts") {
+		t.Fatal(got)
+	}
+	if got := send("tools/list", `{}`); strings.Contains(got, "ebay_buy") || !strings.Contains(got, "ebay_listings") {
+		t.Fatal(got)
+	}
+	if got := send("resources/list", `{}`); strings.Contains(got, "secrets") || strings.Contains(got, "nextCursor") || !strings.Contains(got, "listings.html") {
+		t.Fatal(got)
+	}
+	if got := send("resources/read", `{"uri":"ui://ebay/search.html"}`); !strings.Contains(got, "source-sha256") || !strings.Contains(got, "https://i.ebayimg.com") {
+		t.Fatal(got)
+	}
+	for _, name := range []string{"ebay_search", "ebay_listings"} {
+		if got := send("tools/call", `{"name":"`+name+`","arguments":{}}`); strings.Contains(got, `"error"`) {
+			t.Fatal(got)
+		}
+	}
+}

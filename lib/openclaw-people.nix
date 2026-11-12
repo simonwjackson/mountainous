@@ -22,9 +22,17 @@ in
       emoji = "❄️";
     };
     mcpServers = {
+      claw-ebay-simon.tools = [
+        "ebay_search"
+        "ebay_listings"
+      ];
       claw-calendar.tools = [ "calendar_busy" ];
       claw-scryer-simon.tools = scryerTools;
     };
+    extraToolPermissions = [
+      "claw-ebay-simon__ebay_search"
+      "claw-ebay-simon__ebay_listings"
+    ];
     extraMcpServers = [
       {
         name = "basic-react";

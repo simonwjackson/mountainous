@@ -12,8 +12,8 @@ import (
 )
 
 // These endpoints expose stateless MCP requests, not a general HTTP proxy.
-// No current calendar/maps tool has a UI resource. Resource and all other MCP
-// methods fail closed; adding a view requires a separate exact URI allowlist.
+// Calendar/maps have no UI resources. Views require a separate exact URI
+// allowlist; adding an upstream tool or resource never widens either list.
 const mcpMaxBody = 4 << 20
 
 type mcpRequest struct {
@@ -62,6 +62,14 @@ func mcpResponse(response *http.Response) (map[string]json.RawMessage, error) {
 }
 
 func mcpHandler(backend *url.URL, tools []string, tailnetClient func(*http.Request) bool) http.Handler {
+	return mcpResourceHandler(backend, tools, nil, tailnetClient)
+}
+
+func mcpResourceHandler(backend *url.URL, tools, resources []string, tailnetClient func(*http.Request) bool) http.Handler {
+	resourceAllowed := make(map[string]bool, len(resources))
+	for _, uri := range resources {
+		resourceAllowed[uri] = true
+	}
 	allowed := make(map[string]bool, len(tools))
 	for _, name := range tools {
 		allowed[name] = true
@@ -87,6 +95,27 @@ func mcpHandler(backend *url.URL, tools []string, tailnetClient func(*http.Reque
 				return
 			}
 			params.Capabilities = map[string]any{}
+			request.Params, _ = json.Marshal(params)
+		case "ping":
+			request.Params = json.RawMessage(`{}`)
+		case "resources/list":
+			if len(resourceAllowed) == 0 {
+				rpcError(w, request.ID, -32601, "method not allowed")
+				return
+			}
+			request.Params = json.RawMessage(`{}`)
+		case "resources/read":
+			var params struct {
+				URI string `json:"uri"`
+			}
+			if json.Unmarshal(request.Params, &params) != nil {
+				rpcError(w, request.ID, -32602, "invalid resource parameters")
+				return
+			}
+			if !resourceAllowed[params.URI] {
+				rpcError(w, request.ID, -32601, "resource not allowed")
+				return
+			}
 			request.Params, _ = json.Marshal(params)
 		case "tools/list":
 			// Our apps are unpaginated. Never forward arbitrary cursors or metadata.
@@ -159,8 +188,28 @@ func mcpHandler(backend *url.URL, tools []string, tailnetClient func(*http.Reque
 					}
 				}
 				output["result"] = map[string]any{"tools": selected}
+			case "resources/list":
+				var listed []struct {
+					URI string `json:"uri"`
+				}
+				var raw []json.RawMessage
+				if json.Unmarshal(result["resources"], &listed) != nil || json.Unmarshal(result["resources"], &raw) != nil {
+					rpcError(w, request.ID, -32603, "invalid upstream resources")
+					return
+				}
+				selected := []json.RawMessage{}
+				for i, resource := range listed {
+					if resourceAllowed[resource.URI] {
+						selected = append(selected, raw[i])
+					}
+				}
+				output["result"] = map[string]any{"resources": selected}
 			case "initialize":
-				output["result"] = map[string]any{"protocolVersion": result["protocolVersion"], "serverInfo": result["serverInfo"], "capabilities": map[string]any{"tools": map[string]any{}}}
+				capabilities := map[string]any{"tools": map[string]any{}}
+				if len(resourceAllowed) > 0 {
+					capabilities["resources"] = map[string]any{}
+				}
+				output["result"] = map[string]any{"protocolVersion": result["protocolVersion"], "serverInfo": result["serverInfo"], "capabilities": capabilities}
 			default:
 				output["result"] = result
 			}
