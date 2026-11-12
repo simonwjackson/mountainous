@@ -88,9 +88,7 @@ let
     assert c.plugins.entries.session-share.enabled && lib.elem "session-share" c.plugins.allow;
     assert node.serviceConfig.User == "openclaw";
     assert node.environment.OPENCLAW_STATE_DIR == "/var/lib/openclaw";
-    assert lib.hasInfix "--commands openclaw.sessions.list.v1,openclaw.sessions.read.v1" (
-      builtins.readFile node.serviceConfig.ExecStart
-    );
+    assert lib.hasInfix "--commands openclaw.sessions.list.v1,openclaw.sessions.read.v1" node.script;
     assert c.mcp.apps.sandboxOrigin == "https://${person.nodeName}.hummingbird-lake.ts.net:8443";
     assert unit.MemoryMax == "8G" && unit.KillMode == "mixed" && unit.TimeoutStopSec == 35;
     assert container.bindMounts."/nix/var/nix/profiles/apps".isReadOnly;

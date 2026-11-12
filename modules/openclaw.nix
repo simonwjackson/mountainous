@@ -191,8 +191,7 @@
           };
         # Preserve the actual historical artifacts, not merely their text:
         # changing a derivation's string context also changes restart triggers.
-        environment.etc."nixos-containers/openclaw.conf".source =
-          lib.mkForce "/nix/store/30qbz85w5qhckyl8dmj9m294ifyv7f07-etc-nixos-containers-openclaw.conf";
+        environment.etc."nixos-containers/openclaw.conf".source = lib.mkForce legacyConf;
         networking.nat = {
           enable = true;
           internalInterfaces = [ "ve-openclaw" ] ++ map (name: "ve-${name}") newNames;
