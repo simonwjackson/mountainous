@@ -224,7 +224,9 @@
           };
         # Preserve the actual historical artifacts, not merely their text:
         # changing a derivation's string context also changes restart triggers.
-        environment.etc."nixos-containers/openclaw.conf".source = lib.mkForce legacyConf;
+        environment.etc."nixos-containers/openclaw.conf".source = lib.mkIf legacyEnabled (
+          lib.mkForce legacyConf
+        );
         networking.nat = {
           enable = true;
           internalInterfaces =
@@ -266,6 +268,12 @@
           assert import ../tests/openclaw-people.nix { inherit lib host; };
           pkgs.runCommand "openclaw-people-drift" { } "touch $out";
         openclaw-in-place =
+          assert
+            toString productionHost.environment.etc."nixos-containers/openclaw.conf".source
+            != "/nix/store/30qbz85w5qhckyl8dmj9m294ifyv7f07-etc-nixos-containers-openclaw.conf";
+          assert
+            toString productionHost.containers.openclaw.path
+            == toString productionHost.containers.openclaw.config.system.build.toplevel;
           assert import ../tests/openclaw-people.nix {
             inherit lib;
             host = productionHost;
@@ -486,6 +494,25 @@
           } "touch $out";
       }
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isAarch64 {
+        openclaw-in-place-config =
+          pkgs.runCommand "openclaw-in-place-config"
+            {
+              nativeBuildInputs = [
+                pkgs.jq
+                pkgs.gnused
+              ];
+            }
+            ''
+              system=$(sed -n 's/^SYSTEM_PATH=//p' ${productionHost.system.build.toplevel}/etc/nixos-containers/openclaw.conf)
+              test "$system" = ${productionHost.containers.openclaw.config.system.build.toplevel}
+              test "$system" != /nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git
+              export HOME=$TMPDIR OPENCLAW_STATE_DIR=$TMPDIR/state
+              export OPENCLAW_CONFIG_PATH="$system/etc/openclaw/openclaw.json"
+              export FRONT_DOOR_API_KEY=test-only OPENCLAW_GATEWAY_PASSWORD=test-only
+              jq -e '.gateway.publicOrigin == "https://claw.hummingbird-lake.ts.net" and .gateway.auth.trustedProxy.allowUsers == ["chancerellelaure@gmail.com"] and .gateway.roles.default == "laure" and (.gateway.roles.definitions | keys) == ["laure"] and (.agents.entries | keys) == ["laure"] and .agents.defaults.workspace == "/var/lib/openclaw/workspace-laure" and (.mcp.servers | keys) == ["claw-family-calendar","claw-maps","claw-scryer-laure","claw-websearch"] and .plugins.entries["session-share"].enabled' "$OPENCLAW_CONFIG_PATH"
+              ${gateway.package}/bin/openclaw config validate
+              touch $out
+            '';
         openclaw-config = pkgs.runCommand "openclaw-config" { } ''
           grep -F "/nix/var/nix/profiles/apps/openclaw/bin/openclaw gateway" ${gateway.execStart}
           export HOME=$TMPDIR
