@@ -38,12 +38,17 @@ let
     '';
   };
   morningBrief = pkgs.writeText "openclaw-morning-brief.json" (
-    builtins.toJSON ((import ./openclaw-morning-brief.nix) // {
-      agentId = person.agentId;
-      sessionKey = "agent:${person.agentId}:main";
-      description = "Daily supported day plan for ${person.name}";
-      payload = (import ./openclaw-morning-brief.nix).payload // { message = person.morningBriefPrompt; };
-    })
+    builtins.toJSON (
+      (import ./openclaw-morning-brief.nix)
+      // {
+        agentId = person.agentId;
+        sessionKey = "agent:${person.agentId}:main";
+        description = "Daily supported day plan for ${person.name}";
+        payload = (import ./openclaw-morning-brief.nix).payload // {
+          message = person.morningBriefPrompt;
+        };
+      }
+    )
   );
   ensureMorningBrief = pkgs.writeShellApplication {
     name = "openclaw-ensure-morning-brief";
@@ -175,7 +180,12 @@ in
             definitions.person = {
               sessions.others = "write";
               agents = [ person.agentId ];
-              scopes = [ "operator.read" "operator.write" "operator.approvals" "operator.questions" ];
+              scopes = [
+                "operator.read"
+                "operator.write"
+                "operator.approvals"
+                "operator.questions"
+              ];
             };
           };
           trustedProxies = [
@@ -254,18 +264,20 @@ in
         memory.search.provider = "none";
         mcp = {
           sessionIdleTtlMs = 600000;
-          servers = lib.mapAttrs (name: endpoint: {
-            transport = "streamable-http";
-            url = "https://${name}.hummingbird-lake.ts.net/mcp";
-            toolFilter.include = endpoint.tools;
-          }) ((lib.filterAttrs (name: _: name == "claw-maps") (import ./claw-tools.nix)) // person.mcpServers)
-          // {
-            claw-websearch = {
+          servers =
+            lib.mapAttrs (name: endpoint: {
               transport = "streamable-http";
-              url = "https://claw-websearch.hummingbird-lake.ts.net/mcp";
-              toolFilter.include = [ "web_search" ];
-            };
-          } // (person.extraMcpServers or {});
+              url = "https://${name}.hummingbird-lake.ts.net/mcp";
+              toolFilter.include = endpoint.tools;
+            }) ((lib.filterAttrs (name: _: name == "claw-maps") (import ./claw-tools.nix)) // person.mcpServers)
+            // {
+              claw-websearch = {
+                transport = "streamable-http";
+                url = "https://claw-websearch.hummingbird-lake.ts.net/mcp";
+                toolFilter.include = [ "web_search" ];
+              };
+            }
+            // (person.extraMcpServers or { });
           apps = {
             enabled = true;
             sandboxPort = 18790;
@@ -279,7 +291,11 @@ in
         ];
         skills.entries.clawhub.enabled = false;
         # Shared by both agents: the hand-kept skills in lib/openclaw-skills.
-        skills.load.extraDirs = [ "${./openclaw-skills/shared}" "${./openclaw-skills + "/${person.name}"}" ] ++ (person.extraSkillFolders or []);
+        skills.load.extraDirs = [
+          "${./openclaw-skills/shared}"
+          "${./openclaw-skills + "/${person.name}"}"
+        ]
+        ++ (person.extraSkillFolders or [ ]);
         # Only the plugins needed by the approved browser, memory, images and web tools.
         plugins = {
           enabled = true;
@@ -289,7 +305,8 @@ in
             "openai"
             "web-readability"
             "session-share"
-          ] ++ (person.extraPlugins or []);
+          ]
+          ++ (person.extraPlugins or [ ]);
           entries.session-share = {
             enabled = true;
             config.share.groups = [ "Shared" ];
@@ -323,9 +340,10 @@ in
             "image_generate"
             "bundle-mcp"
           ]
-          ++ lib.concatMap (name: map (tool: "${name}__${tool}") scryerAppTools)
-            (lib.filter (name: lib.hasPrefix "claw-scryer-" name) (lib.attrNames person.mcpServers))
-          ++ (person.extraToolPermissions or []);
+          ++ lib.concatMap (name: map (tool: "${name}__${tool}") scryerAppTools) (
+            lib.filter (name: lib.hasPrefix "claw-scryer-" name) (lib.attrNames person.mcpServers)
+          )
+          ++ (person.extraToolPermissions or [ ]);
           deny = [ "group:runtime" ];
           sessions.visibility = "agent";
           agentToAgent.enabled = false;
@@ -405,7 +423,10 @@ in
     openclaw-session-share = {
       description = "Read-only Session Share source connected to the other person's gateway";
       wantedBy = [ "multi-user.target" ];
-      after = [ "openclaw-gateway.service" "claw-tailnet.service" ];
+      after = [
+        "openclaw-gateway.service"
+        "claw-tailnet.service"
+      ];
       unitConfig.ConditionPathExists = "/var/lib/openclaw/node.json";
       environment = {
         HOME = "/var/lib/openclaw";
@@ -424,7 +445,11 @@ in
         ProtectSystem = "strict";
         ProtectHome = true;
         ReadWritePaths = [ "/var/lib/openclaw" ];
-        InaccessiblePaths = [ "/nix/var/nix/daemon-socket" "/run/host-credentials" "/run/tailscale" ];
+        InaccessiblePaths = [
+          "/nix/var/nix/daemon-socket"
+          "/run/host-credentials"
+          "/run/tailscale"
+        ];
         MemoryMax = "1G";
       };
     };
@@ -478,7 +503,9 @@ in
         tailscale set --ssh=false --accept-dns=false --accept-routes=false \
           --exit-node=${exitNode} --exit-node-allow-lan-access=false
         # Through claw-identity-proxy, which names the person for tagged devices.
-        tailscale serve --bg --https=443 http://127.0.0.1:${if person.name == "simon" then "18788" else "18789"}
+        tailscale serve --bg --https=443 http://127.0.0.1:${
+          if person.name == "simon" then "18788" else "18789"
+        }
         tailscale serve --bg --https=8443 http://127.0.0.1:18790
       '';
       serviceConfig = {

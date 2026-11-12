@@ -1,13 +1,24 @@
 # All differences between the two new gateways belong here.
 let
-  scryerTools = [ "scryer_graphql" "scryer_search" "scryer_title" "scryer_add" "scryer_monitor" ];
-in {
+  scryerTools = [
+    "scryer_graphql"
+    "scryer_search"
+    "scryer_title"
+    "scryer_add"
+    "scryer_monitor"
+  ];
+in
+{
   simon = {
     name = "simon";
     nodeName = "claw-simon";
     agentId = "main"; # Preserve stored session keys during the controlled move.
     login = "simon.jackson@gmail.com";
-    identity = { name = "flakey"; emoji = "❄️"; avatar = "avatars/avatar.png"; };
+    identity = {
+      name = "flakey";
+      emoji = "❄️";
+      avatar = "avatars/avatar.png";
+    };
     mcpServers = {
       claw-calendar.tools = [ "calendar_busy" ];
       claw-scryer-simon.tools = scryerTools;

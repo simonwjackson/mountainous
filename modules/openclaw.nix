@@ -111,63 +111,83 @@
             restartUnits = [ "container@openclaw.service" ];
           };
         };
-        containers = { openclaw = {
-          autoStart = true;
-          enableTun = true;
-          privateNetwork = true;
-          hostAddress = "10.231.0.1";
-          localAddress = "10.231.0.2";
-          bindMounts = {
-            # Bind the directory, not the symlink target: deploy-rs atomically
-            # replaces links here while the container remains running.
-            "/nix/var/nix/profiles/apps" = {
-              hostPath = "/nix/var/nix/profiles/apps";
-              isReadOnly = true;
+        containers = {
+          openclaw = {
+            autoStart = true;
+            enableTun = true;
+            privateNetwork = true;
+            hostAddress = "10.231.0.1";
+            localAddress = "10.231.0.2";
+            bindMounts = {
+              # Bind the directory, not the symlink target: deploy-rs atomically
+              # replaces links here while the container remains running.
+              "/nix/var/nix/profiles/apps" = {
+                hostPath = "/nix/var/nix/profiles/apps";
+                isReadOnly = true;
+              };
+              "/run/host-credentials/front-door" = {
+                hostPath = config.sops.secrets.ai-gateway-key-openclaw-yari.path;
+                isReadOnly = true;
+              };
+              "/run/host-credentials/gateway-token" = {
+                hostPath = config.sops.secrets.openclaw-gateway-token.path;
+                isReadOnly = true;
+              };
+              "/run/host-credentials/oauth-secret" = {
+                hostPath = config.sops.secrets.tailscale-oauth-secret.path;
+                isReadOnly = true;
+              };
             };
-            "/run/host-credentials/front-door" = {
-              hostPath = config.sops.secrets.ai-gateway-key-openclaw-yari.path;
-              isReadOnly = true;
+            # Frozen until Laure's final handoff. Pinning the system path keeps
+            # the nspawn unit/restart triggers/config byte-identical even as the
+            # shared definition and skills evolve for the new placements.
+            path = lib.mkForce "/nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git";
+            config = import ../lib/openclaw-legacy-container.nix { inherit inputs profilePath; };
+          };
+        }
+        // lib.mapAttrs' (
+          name: person:
+          lib.nameValuePair person.nodeName {
+            autoStart = true;
+            enableTun = true;
+            privateNetwork = true;
+            hostAddress = if name == "simon" then "10.231.1.1" else "10.231.2.1";
+            localAddress = if name == "simon" then "10.231.1.2" else "10.231.2.2";
+            bindMounts = config.containers.openclaw.bindMounts;
+            config = import ../lib/openclaw-container.nix { inherit inputs profilePath person; };
+          }
+        ) people;
+        systemd.services =
+          lib.genAttrs (map (name: "container@${name}") newNames) (name: {
+            after = [ "sops-install-secrets.service" ];
+            serviceConfig = {
+              MemoryMax = "8G";
+              TimeoutStopSec = 180;
             };
-            "/run/host-credentials/gateway-token" = {
-              hostPath = config.sops.secrets.openclaw-gateway-token.path;
-              isReadOnly = true;
-            };
-            "/run/host-credentials/oauth-secret" = {
-              hostPath = config.sops.secrets.tailscale-oauth-secret.path;
-              isReadOnly = true;
+            unitConfig.RequiresMountsFor = [
+              "/var/lib/nixos-containers/${lib.removePrefix "container@" name}"
+            ];
+          })
+          // {
+            "container@openclaw" = {
+              after = [ "sops-install-secrets.service" ];
+              serviceConfig = {
+                MemoryMax = "8G";
+                TimeoutStopSec = 180;
+              };
+              unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/openclaw" ];
             };
           };
-          # Frozen until Laure's final handoff. Pinning the system path keeps
-          # the nspawn unit/restart triggers/config byte-identical even as the
-          # shared definition and skills evolve for the new placements.
-          path = lib.mkForce "/nix/store/j5gwnqw7sw5gbs5fbr19dmvrrvalj335-nixos-system-claw-26.11pre-git";
-          config = import ../lib/openclaw-legacy-container.nix { inherit inputs profilePath; };
-        };
-        } // lib.mapAttrs' (name: person: lib.nameValuePair person.nodeName {
-          autoStart = true;
-          enableTun = true;
-          privateNetwork = true;
-          hostAddress = if name == "simon" then "10.231.1.1" else "10.231.2.1";
-          localAddress = if name == "simon" then "10.231.1.2" else "10.231.2.2";
-          bindMounts = config.containers.openclaw.bindMounts;
-          config = import ../lib/openclaw-container.nix { inherit inputs profilePath person; };
-        }) people;
-        systemd.services = lib.genAttrs (map (name: "container@${name}") newNames) (name: {
-          after = [ "sops-install-secrets.service" ];
-          serviceConfig = { MemoryMax = "8G"; TimeoutStopSec = 180; };
-          unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/${lib.removePrefix "container@" name}" ];
-        }) // { "container@openclaw" = {
-          after = [ "sops-install-secrets.service" ];
-          serviceConfig = { MemoryMax = "8G"; TimeoutStopSec = 180; };
-          unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/openclaw" ];
-        }; };
         networking.nat = {
           enable = true;
           internalInterfaces = [ "ve-openclaw" ] ++ map (name: "ve-${name}") newNames;
           externalInterface = "enp0s6";
         };
         # Retain the whole nspawn root: overlay identity, config, and service state.
-        environment.persistence."/permafrost".directories = [ "/var/lib/nixos-containers/openclaw" ] ++ map (name: "/var/lib/nixos-containers/${name}") newNames;
+        environment.persistence."/permafrost".directories = [
+          "/var/lib/nixos-containers/openclaw"
+        ]
+        ++ map (name: "/var/lib/nixos-containers/${name}") newNames;
         assertions = [
           {
             assertion = config.networking.hostName == "yari";
@@ -474,9 +494,21 @@
           export FRONT_DOOR_API_KEY=test-only
           export OPENCLAW_GATEWAY_PASSWORD=test-only
           ${gateway.package}/bin/openclaw config validate
-          ${lib.concatMapStringsSep "\n" (name: let
-            new = host.containers.${name}.config;
-          in "export OPENCLAW_CONFIG_PATH=${new.environment.etc."openclaw/openclaw.json".source}\n${new.services.openclaw-gateway.package}/bin/openclaw config validate") [ "claw-simon" "claw-laure" ]}
+          ${lib.concatMapStringsSep "\n"
+            (
+              name:
+              let
+                new = host.containers.${name}.config;
+              in
+              "export OPENCLAW_CONFIG_PATH=${
+                new.environment.etc."openclaw/openclaw.json".source
+              }\n${new.services.openclaw-gateway.package}/bin/openclaw config validate"
+            )
+            [
+              "claw-simon"
+              "claw-laure"
+            ]
+          }
           touch $out
         '';
       };

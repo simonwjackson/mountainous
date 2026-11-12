@@ -3,12 +3,16 @@
 { lib, host }:
 let
   people = import ../lib/openclaw-people.nix;
-  configs = lib.mapAttrs (_: person: host.containers.${person.nodeName}.config.services.openclaw-gateway.config) people;
-  normalize = person: c:
+  configs = lib.mapAttrs (
+    _: person: host.containers.${person.nodeName}.config.services.openclaw-gateway.config
+  ) people;
+  normalize =
+    person: c:
     let
       agent = c.agents.entries.${person.agentId};
     in
-    c // {
+    c
+    // {
       gateway = c.gateway // {
         auth = c.gateway.auth // {
           trustedProxy = builtins.removeAttrs c.gateway.auth.trustedProxy [ "allowUsers" ];
@@ -19,8 +23,14 @@ let
         controlUi = builtins.removeAttrs c.gateway.controlUi [ "allowedOrigins" ];
       };
       agents = c.agents // {
-        defaults = builtins.removeAttrs c.agents.defaults [ "systemAgent" "sessionStore" ];
-        entries.person = builtins.removeAttrs agent [ "identity" "agentDir" ];
+        defaults = builtins.removeAttrs c.agents.defaults [
+          "systemAgent"
+          "sessionStore"
+        ];
+        entries.person = builtins.removeAttrs agent [
+          "identity"
+          "agentDir"
+        ];
       };
       talk = builtins.removeAttrs c.talk [ "agentId" ];
       mcp = c.mcp // {
@@ -35,12 +45,21 @@ let
       };
     };
   # Avoid leaving original dynamic agent entries alongside the normalized one.
-  normalized = person: c:
-    let n = normalize person c;
-    in n // { agents = n.agents // { entries = { inherit (n.agents.entries) person; }; }; };
+  normalized =
+    person: c:
+    let
+      n = normalize person c;
+    in
+    n
+    // {
+      agents = n.agents // {
+        entries = { inherit (n.agents.entries) person; };
+      };
+    };
   common = normalized people.simon configs.simon;
   same = common == normalized people.laure configs.laure;
-  valid = name: person:
+  valid =
+    name: person:
     let
       container = host.containers.${person.nodeName};
       c = configs.${name};
@@ -55,13 +74,22 @@ let
     assert c.gateway.roles.definitions.person.agents == [ person.agentId ];
     assert !(lib.elem "operator.admin" c.gateway.roles.definitions.person.scopes);
     assert c.agents.entries.${person.agentId}.identity == person.identity;
-    assert c.tools.deny == [ "group:runtime" ] && !c.tools.elevated.enabled && !c.tools.codeMode.enabled;
-    assert lib.attrNames c.mcp.servers == lib.sort builtins.lessThan ([ "claw-maps" "claw-websearch" ] ++ lib.attrNames person.mcpServers);
+    assert
+      c.tools.deny == [ "group:runtime" ] && !c.tools.elevated.enabled && !c.tools.codeMode.enabled;
+    assert
+      lib.attrNames c.mcp.servers == lib.sort builtins.lessThan (
+        [
+          "claw-maps"
+          "claw-websearch"
+        ]
+        ++ lib.attrNames person.mcpServers
+      );
     assert c.plugins.entries.session-share.config.share.groups == [ "Shared" ];
     assert c.plugins.entries.session-share.enabled && lib.elem "session-share" c.plugins.allow;
     assert node.serviceConfig.User == "openclaw";
     assert node.environment.OPENCLAW_STATE_DIR == "/var/lib/openclaw";
-    assert lib.hasSuffix "node run --commands openclaw.sessions.list.v1,openclaw.sessions.read.v1" node.serviceConfig.ExecStart;
+    assert lib.hasSuffix "node run --commands openclaw.sessions.list.v1,openclaw.sessions.read.v1"
+      node.serviceConfig.ExecStart;
     assert c.mcp.apps.sandboxOrigin == "https://${person.nodeName}.hummingbird-lake.ts.net:8443";
     assert unit.MemoryMax == "8G" && unit.KillMode == "mixed" && unit.TimeoutStopSec == 35;
     assert container.bindMounts."/nix/var/nix/profiles/apps".isReadOnly;
