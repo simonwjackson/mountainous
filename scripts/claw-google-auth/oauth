@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -24,6 +25,11 @@ SCOPES = (
     "https://www.googleapis.com/auth/calendar.readonly",
     "https://www.googleapis.com/auth/gmail.modify",
 )
+# Google may also report scopes this account granted earlier, and may report
+# "email" only in its long form. These are the only differences accepted; any
+# other granted scope (settings, send-only, full mail, calendar write) refuses.
+REQUIRED = frozenset(SCOPES) - {"email"}
+TOLERATED = frozenset({"email", "https://www.googleapis.com/auth/gmail.readonly"})
 STATE_FILE = ".google-oauth-state.json"
 TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
 USERINFO_ENDPOINT = "https://openidconnect.googleapis.com/v1/userinfo"
@@ -159,8 +165,16 @@ def finish(
     token = request_json(urllib.request.Request(token_endpoint, data=data))
     # Google's native-app contract defines scope as space-delimited and case-sensitive.
     granted = token.get("scope")
-    if not isinstance(granted, str) or set(granted.split()) != set(SCOPES):
-        raise ValueError("Google returned a different scope set; nothing imported")
+    if not isinstance(granted, str):
+        raise ValueError("Google returned no scope list; nothing imported")
+    got = set(granted.split())
+    missing = sorted(REQUIRED - got)
+    extra = sorted(got - REQUIRED - TOLERATED)
+    if missing or extra:
+        raise ValueError(
+            "Google returned a different scope set; nothing imported."
+            f" Missing: {missing or 'none'}. Unexpected: {extra or 'none'}."
+        )
     for key in ("access_token", "refresh_token"):
         if not isinstance(token.get(key), str) or not token[key].strip():
             raise ValueError("Google did not return offline credentials")
@@ -209,6 +223,13 @@ def main():
             finish(config, account, os.environ["GOG_BIN"], sys.stdin.read().strip())
         else:
             raise ValueError("Usage: oauth begin|finish")
+    except ValueError as error:
+        # Our own messages: scope names and check names only, never codes or tokens.
+        print(f"Google consent failed: {error}", file=sys.stderr)
+        return 1
+    except urllib.error.HTTPError as error:
+        print(f"Google consent failed: HTTP {error.code} from Google.", file=sys.stderr)
+        return 1
     except Exception:  # noqa: BLE001 - the CLI must not expose private error details
         # HTTP errors and subprocess errors can include credentials or private URLs.
         print(

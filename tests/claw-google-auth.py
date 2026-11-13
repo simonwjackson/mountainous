@@ -349,7 +349,8 @@ class ExactConsent(unittest.TestCase):
     def test_extra_missing_or_absent_scopes_never_import(self):
         for scopes in (
             SCOPES | {"https://www.googleapis.com/auth/gmail.settings.sharing"},
-            SCOPES - {"email"},
+            SCOPES | {"https://mail.google.com/"},
+            SCOPES - {"https://www.googleapis.com/auth/gmail.modify"},
             set(),
         ):
             with self.subTest(scopes=scopes):
@@ -369,6 +370,13 @@ class ExactConsent(unittest.TestCase):
                     sorted(p.name for p in self.config.iterdir()),
                     ["credentials.json", "gog"],
                 )
+
+    def test_earlier_readonly_grant_and_long_email_form_are_tolerated(self):
+        self.token["scope"] = " ".join(
+            (SCOPES - {"email"}) | {"https://www.googleapis.com/auth/gmail.readonly"}
+        )
+        self.finish()
+        self.assertTrue(self.record.exists())
 
     def test_correct_token_imports_only_expected_shape_and_removes_tempfile(self):
         requests = self.finish()
