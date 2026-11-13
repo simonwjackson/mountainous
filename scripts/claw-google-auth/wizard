@@ -210,11 +210,12 @@ main() {
   cd "$HOME/.config/gogcli"
   ENV_FILE="$PWD/.calendar-signin.env"
   TOTAL_STAGES=2
-  banner 'Connect Google Calendar and Gmail (read-only)'
+  banner 'Connect Calendar (read-only) and Gmail (read, label, archive and drafts)'
   say 'The Desktop client is already installed from encrypted mountainous secrets.'
-  note 'Calendar and Gmail are read-only. No write access is requested. Identity scopes identify the account.'
+  note 'Calendar stays read-only. Gmail modify allows read, label, archive and drafts, and can also send.'
+  note 'No send-only or settings scopes are requested. Identity scopes identify the account.'
   note 'If Google denies access, check that Calendar API and Gmail API are enabled in the client project.'
-  note 'Gmail read is a restricted scope: Google shows an unverified-app screen. Choose Advanced, then continue.'
+  note 'Gmail modify is a restricted scope: Google shows an unverified-app screen. Choose Advanced, then continue.'
   warn 'External apps in Testing can issue refresh tokens that expire after seven days.'
 
   stage 'Select the Google account'
@@ -228,21 +229,21 @@ main() {
   export GOG_ACCOUNT
   "$GOG_BIN" auth keyring file >/dev/null
 
-  stage 'Approve read-only Calendar and Gmail access in your browser'
+  stage 'Approve Calendar read-only and Gmail modify access in your browser'
   say 'Copy the generated URL into your browser. Choose the account selected above.'
   say 'After approval the browser cannot open its loopback callback. This is expected.'
   say 'Copy the complete callback URL from its address bar, including code and state.'
   confirm 'Are you ready to open the URL now? It expires in about ten minutes.' || exit 1
-  local auth_output url REDIRECT=''
-  auth_output=$("$GOG_BIN" --json auth add "$GOG_ACCOUNT" --services calendar,gmail --readonly --remote --step 1 --timeout 10m)
+  local helper url REDIRECT=''
+  helper="$(dirname -- "${BASH_SOURCE[0]}")/oauth"
+  url=$(python3 "$helper" begin)
+  [[ -n "$url" ]] || { warn 'No authorization URL was returned. Re-run this command.'; exit 1; }
   # The PTY goes directly to the operator, not to the system journal.
-  url=$(printf '%s\n' "$auth_output" | python3 -c 'import json,sys; print(json.load(sys.stdin)["auth_url"])')
-  [[ -n "$url" ]] || { warn 'gog did not return an authorization URL. Re-run this command.'; exit 1; }
   open_url "$url"
   ask_secret REDIRECT 'Paste the complete callback URL (hidden):'
   [[ "$REDIRECT" == http://127.0.0.1:*/* || "$REDIRECT" == http://localhost:*/* ]] || { warn 'Expected the loopback callback URL from your browser.'; exit 1; }
-  "$GOG_BIN" auth add "$GOG_ACCOUNT" --services calendar,gmail --readonly --remote --step 2 --auth-url "$REDIRECT" --timeout 10m >/dev/null 2>&1 || { warn 'Google consent failed. Check the selected account and try again.'; exit 1; }
-  unset REDIRECT auth_output url
+  printf '%s' "$REDIRECT" | python3 "$helper" finish || { warn 'Google consent failed. Check the selected account and try again.'; exit 1; }
+  unset REDIRECT url
   # Persist only after consent succeeds. The service reads this same private file.
   write_env GOG_ACCOUNT "$GOG_ACCOUNT"
   say 'Consent saved. Restarting Google and checking both endpoints and the personal assistant.'

@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""Desktop OAuth with an exact scope allowlist; never print callback/token errors."""
+
+import base64
+import datetime
+import hashlib
+import hmac
+import json
+import os
+import pathlib
+import secrets
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.parse
+import urllib.request
+
+SCOPES = (
+    "openid",
+    "email",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/gmail.modify",
+)
+STATE_FILE = ".google-oauth-state.json"
+TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
+USERINFO_ENDPOINT = "https://openidconnect.googleapis.com/v1/userinfo"
+
+
+def credentials(config):
+    # gog's normalized Desktop credentials, not the original installed envelope.
+    client = json.loads((config / "credentials.json").read_text())
+    for key in ("client_id", "client_secret"):
+        if not isinstance(client.get(key), str) or not client[key].strip():
+            raise ValueError("Missing Desktop credentials")
+    return client
+
+
+def private_json(config, payload):
+    """Return a newly created 0600 path; the caller owns its deletion."""
+    fd, name = tempfile.mkstemp(prefix=".google-oauth-", dir=config)
+    path = pathlib.Path(name)
+    try:
+        with os.fdopen(fd, "w") as stream:
+            json.dump(payload, stream)
+    except BaseException:
+        path.unlink()
+        raise
+    return path
+
+
+def begin(config, account):
+    client = credentials(config)
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    redirect = f"http://127.0.0.1:{port}/oauth2/callback"
+    state = secrets.token_urlsafe(32)
+    verifier = secrets.token_urlsafe(64)
+    challenge = (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
+    pending = private_json(
+        config,
+        {
+            "state": state,
+            "verifier": verifier,
+            "redirect_uri": redirect,
+            "account": account,
+            "client_id": client["client_id"],
+            "created_at": time.time(),
+        },
+    )
+    try:
+        pending.replace(config / STATE_FILE)
+    finally:
+        pending.unlink(missing_ok=True)
+    return "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(
+        {
+            "client_id": client["client_id"],
+            "redirect_uri": redirect,
+            "response_type": "code",
+            "scope": " ".join(SCOPES),
+            "access_type": "offline",
+            "prompt": "consent",
+            "include_granted_scopes": "false",
+            "state": state,
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
+            "login_hint": account,
+        }
+    )
+
+
+def request_json(request):
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return json.load(response)
+
+
+def finish(
+    config,
+    account,
+    gog,
+    callback,
+    *,
+    token_endpoint=TOKEN_ENDPOINT,
+    userinfo_endpoint=USERINFO_ENDPOINT,
+):
+    # Consume state even on refusal. A failed attempt needs a fresh consent URL.
+    state_path = config / STATE_FILE
+    try:
+        pending = json.loads(state_path.read_text())
+    finally:
+        state_path.unlink(missing_ok=True)
+    client = credentials(config)
+    age = time.time() - pending["created_at"]
+    if (
+        not 0 <= age <= 600
+        or pending["account"] != account
+        or pending["client_id"] != client["client_id"]
+    ):
+        raise ValueError("Expired or changed consent session")
+    redirect = urllib.parse.urlsplit(pending["redirect_uri"])
+    pasted = urllib.parse.urlsplit(callback)
+    if (
+        pasted.scheme != "http"
+        or pasted.hostname not in ("127.0.0.1", "localhost")
+        or pasted.port != redirect.port
+        or pasted.path != redirect.path
+        or pasted.username is not None
+        or pasted.password is not None
+        or pasted.fragment
+    ):
+        raise ValueError("Invalid loopback callback")
+    query = urllib.parse.parse_qs(pasted.query, keep_blank_values=True)
+    if (
+        len(query.get("state", [])) != 1
+        or "error" in query
+        or len(query.get("code", [])) != 1
+        or not query["code"][0]
+    ):
+        raise ValueError("Invalid consent state or code")
+    if not hmac.compare_digest(query["state"][0], pending["state"]):
+        raise ValueError("Invalid consent state")
+    data = urllib.parse.urlencode(
+        {
+            "client_id": client["client_id"],
+            "client_secret": client["client_secret"],
+            "code": query["code"][0],
+            "code_verifier": pending["verifier"],
+            "redirect_uri": pending["redirect_uri"],
+            "grant_type": "authorization_code",
+        }
+    ).encode("ascii")
+    token = request_json(urllib.request.Request(token_endpoint, data=data))
+    # Google's native-app contract defines scope as space-delimited and case-sensitive.
+    granted = token.get("scope")
+    if not isinstance(granted, str) or set(granted.split()) != set(SCOPES):
+        raise ValueError("Google returned a different scope set; nothing imported")
+    for key in ("access_token", "refresh_token"):
+        if not isinstance(token.get(key), str) or not token[key].strip():
+            raise ValueError("Google did not return offline credentials")
+    identity = request_json(
+        urllib.request.Request(
+            userinfo_endpoint,
+            headers={
+                "Authorization": "Bearer " + token["access_token"],
+            },
+        )
+    )
+    if identity.get("email_verified") is not True or identity.get("email") != account:
+        raise ValueError("Google returned a different or unverified account")
+    imported = private_json(
+        config,
+        {
+            "email": account,
+            "client": "default",
+            "services": ["calendar", "gmail"],
+            "scopes": list(SCOPES),
+            "created_at": datetime.datetime.now(datetime.timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            ),
+            "refresh_token": token["refresh_token"],
+        },
+    )
+    try:
+        subprocess.run(
+            [gog, "auth", "tokens", "import", str(imported)],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    finally:
+        imported.unlink(missing_ok=True)
+
+
+def main():
+    try:
+        config = pathlib.Path.home() / ".config/gogcli"
+        account = os.environ["GOG_ACCOUNT"]
+        if sys.argv[1:] == ["begin"]:
+            print(begin(config, account))
+        elif sys.argv[1:] == ["finish"]:
+            # The callback never enters argv, environment, or a persistent file.
+            finish(config, account, os.environ["GOG_BIN"], sys.stdin.read().strip())
+        else:
+            raise ValueError("Usage: oauth begin|finish")
+    except Exception:  # noqa: BLE001 - the CLI must not expose private error details
+        # HTTP errors and subprocess errors can include credentials or private URLs.
+        print(
+            "Google consent failed. Check account and permissions, then start again.",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

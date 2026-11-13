@@ -148,6 +148,7 @@ in
             mkdir -p $out/bin $out/lib/claw-google-auth
             cp ${../scripts/claw-google-auth/start} $out/lib/claw-google-auth/start
             cp ${../scripts/claw-google-auth/wizard} $out/lib/claw-google-auth/wizard
+            cp ${../scripts/claw-google-auth/oauth} $out/lib/claw-google-auth/oauth
             makeWrapper ${pkgs.python3}/bin/python3 $out/bin/claw-google-auth \
               --add-flags $out/lib/claw-google-auth/start \
               --prefix PATH : ${
@@ -177,7 +178,7 @@ in
             shellcheck -e SC2034 ${../scripts/claw-google-auth/wizard}
             python3 ${../tests/claw-google-auth.py} ${../scripts/claw-google-auth/start} ${
               self.packages.${pkgs.stdenv.hostPlatform.system}.gogcli
-            }/bin/gog
+            }/bin/gog ${../scripts/claw-google-auth/oauth}
             touch $out
           '';
       checks.pi-assistant-skills =
