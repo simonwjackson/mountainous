@@ -2432,3 +2432,66 @@ Rakku generation **150** restores the prior server. Yari generation **45**
 restores the prior skill without removing the concurrent Gmail work or changing
 Laure. Use the guarded switch procedure and do not disable the automation for
 this text-only rollback. Prefer a forward revert after later host changes.
+
+### Step 3 deployment evidence — 2026-11-13 UTC
+
+Implementation `92d75023`, corrected payload nesting `40a41314`, pushed to
+`cairn` fast-forward after rebasing. Concurrent eBay `3b4fd1d7` and evidence
+`37c8373c` were preserved. Each activation required Yari's running output to
+match that source commit's parent output. No host rebooted; Rakku was unchanged.
+
+The first activation (generation **47**) installed the new brief but its filing
+reconciler failed closed: `cron.add` rejects root-level `toolsAllow`. No hourly
+job was created and no mail action ran. The installed CLI confirms that field
+belongs inside `payload`. The correction and regression assertion landed before
+the second activation. Final generation **48** is:
+`/nix/store/gbw0winmm54djg2y62pdw5y3wk03nwbl-nixos-system-yari-26.11.20260923.4975466`.
+Both switches stopped only Simon's container. Health sampling measured **19.9 s**
+and **19.3 s** interruptions. Laure had **0 s**, no restart, identical container
+unit/config store paths and bytes, unchanged container/gateway invocation IDs
+and unchanged app profile. Her **6 sessions (1 archived)**, **4 pairings**,
+zero pending pairings and two job IDs stayed unchanged. No conversation text
+was opened and her agent was not run.
+
+Verified the real scheduler declaration:
+`ab4b714c-04c9-4980-a3b8-d5448351dfcf`, `mountainous:mail-not-me`, enabled,
+agent `mail`, isolated, `15 * * * *`, America/Denver, zero stagger, delivery
+`none`, failureAlert false, payload cap exactly the four filing tools.
+Morning brief `66d2d1b5-48d2-45a1-b899-ec86179df374` retained its ID and schedule;
+the deployed prompt matches source after the scheduler's trailing-newline trim.
+It was **not run**. Its before/after prompt diff is retained as
+`/tmp/claw/mail-brief-prompt.diff` on Zao. Laure has neither declaration.
+
+The hourly job was manually force-run **once**, with completion `succeeded`,
+status `ok`, duration **23.581 s**, `delivered=false`, delivery `not-requested`.
+Run ID: `cron-request.d456b503-807d-4f87-93b2-b3df1de0956e`.
+Both actual mail_list results were complete empty pages. Counts: **seen 0,
+not_mine 0, mine 0, unsure 0, labelled 0, archived threads 0, errors 0**;
+message IDs `[]`. Audit metadata proves exactly two mail_list calls and zero
+body-read, label, archive, draft, discard or send calls. An independent
+read-only claw-gmail check as the serving OpenClaw user confirmed zero messages
+for both `in:inbox newer_than:2h` and `label:"Not Me" newer_than:2h`.
+There were no labelled messages to verify or undo. **The live write branch
+was not exercised**, because no qualifying mail arrived in the window; no mail
+was manufactured or broadened into the run to produce a write.
+
+Passed focused x86 `openclaw`, `openclaw-people` (generated-config drift) and
+`openclaw-in-place`, Yari drvPath evaluations, native ARM `openclaw-config`
+(real CLI validation for both people), both native system builds, Nix formatting,
+whitespace and check-flake-inputs. The first new contract failed before code;
+the final contract also rejects a root-level tool cap. Native config validation
+retains the existing sandbox log-path warning. No aggregate check ran.
+All six Simon and four Laure HTTP MCP tool lists passed as the serving user;
+Gmail still exposes exactly seven tools. Both gateway health and root return
+HTTP 200. Audit remains **1 critical, 3 warnings, 1 info**; no exception changed.
+
+Helpers and counts-only evidence use `/tmp/claw/mail-brief-*` on Zao/Yari.
+Rollback, only if no later deployment intervened:
+`ssh -F /dev/null root@yari /tmp/claw/mail-brief-rollback.sh`.
+It disables the persisted hourly job, checks both gateways idle, verifies
+Laure's unchanged closure, restores pre-step **generation 46** output
+`/nix/store/4b64i2rmar98kwcai3vxhycgpm8pfhi4-nixos-system-yari-26.11.20260923.4975466`,
+and reconciles the previous brief without running it. It does not undo Gmail
+changes or erase job history. Rollback was linted and inspected, not executed.
+The bounded window can miss mail during outages over two hours or a sustained
+100-message backlog; this step deliberately does not add a backfill poll.
