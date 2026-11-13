@@ -47,8 +47,11 @@ assert rakku.users.users.postgres.uid == 71 && rakku.users.groups.postgres.gid =
 assert
   rakku.mountainous.tailnetNames.sparkyfitness.backend == "http://127.0.0.1:${toString frontendPort}";
 assert cfg.frontendUrl == "https://sparkyfitness.hummingbird-lake.ts.net";
-# Preset workouts must keep equipment, or the web plate calculator is hidden.
-assert lib.any (p: baseNameOf p == "preset-equipment.patch") (cfg.frontendPackage.patches or [ ]);
+# Preset workouts must keep equipment, or the web plate calculator is hidden;
+# warm-ups must not drive the suggested working weights.
+assert lib.all (
+  name: lib.any (p: baseNameOf p == name) (cfg.frontendPackage.patches or [ ])
+) [ "preset-equipment.patch" "progression-warmups.patch" ];
 assert !lib.elem "multi-user.target" rakku.systemd.services.logbook.wantedBy;
 assert rakku.systemd.services.logbook-tsnet.wantedBy == [ ];
 assert rakku.systemd.services.logbook.unitConfig.RefuseManualStart;

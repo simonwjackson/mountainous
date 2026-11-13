@@ -65,12 +65,17 @@
               doCheck = false;
             })
           );
-          # Workouts started from a preset lose the exercise equipment, which
-          # hides the per-set plate calculator. Drop the patch once the pin
-          # contains the upstream fix, CodeWithCJ/SparkyFitness#3567.
+          # Two web playback fixes, each dropped once the pin contains it upstream:
+          # - preset-equipment: preset workouts lose the exercise equipment, which
+          #   hides the per-set plate calculator (CodeWithCJ/SparkyFitness#3567).
+          # - progression-warmups: warm-ups count as working sets, so suggested
+          #   working weights are built from warm-up loads.
           frontendPackage = lib.mkDefault (
             packages.sparkyfitness-frontend.overrideAttrs (old: {
-              patches = (old.patches or [ ]) ++ [ ./sparkyfitness/preset-equipment.patch ];
+              patches = (old.patches or [ ]) ++ [
+                ./sparkyfitness/preset-equipment.patch
+                ./sparkyfitness/progression-warmups.patch
+              ];
             })
           );
           frontendUrl = lib.mkDefault "https://sparkyfitness.hummingbird-lake.ts.net";
