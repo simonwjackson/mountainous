@@ -2048,3 +2048,110 @@ A host that omits tool input cannot preserve a requested time sort; this limit
 is documented in the eBay contract and view README.
 Rollback, after inspecting concurrent changes: Rakku **143**, Yari **41**.
 These restore the previous cards/skill without changing Laure's configuration.
+
+### eBay selling approval deployment evidence (2026-11-12 Denver / 2026-11-13 UTC)
+
+Implementation **726b6a57** pins only the eBay input to
+`cdbea4f671f36bccde1b4045c144616a9985ec09`. All other lock nodes compare equal.
+The endpoint permits exactly the 14 contract tools and seven exact
+`ui://ebay/*.html` resources, not arbitrary URIs. Only Simon receives the expanded
+allow policy, server-wide `codex.defaultToolsApprovalMode = "approve"`, skill,
+and `ebay-selling` automation. App-only visibility is still the model boundary.
+
+| Host | Generation | System | Builder |
+| --- | --- | --- | --- |
+| Rakku | **150** | `/nix/store/rhxh6zzjf7h7mjhw9gbmi33jjkqawbi2-nixos-system-rakku-26.11.20260923.4975466` | root@unzen; closure copied through Zao as root |
+| Yari | **43** | `/nix/store/i1f8xw0fcgplk8mijm2khndq4y7jgfnr-nixos-system-yari-26.11.20260923.4975466` | Yari, builders disabled |
+
+Fetched/rebased on latest origin/cairn before builds and activation, rechecked
+both built drvPaths before activation, checked for target switches and unfinished
+Simon agent runs. Neither host rebooted. Rakku's initial guard correctly refused
+an outdated baseline: another session had activated generation 149. Compared
+its candidate `/etc` tree: only the two eBay units differ from our candidate.
+The subsequent switch stopped only ebay-server and its proxy. The combined
+source includes others' Gmail read-only/preparation work (`73a8ebf3`, `446bb039`,
+`43265e81`); `claw-google-auth`, `claw-tools` and both host evaluations passed.
+No other author's commit was edited. Home Assistant, Z-Wave and ai-gateway kept
+their start times. Simon's Pi assistant had restarted at 02:43:13 UTC during the
+other deployment, before our 02:50:16 activation; it remains active.
+
+Passed six focused x86 checks: `claw-ebay`, `claw-tools`, `tailnet-names`,
+`openclaw`, `openclaw-people`, `claw-google-auth`. Passed both host toplevel
+evaluations, native ARM `openclaw-config` (real CLI validation), Nix formatting,
+whitespace, and lock-node equality. The packaged eBay build ran **52 Rust tests**,
+all passed. Shell applications passed their build-time checks. No aggregate
+flake check ran. The new boundary assertions cover all names, approval mode,
+persistent storage, Simon's cron declaration and absence from Laure.
+
+Verified through TLS as the real OpenClaw user inside `claw-simon`:
+
+- `tools/list`: exactly **14**, with exactly the five app-only descriptors
+  carrying `_meta.ui.visibility = ["app"]`.
+- All **seven** resource pages: DOCTYPE, source stamp within 300 bytes, correct
+  MIME and full SHA256 equal to the pinned committed `view/dist` bytes.
+- Unknown-tool refusal; successful local `ebay_drafts {}` (no eBay HTTP).
+- Actual serving gateway `tools.effective`, with
+  `{"agentId":"main","sessionKey":"agent:main:main"}`: exactly the **nine**
+  qualified model-visible eBay tools; **none** of apply/skip/save/put-back/upload.
+  This is the effective runtime list, not `tools.catalog` or an offline probe.
+- All six other established endpoint tool lists passed. All 17 tsnet services
+  are active; Home Assistant returned HTTP 200, Z-Wave passed handshake/version.
+- Simon gateway health `ok=true`, zero automatic restarts; started 02:53:45 UTC.
+
+State: `StateDirectory=ebay`, `StateDirectoryMode=0700`,
+`EBAY_STATE_DIR=/var/lib/ebay`, `TZ=America/Denver`; hardening retained.
+Through the service's idmapped mount the directory is **0700 ebay-server:ebay-server**
+(uid/gid 61512 at verification). Host view is deliberately nobody:nogroup under
+`/var/lib/private/ebay`, with `/var/lib/ebay` a systemd-managed symlink. An app-user
+marker survived an explicit service restart; the marker alone was then removed.
+Do not clean this directory during deployment or rollback. It holds private
+message-bearing drafts and the append-only write audit, and must be retained
+as private application state when backing up or moving the service.
+
+Automation proof: gateway `cron.list` has exactly the enabled declaration
+`mountainous:ebay-selling`, ID **819b4130-7f43-478d-9033-acadb60db88d**,
+agent `main`, session `agent:main:main`, isolated agentTurn, 300-second timeout,
+announce delivery, `0 8 * * *`, America/Denver, no stagger.
+Next run **2026-11-13 08:00:00 MST** (1794582000000 ms).
+It was **not run**. The oneshot retried once while the gateway was starting,
+then reconciled successfully; it is active/exited. The installed OpenClaw
+`docs/automation/cron-jobs/delivery.md:117` explicitly documents text-only
+`NO_REPLY` suppression for announce agentTurns. The prompt uses it only after
+successful checks find nothing needing Simon. Price drafts require a known
+no-sale state; the model must not guess absent sale data.
+
+Laure proof: live/candidate unit and container config compare byte-identical;
+container system root and gateway-config store path are identical. Full
+before/after/final evidence files compare byte-identical, including app profile:
+container PID **1462903**, gateway PID **391**, both started **04:38:53 UTC**;
+unit SHA `ac5290d73d6d3d8372a9691f8a43d899d302ba4a9186f1ea54dd8c05abe39727`,
+container config SHA `2924b0618f171b3d20cff34c21d502f07ead760f2236083a15baddc0b3edc1ff`,
+gateway config SHA `00c26526158088baba45a8499389bee708ace3be8194b84778ff3f0b573a3ac9`;
+closure `/nix/store/z4mglka9jzbr1yssdkjnxwy0ipgylhw2-nixos-system-claw-26.11pre-git`.
+No Laure conversation was read and no Laure agent run was created.
+
+Budget: **zero live eBay HTTP attempts, zero writes**. Only metadata and the
+local draft read ran. Static client operation events in the complete post-deploy
+server journal also count zero across the persistence restart. New live
+message/offer parsing, writes, physical phone card approval and actual scheduled
+model behavior remain unverified; no live write/Verify/photo was attempted.
+Daily price action can be skipped when no-sale information is unavailable.
+Evidence and copied local Nix-shebang scripts: `/tmp/ebay-selling-evidence/` on Zao.
+
+Rollback: retain state and inspect concurrent changes first. Disable the
+persisted automation through the gateway API (rolling back Nix alone does not
+remove gateway-owned jobs):
+
+```sh
+ssh -F /dev/null root@yari 'nixos-container run claw-simon -- openclaw-admin gateway call cron.update --json --params '\''{"id":"819b4130-7f43-478d-9033-acadb60db88d","patch":{"enabled":false}}'\'''
+```
+
+Then use the guarded Yari switch procedure with **generation 42**
+(`/nix/store/63ggdbwsfxpazwkms2x3y6s8xjk2dxh7-nixos-system-yari-26.11.20260923.4975466`),
+which preserves Laure. Rakku **generation 149**
+(`/nix/store/sb23bpsbpk5sam2frssd74nfr7dqdnnh-nixos-system-rakku-26.11.20260923.4975466`)
+restores its immediate pre-release eBay configuration without undoing other
+sessions' earlier deployments. Set the selected system profile then run that
+closure's `bin/switch-to-configuration switch`; never build on Rakku. Keep
+`/var/lib/private/ebay`, both secrets and proxy identity. Prefer a forward revert
+and rebuild if subsequent generations carry unrelated work.
