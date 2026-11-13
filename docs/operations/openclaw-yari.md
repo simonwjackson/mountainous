@@ -2339,3 +2339,94 @@ Rollback must first disable the persisted `mountainous:mail-not-me` job through
 and reconciles the prior brief prompt. Do not erase history or Google state.
 Mailbox undo is separate: remove `Not Me` and add `INBOX` on the recorded IDs
 only if Simon asks; system rollback cannot undo Gmail changes.
+
+### eBay model-awareness deployment evidence (2026-11-13 UTC)
+
+These are this run's verified generations, not the latest cairn tip or a claim
+about later live generations. Rakku 152 was built from cairn commit
+`3b4fd1d7d64f47be2a1c62e39ba4a4fcc546baf6`. Yari 46 was built from
+`560bd06cb4425a6decd9d60be919506e04020a59` (its derivation is unchanged at
+`3b4fd1d7`). Later commits, including `92d75023` (Gmail step 3), are deployed
+by their own session, not this deployment. No further host operation was made
+after that concurrent commit appeared.
+
+Implementation `0695bf0e` and input follow-up `3b4fd1d7` pin eBay
+`aae1854bf09c1f2eee375287e29c1533f00aeb2c` (including `0e20d5c2`). Only the
+`ebay` lock node changed. The model now gets replacement IDs/values, exact live
+price direction, recent confirmed card prices, and pending/done-today values
+and UTC times. Disk-only summaries label saved baselines, not live prices.
+Simon's skill requires fresh drafts/listings before advice, explains card clicks,
+forbids a price-raising “drop”, and keeps replies after cards short, without tables.
+
+| Host | Generation | System | Builder |
+| --- | --- | --- | --- |
+| Rakku | **152** | `/nix/store/apyq1zb0w3rq4b6g0x44py5j9vpkr1p1-nixos-system-rakku-26.11.20260923.4975466` | root@unzen; copied through Zao as root |
+| Yari | **46** | `/nix/store/4b64i2rmar98kwcai3vxhycgpm8pfhi4-nixos-system-yari-26.11.20260923.4975466` | Yari; builders disabled |
+
+Rakku first ran generation 151, then 152 for the saved-baseline wording fix.
+Yari switched after the first Rakku switch; its derivation is identical under
+the final input, so it needed no second switch. Rebased on latest origin/cairn
+before builds and activation; both built derivations were rechecked. No target
+switch or Simon agent run was in flight. Rakku only restarted ebay-server;
+Yari only restarted Simon's container. No reboot. Other sessions' Gmail commits
+`75f74901`, `c5f656fc`, and evidence `b1a5141e` are retained.
+
+The required `claw-tools` check initially failed on a stale pre-Gmail assertion.
+Separate commit `560bd06c` only replaces that assertion: Simon's exact seven-tool
+Gmail filter, no mail_send, no Laure Gmail server. No Gmail behavior changed.
+
+Passed: TDD HTTP regression (failed before implementation), **56 Rust tests**,
+Rust fmt/clippy with warnings denied, **35 view tests**, byte-for-byte view build
+check, and eBay `nix build`. Passed focused x86 `claw-ebay`, `claw-tools`,
+`tailnet-names`, `openclaw`, `openclaw-people`, `openclaw-in-place`, both host
+`toplevel.drvPath` evaluations, native ARM `openclaw-config`, Nix formatting,
+whitespace, and all-other-lock-nodes equality. No aggregate flake check ran.
+
+Through verified TLS as the OpenClaw user in `claw-simon`: initialize, all 14
+descriptors (five app-only), seven views' committed full SHA256/stamp/MIME/image
+CSP, unknown-tool refusal, and local `ebay_drafts` passed. The final text reports
+**six pending**, **two confirmed writes today**, including Simon's **$15.00**
+card approval for **137575778518** at **03:09 UTC on 2026-11-13**. The exact-config
+CLI probe with empty throwaway state discovers exactly nine model-visible tools,
+none app-only, approval `approve`, no diagnostics. Throwaway state was removed.
+The serving gateway's `tools.effective` reports a cold/not-yet-connected MCP
+catalog until the next agent turn; it does not yet prove the live nine-tool list.
+No agent turn was started to warm it. Model adherence and phone clicks were not
+exercised. The six other established endpoint tool lists pass.
+
+One live listings read succeeded (count three). Complete static request events:
+**two eBay HTTP attempts total**, one OAuth and one GetMyeBaySelling; **zero eBay
+writes**, no retries. The final server invocation has zero HTTP attempts; the
+single read was on generation 151 before the summary-only follow-up. Home
+Assistant HTTP 200 and Z-Wave handshake/version passed; their, ai-gateway's,
+all three Pi assistants', and the eBay proxy's start times are unchanged.
+All 17 proxies are active. Simon gateway health is ok, zero automatic restarts,
+started **03:34:09 UTC**. The new eBay skill is eligible and enabled.
+
+Before either activation, `/var/lib/private/ebay` was backed up with numeric
+owners, ACLs and xattrs to root-only
+`/var/backups/ebay-awareness-20261113/ebay.tar` on Rakku. Final full-directory
+inventory, modes, numeric ownership and all file SHA256 values equal the backup.
+No draft state migration or cleanup occurred. Directory remains 0700; data
+files 0600; service mount is ebay-server:ebay-server (host nobody:nogroup).
+
+- drafts.json: `109ef964d1a55d11c64ea3af5801e6d69cc16bdbfbf4ad38bbe95b3f07ff7e2f`
+- writes.jsonl: `e931010f5aaa7495e143367deec9efa955378889d8d0f4a0ee9a6b78f5da2de6`
+
+Laure's live/candidate unit, container config, system closure and gateway config
+were compared before activation. Full before/after/final evidence is identical:
+container PID **1462903**, gateway PID **391**, both still started **2026-11-12
+04:38:53 UTC**; InvocationIDs, system/config hashes and signed app profile equal
+the selling-approval evidence above. No Laure restart or agent run occurred.
+
+The same job **819b4130-7f43-478d-9033-acadb60db88d** stays enabled, declaration
+`mountainous:ebay-selling`, `0 8 * * *`, America/Denver, no stagger. Next run is
+**2026-11-13 08:00 MST (1794582000000)**. It was not run or edited.
+Evidence and Nix-shebang scripts: `/tmp/ebay-awareness-evidence/` on Zao.
+
+Rollback: retain the state directory; inspect intervening changes first.
+Rakku generation **150** restores the prior server. Yari generation **45**
+(`/nix/store/lxzj3skfjng70vpl11ig6ykbvz9sl05s-nixos-system-yari-26.11.20260923.4975466`)
+restores the prior skill without removing the concurrent Gmail work or changing
+Laure. Use the guarded switch procedure and do not disable the automation for
+this text-only rollback. Prefer a forward revert after later host changes.
