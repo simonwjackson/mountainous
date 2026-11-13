@@ -4,11 +4,15 @@
     { config, ... }:
     {
       systemd.services.ebay-server = {
-        description = "Read-only eBay product service for Simon";
+        description = "eBay selling approval product service for Simon";
         wantedBy = [ "multi-user.target" ];
         wants = [ "network-online.target" ];
         after = [ "network-online.target" ];
-        environment.PORT = "3191";
+        environment = {
+          PORT = "3191";
+          EBAY_STATE_DIR = "/var/lib/ebay";
+          TZ = "America/Denver";
+        };
         serviceConfig = {
           ExecStart = "${inputs.ebay.packages.x86_64-linux.default}/bin/ebay-server";
           LoadCredential = [
@@ -16,6 +20,8 @@
             "ebay-refresh-token:${config.sops.secrets.ebay-refresh-token.path}"
           ];
           DynamicUser = true;
+          StateDirectory = "ebay";
+          StateDirectoryMode = "0700";
           Restart = "on-failure";
           RestartSec = "5s";
           UMask = "0077";
@@ -51,17 +57,19 @@
       sops.secrets.ebay-api-env.restartUnits = [ "ebay-server.service" ];
       sops.secrets.ebay-refresh-token.restartUnits = [ "ebay-server.service" ];
       mountainous.tailnetNames.claw-ebay-simon = {
-        description = "Simon's read-only eBay MCP endpoint for OpenClaw";
+        description = "Simon's eBay approval MCP endpoint for OpenClaw";
         backend = "http://127.0.0.1:3191";
         after = [ "ebay-server.service" ];
         tags = [ "tag:claw-tools" ];
-        mcpTools = [
-          "ebay_search"
-          "ebay_listings"
-        ];
+        mcpTools = import ../lib/openclaw-ebay-tools.nix;
         mcpResources = [
           "ui://ebay/search.html"
           "ui://ebay/listings.html"
+          "ui://ebay/needs.html"
+          "ui://ebay/price.html"
+          "ui://ebay/reply.html"
+          "ui://ebay/offer.html"
+          "ui://ebay/listing.html"
         ];
       };
     };
@@ -79,32 +87,60 @@
     in
     {
       checks.claw-ebay =
-        assert inputs.ebay.rev == "1bbffa36ba768e60929892a4bd4e449cc8dca5ba";
+        assert inputs.ebay.rev == "cdbea4f671f36bccde1b4045c144616a9985ec09";
         assert endpoint.tags == [ "tag:claw-tools" ];
         assert endpoint.backend == "http://127.0.0.1:3191";
         assert
           endpoint.mcpTools == [
             "ebay_search"
             "ebay_listings"
+            "ebay_drafts"
+            "ebay_messages"
+            "ebay_offers"
+            "ebay_draft_price"
+            "ebay_draft_reply"
+            "ebay_draft_offer"
+            "ebay_draft_listing"
+            "ebay_apply_draft"
+            "ebay_skip_draft"
+            "ebay_save_draft"
+            "ebay_put_back_price"
+            "ebay_upload_photo"
           ];
         assert
           endpoint.mcpResources == [
             "ui://ebay/search.html"
             "ui://ebay/listings.html"
+            "ui://ebay/needs.html"
+            "ui://ebay/price.html"
+            "ui://ebay/reply.html"
+            "ui://ebay/offer.html"
+            "ui://ebay/listing.html"
           ];
-        assert lib.hasInfix "-mcp-tools ebay_search,ebay_listings" proxyUnit.ExecStart;
-        assert lib.hasInfix "-mcp-resources ui://ebay/search.html,ui://ebay/listings.html"
-          proxyUnit.ExecStart;
+        assert lib.hasInfix (
+          "-mcp-tools " + lib.concatStringsSep "," endpoint.mcpTools
+        ) proxyUnit.ExecStart;
+        assert lib.hasInfix (
+          "-mcp-resources " + lib.concatStringsSep "," endpoint.mcpResources
+        ) proxyUnit.ExecStart;
         assert unit.environment.PORT == "3191";
         assert unit.serviceConfig.DynamicUser && unit.serviceConfig.ProtectSystem == "strict";
-        assert !(unit.serviceConfig ? StateDirectory);
+        assert unit.serviceConfig.StateDirectory == "ebay";
+        assert unit.serviceConfig.StateDirectoryMode == "0700";
+        assert unit.environment.EBAY_STATE_DIR == "/var/lib/ebay";
+        assert unit.environment.TZ == "America/Denver";
         assert
           unit.serviceConfig.LoadCredential == [
             "ebay-api-env:${cfg.sops.secrets.ebay-api-env.path}"
             "ebay-refresh-token:${cfg.sops.secrets.ebay-refresh-token.path}"
           ];
         assert simon.mcp.servers.claw-ebay-simon.toolFilter.include == endpoint.mcpTools;
-        assert !(simon.mcp.servers.claw-ebay-simon ? approval);
+        assert simon.mcp.servers.claw-ebay-simon.codex.defaultToolsApprovalMode == "approve";
+        assert import ../tests/openclaw-ebay-selling.nix {
+          inherit lib;
+          container = containers.claw-simon.config;
+        };
+        assert !(containers.openclaw.config.systemd.services ? openclaw-ebay-selling);
         assert lib.all (tool: lib.elem "claw-ebay-simon__${tool}" simon.tools.allow) endpoint.mcpTools;
         assert !(laure.mcp.servers ? claw-ebay-simon);
         assert !(lib.any (tool: lib.hasInfix "ebay" tool) laure.tools.allow);

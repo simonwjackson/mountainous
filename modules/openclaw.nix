@@ -377,6 +377,18 @@
               "claw-scryer-simon__scryer_monitor"
               "claw-ebay-simon__ebay_search"
               "claw-ebay-simon__ebay_listings"
+              "claw-ebay-simon__ebay_drafts"
+              "claw-ebay-simon__ebay_messages"
+              "claw-ebay-simon__ebay_offers"
+              "claw-ebay-simon__ebay_draft_price"
+              "claw-ebay-simon__ebay_draft_reply"
+              "claw-ebay-simon__ebay_draft_offer"
+              "claw-ebay-simon__ebay_draft_listing"
+              "claw-ebay-simon__ebay_apply_draft"
+              "claw-ebay-simon__ebay_skip_draft"
+              "claw-ebay-simon__ebay_save_draft"
+              "claw-ebay-simon__ebay_put_back_price"
+              "claw-ebay-simon__ebay_upload_photo"
             ];
           assert !(gateway.config.mcp.servers ? claw-scryer);
           assert lib.all (

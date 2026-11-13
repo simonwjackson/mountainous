@@ -1,0 +1,16 @@
+[
+  "ebay_search"
+  "ebay_listings"
+  "ebay_drafts"
+  "ebay_messages"
+  "ebay_offers"
+  "ebay_draft_price"
+  "ebay_draft_reply"
+  "ebay_draft_offer"
+  "ebay_draft_listing"
+  "ebay_apply_draft"
+  "ebay_skip_draft"
+  "ebay_save_draft"
+  "ebay_put_back_price"
+  "ebay_upload_photo"
+]

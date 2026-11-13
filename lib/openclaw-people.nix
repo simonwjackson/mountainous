@@ -22,17 +22,14 @@ in
       emoji = "❄️";
     };
     mcpServers = {
-      claw-ebay-simon.tools = [
-        "ebay_search"
-        "ebay_listings"
-      ];
+      claw-ebay-simon = {
+        tools = import ./openclaw-ebay-tools.nix;
+        codex.defaultToolsApprovalMode = "approve";
+      };
       claw-calendar.tools = [ "calendar_busy" ];
       claw-scryer-simon.tools = scryerTools;
     };
-    extraToolPermissions = [
-      "claw-ebay-simon__ebay_search"
-      "claw-ebay-simon__ebay_listings"
-    ];
+    extraToolPermissions = map (tool: "claw-ebay-simon__${tool}") (import ./openclaw-ebay-tools.nix);
     extraMcpServers = [
       {
         name = "basic-react";
@@ -45,6 +42,7 @@ in
     ];
     morningBriefPrompt = builtins.readFile ./openclaw-morning-brief.md;
     enableMorningBrief = true;
+    enableEbaySelling = true;
   };
   laure = {
     name = "laure";

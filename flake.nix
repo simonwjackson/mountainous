@@ -73,7 +73,7 @@
       flake = false;
     };
     # eBay seller tools for Simon's assistant on Rakku.
-    ebay.url = "git+ssh://git@github.com/simonwjackson/ebay?ref=main&rev=1bbffa36ba768e60929892a4bd4e449cc8dca5ba";
+    ebay.url = "git+ssh://git@github.com/simonwjackson/ebay?ref=main&rev=cdbea4f671f36bccde1b4045c144616a9985ec09";
     pi-ebay-seller = {
       url = "git+ssh://git@github.com/simonwjackson/pi-ebay-seller?ref=main";
       flake = false;
