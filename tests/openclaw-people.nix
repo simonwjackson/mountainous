@@ -40,6 +40,7 @@ let
           "identity"
           "agentDir"
           "workspace"
+          "tools"
         ];
       };
       talk = builtins.removeAttrs c.talk [ "agentId" ];
@@ -58,6 +59,9 @@ let
         allow = lib.filter (id: !(lib.elem id (person.extraPlugins or [ ]))) c.plugins.allow;
       };
       tools = c.tools // {
+        agentToAgent = {
+          enabled = false;
+        };
         allow = lib.filter (
           tool:
           !(lib.elem tool (
@@ -94,8 +98,14 @@ let
       unit = container.config.systemd.services.openclaw-gateway.serviceConfig;
       node = container.config.systemd.services.openclaw-session-share;
     in
-    assert lib.attrNames c.agents.entries == [ person.agentId ];
-    assert !(c.agents.entries.${person.agentId} ? tools);
+    assert
+      lib.attrNames c.agents.entries
+      == lib.sort builtins.lessThan ([ person.agentId ] ++ lib.attrNames (person.extraAgents or { }));
+    assert (c.agents.entries.${person.agentId}.tools or { }) == (person.agentTools or { });
+    assert lib.all (id: c.agents.entries.${id} == person.extraAgents.${id}) (
+      lib.attrNames (person.extraAgents or { })
+    );
+    assert c.tools.agentToAgent == (person.agentToAgent or { enabled = false; });
     assert c.gateway.auth.trustedProxy.allowUsers == [ person.login ];
     assert c.gateway.roles.default == person.roleName;
     assert lib.attrNames c.gateway.roles.definitions == [ person.roleName ];
@@ -140,6 +150,60 @@ assert (import ../lib/openclaw-people.nix).laure.containerName == "openclaw";
 assert (import ../lib/openclaw-people.nix).laure.nodeName == "claw";
 assert (import ../lib/openclaw-people.nix).laure.roleName == "laure";
 assert !(import ../lib/openclaw-people.nix).laure.enableMorningBrief;
+# Step 2: mail is confined to Simon's restricted reader, never his main agent.
+assert
+  lib.attrNames configs.simon.agents.entries == [
+    "mail"
+    "main"
+  ];
+assert configs.simon.agents.entries.main.tools.deny == [ "claw-gmail__*" ];
+assert configs.simon.agents.entries.main.tools.agentToAgent.send == [ "mail" ];
+assert
+  configs.simon.agents.entries.mail.tools.allow == (map (t: "claw-gmail__${t}") [
+    "mail_list"
+    "mail_read"
+    "mail_not_mine"
+    "mail_label"
+    "mail_archive"
+    "mail_draft"
+    "mail_discard_draft"
+  ])
+  ++ [ "session_status" ];
+assert configs.simon.agents.entries.mail.tools.agentToAgent.send == [ ];
+assert configs.simon.agents.entries.mail.skills == [ ];
+assert configs.simon.agents.entries.mail.name == "Mail reader";
+assert configs.simon.agents.entries.mail.workspace == "/var/lib/openclaw/workspace-mail";
+assert configs.simon.agents.entries.mail.agentDir == "/var/lib/openclaw/agents/mail/agent";
+assert !(configs.simon.agents.entries.mail ? heartbeat);
+assert lib.pathExists "${builtins.elemAt configs.simon.skills.load.extraDirs 1}/mail/SKILL.md";
+assert lib.all
+  (
+    file:
+    lib.hasInfix "/${file} /var/lib/openclaw/workspace-mail/${file}"
+      host.containers.${people.simon.containerName}.config.systemd.services.openclaw-agent-instructions.script
+  )
+  [
+    "AGENTS.md"
+    "SOUL.md"
+    "BOOTSTRAP.md"
+  ];
+assert
+  host.containers.${people.simon.containerName}.config.systemd.services.openclaw-agent-instructions.before
+  == [ "openclaw-gateway.service" ];
+assert
+  configs.simon.agents.entries.mail.model.primary == configs.simon.agents.defaults.model.primary;
+assert
+  configs.simon.tools.agentToAgent == {
+    enabled = true;
+    allow = [
+      "main"
+      "mail"
+    ];
+  };
+assert lib.attrNames configs.laure.agents.entries == [ "laure" ];
+assert !(configs.laure.mcp.servers ? claw-gmail);
+assert !configs.laure.tools.agentToAgent.enabled;
+assert configs.simon.tools.sessions.visibility == "agent";
 assert same;
 # Prove the drift comparison rejects a change outside the personal allowlist.
 assert common != normalized people.laure (configs.laure // { discovery.mdns.mode = "all"; });

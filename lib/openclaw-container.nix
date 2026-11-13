@@ -257,12 +257,16 @@ in
             systemAgent.agentId = person.agentId;
             sessionStore.agentId = person.agentId;
           };
-          entries.${person.agentId} = {
-            identity = person.identity;
-            workspace = person.workspacePath;
-            agentDir = "/var/lib/openclaw/agents/${person.agentId}/agent";
-            heartbeat.every = "30m";
-          };
+          entries = {
+            ${person.agentId} = {
+              identity = person.identity;
+              workspace = person.workspacePath;
+              agentDir = "/var/lib/openclaw/agents/${person.agentId}/agent";
+              heartbeat.every = "30m";
+            }
+            // lib.optionalAttrs (person ? agentTools) { tools = person.agentTools; };
+          }
+          // (person.extraAgents or { });
         };
         talk.agentId = person.agentId;
         models = {
@@ -426,7 +430,7 @@ in
             "web_search"
           ];
           sessions.visibility = "agent";
-          agentToAgent.enabled = false;
+          agentToAgent = person.agentToAgent or { enabled = false; };
           codeMode.enabled = false;
           fs.workspaceOnly = true;
           elevated.enabled = false;
@@ -451,6 +455,38 @@ in
     };
   };
   systemd.services = {
+    # Bootstrap reads reject symlinks outside the workspace. Install real files,
+    # not store symlinks. The reader has no file tools to change these documents.
+    openclaw-agent-instructions = lib.mkIf (person ? extraAgentInstructions) {
+      description = "Install declarative restricted-agent instructions";
+      requiredBy = [ "openclaw-gateway.service" ];
+      before = [ "openclaw-gateway.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script = lib.concatStringsSep "\n" (
+        lib.mapAttrsToList (
+          id: directory:
+          let
+            workspace = person.extraAgents.${id}.workspace;
+          in
+          ''
+            ${pkgs.coreutils}/bin/install -d -m 0700 -o openclaw -g openclaw ${workspace}
+          ''
+          +
+            lib.concatMapStringsSep "\n"
+              (file: ''
+                ${pkgs.coreutils}/bin/install -m 0444 ${directory}/${file} ${workspace}/${file}
+              '')
+              [
+                "AGENTS.md"
+                "SOUL.md"
+                "BOOTSTRAP.md"
+              ]
+        ) person.extraAgentInstructions
+      );
+    };
     # Tailscale Serve sets no login for tagged devices. Simon's own fleet
     # machines (Myoko, Ibuki, ...) carry tag:mountainous, so this proxy names
     # Simon for that tag only. It asks tailscaled read-only (WhoIs); it has no

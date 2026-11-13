@@ -355,7 +355,14 @@
               "web_search"
             ];
           assert gateway.config.tools.sessions.visibility == "agent";
-          assert !gateway.config.tools.agentToAgent.enabled;
+          assert
+            gateway.config.tools.agentToAgent == {
+              enabled = true;
+              allow = [
+                "main"
+                "mail"
+              ];
+            };
           assert
             gateway.config.tools.allow == [
               "ask_user"
@@ -389,6 +396,13 @@
               "claw-ebay-simon__ebay_save_draft"
               "claw-ebay-simon__ebay_put_back_price"
               "claw-ebay-simon__ebay_upload_photo"
+              "claw-gmail__mail_list"
+              "claw-gmail__mail_read"
+              "claw-gmail__mail_not_mine"
+              "claw-gmail__mail_label"
+              "claw-gmail__mail_archive"
+              "claw-gmail__mail_draft"
+              "claw-gmail__mail_discard_draft"
             ];
           assert !(gateway.config.mcp.servers ? claw-scryer);
           assert lib.all (

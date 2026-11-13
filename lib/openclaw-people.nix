@@ -7,6 +7,16 @@ let
     "scryer_add"
     "scryer_monitor"
   ];
+  mailTools = [
+    "mail_list"
+    "mail_read"
+    "mail_not_mine"
+    "mail_label"
+    "mail_archive"
+    "mail_draft"
+    "mail_discard_draft"
+  ];
+  mailPermissions = map (tool: "claw-gmail__${tool}") mailTools;
 in
 {
   simon = {
@@ -26,10 +36,36 @@ in
         tools = import ./openclaw-ebay-tools.nix;
         codex.defaultToolsApprovalMode = "approve";
       };
+      claw-gmail.tools = mailTools;
       claw-calendar.tools = [ "calendar_busy" ];
       claw-scryer-simon.tools = scryerTools;
     };
-    extraToolPermissions = map (tool: "claw-ebay-simon__${tool}") (import ./openclaw-ebay-tools.nix);
+    extraToolPermissions =
+      (map (tool: "claw-ebay-simon__${tool}") (import ./openclaw-ebay-tools.nix)) ++ mailPermissions;
+    agentTools = {
+      deny = [ "claw-gmail__*" ];
+      agentToAgent.send = [ "mail" ];
+    };
+    agentToAgent = {
+      enabled = true;
+      allow = [
+        "main"
+        "mail"
+      ];
+    };
+    extraAgents.mail = {
+      name = "Mail reader";
+      identity.name = "Mail reader";
+      workspace = "/var/lib/openclaw/workspace-mail";
+      agentDir = "/var/lib/openclaw/agents/mail/agent";
+      model.primary = "front-door/claude-opus-5-5";
+      skills = [ ];
+      tools = {
+        allow = mailPermissions ++ [ "session_status" ];
+        agentToAgent.send = [ ];
+      };
+    };
+    extraAgentInstructions.mail = ./openclaw-mail;
     extraMcpServers = [
       {
         name = "basic-react";
