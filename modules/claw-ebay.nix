@@ -87,7 +87,7 @@
     in
     {
       checks.claw-ebay =
-        assert inputs.ebay.rev == "cdbea4f671f36bccde1b4045c144616a9985ec09";
+        assert inputs.ebay.rev == "0e20d5c2f42abf4a41f39e1ef2489d703fd93475";
         assert endpoint.tags == [ "tag:claw-tools" ];
         assert endpoint.backend == "http://127.0.0.1:3191";
         assert

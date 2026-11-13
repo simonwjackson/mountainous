@@ -1,8 +1,18 @@
 { lib, container }:
 let
+  skill = builtins.readFile ../lib/openclaw-skills/simon/ebay/SKILL.md;
   job = import ../lib/openclaw-ebay-selling.nix;
   unit = container.systemd.services.openclaw-ebay-selling;
 in
+assert lib.all (text: lib.hasInfix text skill) [
+  "card clicks happen outside your view"
+  "Before recommending prices or"
+  "talking about drafts, call `ebay_drafts` and use fresh `ebay_listings` data"
+  "most likely Simon's own approved"
+  "Check `ebay_drafts` before suggesting anything else"
+  "Do not draft a “drop” that raises a price"
+  "After any card, answer in one or two sentences, no table"
+];
 assert job.declarationKey == "mountainous:ebay-selling";
 assert job.name == "ebay-selling" && job.enabled && job.agentId == "main";
 assert
