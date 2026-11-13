@@ -67,7 +67,7 @@
           );
           # Workouts started from a preset lose the exercise equipment, which
           # hides the per-set plate calculator. Drop the patch once the pin
-          # contains the upstream fix.
+          # contains the upstream fix, CodeWithCJ/SparkyFitness#3567.
           frontendPackage = lib.mkDefault (
             packages.sparkyfitness-frontend.overrideAttrs (old: {
               patches = (old.patches or [ ]) ++ [ ./sparkyfitness/preset-equipment.patch ];
