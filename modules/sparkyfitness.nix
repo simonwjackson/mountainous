@@ -69,7 +69,7 @@
           # - preset-equipment: preset workouts lose the exercise equipment, which
           #   hides the per-set plate calculator (CodeWithCJ/SparkyFitness#3567).
           # - progression-warmups: warm-ups count as working sets, so suggested
-          #   working weights are built from warm-up loads.
+          #   working weights are built from warm-up loads (CodeWithCJ/SparkyFitness#3569).
           frontendPackage = lib.mkDefault (
             packages.sparkyfitness-frontend.overrideAttrs (old: {
               patches = (old.patches or [ ]) ++ [
