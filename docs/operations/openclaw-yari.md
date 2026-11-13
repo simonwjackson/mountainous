@@ -2160,7 +2160,7 @@ and rebuild if subsequent generations carry unrelated work.
 Simon approved only this gateway wiring step. `claw-gmail` on Rakku remains
 unchanged. Only Simon's per-person descriptor declares it. The `mail` agent
 uses `front-door/claude-opus-5-5`, its own workspace and agent auth directory,
-no skills, and an explicit allowlist of the seven projected Gmail tools plus
+no skills, explicit `tools.exec.mode = "deny"`, and an explicit allowlist of the seven projected Gmail tools plus
 `session_status`. Unlisted tools are unavailable. `main` denies `claw-gmail__*`.
 Do not add `mail_send`, a general Google endpoint, shell access or a mail poll.
 
@@ -2187,6 +2187,9 @@ Config authority: the installed **2026.11.3** package's docs on Yari:
 
 - `docs/gateway/config-agents/entries-and-multi-agent.md:29-32,44-48,74-81`:
   name, workspace, agentDir, model, identity and empty skills list.
+- `docs/tools/exec.md:140-150`: exec mode `deny` blocks execution at its own
+  boundary as well as the tool allowlist. This also prevents the skill/MCP
+  host-exec drift warning for the reader.
 - `docs/tools/multi-agent-sandbox-tools.md:219-288`: per-agent tool allowlists,
   intersection with global policy and projected `<server>__<tool>` names.
 - `docs/gateway/config-tools/sessions-and-subagents.md:25-30,33-97,129-133`:

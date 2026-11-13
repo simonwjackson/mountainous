@@ -62,6 +62,8 @@ in
       skills = [ ];
       tools = {
         allow = mailPermissions ++ [ "session_status" ];
+        # Also deny at exec's own boundary, not only at tool discovery.
+        exec.mode = "deny";
         agentToAgent.send = [ ];
       };
     };

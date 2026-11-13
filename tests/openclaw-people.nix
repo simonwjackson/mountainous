@@ -171,6 +171,7 @@ assert
   ++ [ "session_status" ];
 assert configs.simon.agents.entries.mail.tools.agentToAgent.send == [ ];
 assert configs.simon.agents.entries.mail.skills == [ ];
+assert configs.simon.agents.entries.mail.tools.exec.mode == "deny";
 assert configs.simon.agents.entries.mail.name == "Mail reader";
 assert configs.simon.agents.entries.mail.workspace == "/var/lib/openclaw/workspace-mail";
 assert configs.simon.agents.entries.mail.agentDir == "/var/lib/openclaw/agents/mail/agent";
