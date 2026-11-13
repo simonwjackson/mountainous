@@ -29,6 +29,8 @@
   description,
   egressDescription,
   tailnetDescription,
+  tailnetMCPRoutes ? { },
+  tailnetMCPRouting ? false,
 }:
 {
   config,
@@ -395,6 +397,8 @@ in
     ];
     mountainous.tailnetNames.${tailnetName} = {
       description = tailnetDescription;
+      mcpRoutes = tailnetMCPRoutes;
+      mcpRouting.enable = tailnetMCPRouting;
       backend = "http://127.0.0.1:${toString listenPort}";
       after = [ "${name}.service" ];
     };

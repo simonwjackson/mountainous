@@ -1,0 +1,86 @@
+--- a/main.go
++++ b/main.go
+@@ -198,6 +198,7 @@
+ 	oauthID := flag.String("oauth-id-file", "", "OAuth client ID file")
+ 	oauthSecret := flag.String("oauth-secret-file", "", "OAuth secret file")
+ 	tags := flag.String("tags", "tag:mountainous", "Comma-separated enrollment tags")
++	mcpTable := flag.String("mcp-table", "", "Reloadable MCP route table (SIGHUP); other paths retain the normal proxy")
+ 	mcpTools := flag.String("mcp-tools", "", "Enable restricted stateless MCP endpoint with these comma-separated tool names")
+ 	mcpAllowedNodeIDs := flag.String("mcp-allowed-node-ids", "", "Restrict filtered MCP to these stable Tailscale node IDs")
+ 	mcpResources := flag.String("mcp-resources", "", "Exact comma-separated resource URIs for a filtered MCP endpoint")
+@@ -206,6 +207,9 @@
+ 	webSearchKey := flag.String("websearch-key-file", "", "Serve model-native web search MCP using this gateway credential and the backend Responses URL")
+ 	webSearchModel := flag.String("websearch-model", "gpt-6.1-sol", "Fixed model for native web search")
+ 	flag.Parse()
++	if *mcpTable != "" && (*mcpTools != "" || *mcpAllowedNodeIDs != "" || *mcpResources != "" || *scryerPassword != "" || *webSearchKey != "") {
++		log.Fatal("MCP table cannot be combined with endpoint modes")
++	}
+ 	if (*mcpResources != "" || *mcpAllowedNodeIDs != "") && *mcpTools == "" {
+ 		log.Fatal("MCP resources require filtered tools")
+ 	}
+@@ -298,6 +302,27 @@
+ 			handler = mcpResourceHandler(backendURL, strings.Split(*mcpTools, ","), strings.FieldsFunc(*mcpResources, func(r rune) bool { return r == ',' }), verifyPeer)
+ 		}
+ 	}
++	if *mcpTable != "" {
++		local, err := srv.LocalClient()
++		if err != nil {
++			log.Fatal("tailnet identity client unavailable")
++		}
++		router := newMCPRouter(handler, func(r *http.Request) (string, error) {
++			peer, err := local.WhoIs(r.Context(), r.RemoteAddr)
++			if err != nil || peer == nil || peer.Node == nil {
++				return "", errors.New("tailnet identity unavailable")
++			}
++			return peer.Node.Name, nil
++		})
++		if err := router.reload(*mcpTable, os.Getenv("CREDENTIALS_DIRECTORY")); err != nil {
++			log.Fatal("invalid initial MCP route table")
++		}
++		reloads := make(chan os.Signal, 1)
++		signal.Notify(reloads, syscall.SIGHUP)
++		defer signal.Stop(reloads)
++		go router.watch(ctx, reloads, *mcpTable, os.Getenv("CREDENTIALS_DIRECTORY"))
++		handler = router
++	}
+ 	server := &http.Server{Handler: handler, ReadHeaderTimeout: 15 * time.Second}
+ 	if *scryerPassword != "" || *webSearchKey != "" {
+ 		server.ReadTimeout = 30 * time.Second
+--- a/mcp-filter.go
++++ b/mcp-filter.go
+@@ -83,6 +83,11 @@
+ }
+ 
+ func mcpResourceHandler(backend *url.URL, tools, resources []string, tailnetClient func(*http.Request) bool) http.Handler {
++	return mcpAuthenticatedResourceHandler(backend, tools, resources, "", tailnetClient)
++}
++
++// Only this fixed server credential is sent upstream, never caller auth or cookies.
++func mcpAuthenticatedResourceHandler(backend *url.URL, tools, resources []string, bearer string, tailnetClient func(*http.Request) bool) http.Handler {
+ 	resourceAllowed := make(map[string]bool, len(resources))
+ 	for _, uri := range resources {
+ 		resourceAllowed[uri] = true
+@@ -92,9 +97,11 @@
+ 		allowed[name] = true
+ 	}
+ 	// A fixed loopback destination, no environment proxy and no redirects.
+-	client := &http.Client{Timeout: 60 * time.Second, Transport: &http.Transport{}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
++	client := &http.Client{Timeout: 60 * time.Second, Transport: &http.Transport{IdleConnTimeout: 90 * time.Second}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+ 	target := *backend
+-	target.Path, target.RawPath, target.RawQuery, target.Fragment = "/mcp", "", "", ""
++	if target.Path == "" {
++		target.Path = "/mcp"
++	}
+ 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ 		request, ok := readMCPRequest(w, r, tailnetClient)
+ 		if !ok {
+@@ -162,6 +169,9 @@
+ 			rpcError(w, request.ID, -32603, "upstream request failed")
+ 			return
+ 		}
++		if bearer != "" {
++			upstream.Header.Set("Authorization", "Bearer "+bearer)
++		}
+ 		upstream.Header.Set("Content-Type", "application/json")
+ 		upstream.Header.Set("Accept", "application/json, text/event-stream")
+ 		if version := r.Header.Get("MCP-Protocol-Version"); version != "" {

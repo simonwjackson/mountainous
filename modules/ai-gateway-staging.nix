@@ -18,7 +18,12 @@ in
     }
   );
   nixos.modules.ai-gateway-staging =
-    { config, lib, ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
     {
       imports = [
         (import ../lib/ai-gateway-instance.nix (
@@ -30,6 +35,12 @@ in
             description = "AI gateway staging front door (no production cutover)";
             egressDescription = "Staging-only provider hostname allowlisting CONNECT proxy";
             tailnetDescription = "AI staging tailnet proxy";
+            tailnetMCPRouting = true;
+            tailnetMCPRoutes.echo = {
+              backend = "http://127.0.0.1:8422/mcp";
+              callers = [ "claw-simon" ];
+              mcpTools = [ "echo" ];
+            };
             gatewayKeys = geminiImageModels: [
               {
                 name = "ai-staging-test-a";
@@ -76,6 +87,24 @@ in
         ))
       ];
       config = lib.mkIf config.mountainous.features.ai-gateway-staging.enable {
+        systemd.services.ai-staging-mcp-echo = {
+          description = "Harmless staging-only MCP no-op tool";
+          wantedBy = [ "multi-user.target" ];
+          serviceConfig = {
+            ExecStart = "${pkgs.python3}/bin/python3 ${../packages/ai-mcp-echo.py}";
+            DynamicUser = true;
+            NoNewPrivileges = true;
+            ProtectSystem = "strict";
+            ProtectHome = true;
+            PrivateTmp = true;
+            PrivateDevices = true;
+            RestrictAddressFamilies = [ "AF_INET" ];
+            IPAddressDeny = [ "any" ];
+            IPAddressAllow = [ "127.0.0.1/32" ];
+            Restart = "on-failure";
+          };
+        };
+        mountainous.tailnetNames.ai-staging.after = [ "ai-staging-mcp-echo.service" ];
         sops.secrets.ai-staging-login-keeper = {
           sopsFile = ../secrets/fleet.yaml;
           key = "pi-cliproxyapi-api-key";

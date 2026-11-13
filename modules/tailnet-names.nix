@@ -69,6 +69,21 @@
     let
       names = config.mountainous.tailnetNames;
       proxy = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.media-tsnet-proxy;
+      routeTable =
+        name: cfg:
+        pkgs.writeText "tsnet-proxy-${name}-mcp.json" (
+          builtins.toJSON (
+            lib.mapAttrs (
+              tool: row:
+              {
+                inherit (row) backend callers mcpTools;
+              }
+              // lib.optionalAttrs (row.bearerCredentialFile != null) {
+                bearerCredential = "mcp-${tool}";
+              }
+            ) cfg.mcpRoutes
+          )
+        );
       directory = name: "/var/lib/tsnet-proxy-${name}";
       # A new subdirectory: the old, dead TS_AUTHKEY state stays beside it.
       state = name: "${directory name}/tailnet";
@@ -137,6 +152,34 @@
                 default = "gpt-6.1-sol";
                 description = "Fixed granted model for native web search.";
               };
+              mcpRouting.enable = lib.mkEnableOption "reloadable path-prefixed MCP routing";
+              mcpRoutes = lib.mkOption {
+                default = { };
+                description = "Path-prefixed MCP rows, reloaded without restarting the front-door proxy.";
+                type = lib.types.attrsOf (
+                  lib.types.submodule {
+                    options = {
+                      backend = lib.mkOption {
+                        type = lib.types.strMatching "http://127\\.0\\.0\\.1:[0-9]+(/[^?#]*)?";
+                        description = "Fixed loopback MCP URL. An empty path means /mcp.";
+                      };
+                      callers = lib.mkOption {
+                        type = lib.types.nonEmptyListOf (lib.types.strMatching "[a-z0-9]([a-z0-9-]*[a-z0-9])?");
+                        description = "Exact short Tailscale node names from WhoIs. No default grant.";
+                      };
+                      mcpTools = lib.mkOption {
+                        type = lib.types.nonEmptyListOf (lib.types.strMatching "[a-zA-Z0-9_-]+");
+                        description = "Allowed stateless MCP tools for this row.";
+                      };
+                      bearerCredentialFile = lib.mkOption {
+                        type = lib.types.nullOr (lib.types.strMatching "/run/[^:]+");
+                        default = null;
+                        description = "Optional runtime secret source; copied by systemd LoadCredential, never a caller credential or a store value.";
+                      };
+                    };
+                  }
+                );
+              };
               mcpResources = lib.mkOption {
                 type = lib.types.listOf lib.types.str;
                 default = [ ];
@@ -162,8 +205,18 @@
       config = lib.mkIf (names != { }) {
         assertions =
           lib.mapAttrsToList (name: cfg: {
-            assertion = (cfg.mcpResources == [ ] && cfg.mcpAllowedNodeIds == [ ]) || cfg.mcpTools != null;
-            message = "${name}: MCP resources require filtered tools.";
+            assertion =
+              ((cfg.mcpResources == [ ] && cfg.mcpAllowedNodeIds == [ ]) || cfg.mcpTools != null)
+              && (
+                !cfg.mcpRouting.enable
+                || (cfg.mcpTools == null && cfg.scryerPasswordFile == null && cfg.webSearchKeyFile == null)
+              )
+              && lib.all (tool: builtins.match "[a-zA-Z0-9_-]+" tool != null) (lib.attrNames cfg.mcpRoutes);
+            message = "${name}: MCP resources require filtered tools, and path routing cannot use endpoint modes.";
+          }) names
+          ++ lib.mapAttrsToList (name: cfg: {
+            assertion = cfg.mcpRoutes == { } || cfg.mcpRouting.enable;
+            message = "${name}: MCP rows require mcpRouting.enable.";
           }) names
           ++ lib.mapAttrsToList (name: cfg: {
             assertion =
@@ -191,6 +244,15 @@
 
         systemd.services = lib.mapAttrs' (
           name: cfg:
+          let
+            routed = cfg.mcpRouting.enable;
+            package =
+              if routed then
+                inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.ai-mcp-tsnet-proxy
+              else
+                proxy;
+            table = routeTable name cfg;
+          in
           lib.nameValuePair "tsnet-proxy-${name}" {
             inherit (cfg) description;
             wantedBy = [ "multi-user.target" ];
@@ -209,11 +271,15 @@
                 "oauth-secret:${tailscale.oauthSecretFile}"
               ]
               ++ lib.optional (cfg.scryerPasswordFile != null) "scryer-password:${cfg.scryerPasswordFile}"
-              ++ lib.optional (cfg.webSearchKeyFile != null) "websearch-key:${cfg.webSearchKeyFile}";
+              ++ lib.optional (cfg.webSearchKeyFile != null) "websearch-key:${cfg.webSearchKeyFile}"
+              ++ lib.mapAttrsToList (tool: row: "mcp-${tool}:${row.bearerCredentialFile}") (
+                lib.filterAttrs (_: row: row.bearerCredentialFile != null) cfg.mcpRoutes
+              );
               ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p ${state name}";
               ExecStart =
-                "${proxy}/bin/tsnet-proxy -hostname ${name} -state ${state name}"
+                "${package}/bin/tsnet-proxy -hostname ${name} -state ${state name}"
                 + " -backend ${cfg.backend} -port 443"
+                + lib.optionalString routed " -mcp-table /etc/tsnet-proxy-${name}-mcp.json"
                 + " -oauth-id-file %d/oauth-id -oauth-secret-file %d/oauth-secret"
                 + " -tags ${lib.escapeShellArg (lib.concatStringsSep "," cfg.tags)}"
                 + lib.optionalString (
@@ -256,9 +322,21 @@
               RestrictRealtime = true;
               RestrictSUIDSGID = true;
               RemoveIPC = true;
+            }
+            // lib.optionalAttrs routed {
+              ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
             };
+            # The table is deliberately absent from ExecStart and restartTriggers.
+            # NixOS switches /etc first, then reloads this unit on table changes.
+            reloadTriggers = lib.optionals routed [ table ];
           }
         ) names;
+        environment.etc = lib.mapAttrs' (
+          name: cfg:
+          lib.nameValuePair "tsnet-proxy-${name}-mcp.json" {
+            source = routeTable name cfg;
+          }
+        ) (lib.filterAttrs (_: cfg: cfg.mcpRouting.enable) names);
       };
     };
 }
