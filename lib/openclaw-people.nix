@@ -80,6 +80,7 @@ in
     ];
     morningBriefPrompt = builtins.readFile ./openclaw-morning-brief.md;
     enableMorningBrief = true;
+    mailFilingJob = import ./openclaw-mail-filing.nix;
     enableEbaySelling = true;
   };
   laure = {

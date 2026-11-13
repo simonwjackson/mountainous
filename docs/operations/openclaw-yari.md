@@ -2277,3 +2277,65 @@ Yari. Rollback to the pre-step generation **43** output, not 44:
 `ssh -F /dev/null root@yari /tmp/claw/mail-reader-rollback.sh`.
 The helper refuses a later deployment or an active turn and restores the profile
 and system together. It does not erase persistent reader state or reset history.
+
+## Personal Gmail — step 3: hourly filing and morning brief
+
+Simon approved this step on 2026-11-12. Only his descriptor declares
+`mailFilingJob`. The required oneshot reconciles `mountainous:mail-not-me`
+through `cron.add` and `cron.update`, retaining its ID and history. It never
+runs the job during activation. The job belongs to `mail`, runs at :15 each
+hour in America/Denver, uses a fresh isolated session, has delivery `none`,
+and disables failure alerts. Its finite tool cap contains only list, ownership,
+label and archive: no body-read, draft, messaging or delegation tool.
+Laure receives neither this job nor the new brief prompt.
+
+The two-hour inbox window overlaps hourly runs. Only `mail_not_mine` verdict
+`not_mine` permits `Not Me`, then whole-thread archive. Known mixed-ownership
+threads are skipped. Each write has a stable per-message, per-action key.
+A bounded second query recovers labelled messages left in the inbox after an
+archive failure. Both queries share the 100-message cap. Unknown outcomes are
+not retried with fresh keys. The agent reports incomplete work privately.
+It cannot inspect unseen siblings of a thread with the metadata-only tools;
+whole-thread archive retains the existing tool's semantics.
+
+The 07:00 brief delegates read-only from main to mail. It requests at most eight
+person-to-person inbox items, plus Not Me, unsure and unread counts. Gmail's
+`newer_than:1d` counts receipt time, not the time a label changed; the brief
+states that limit rather than claiming a filing timestamp. Unsure is computed
+from ownership verdicts, not a new Gmail label or a second state store. Partial
+pages produce lower bounds. An unavailable reader is one line, not a failed
+whole brief. Delegated requests no longer authorize mailbox or draft writes;
+only the hourly job's declared flow permits label/archive.
+
+Installed 2026.11.3 docs on Yari are the config authority, rooted at
+`/nix/store/rf8fr0x9k1v1xylfxc04jis1yqjdpx37-openclaw-gateway-2026.11.3/lib/node_modules/openclaw/docs`:
+
+- `automation/cron-jobs/schedules.md:14-34`: cron expressions, timezone and
+  explicit zero stagger.
+- `automation/cron-jobs/payloads.md:29-67,140-143`: agent-turn message, timeout
+  and finite `toolsAllow` policy.
+- `automation/cron-jobs/payloads.md:374-400`: isolated execution and fresh
+  conversation history per run.
+- `automation/cron-jobs/delivery.md:16-20,41-53,119-135`: `none` writes no
+  conversation result; `failureAlert: false` disables alerts and owner repair.
+  There is no main conversation binding on this job. The reader has no message
+  tool or outgoing agent access.
+- `automation/cron-jobs/managing-jobs.md:122-147,173-177`: manual force-run,
+  wait for terminal status, declaration reconciliation and full job inspection.
+- `automation/cron-jobs/managing-jobs.md:140-142`: explicit agent selection.
+
+Before deployment, evaluate the parent cairn commit's Yari output and require
+that exact running system. Refuse concurrent switches, check both gateways idle,
+and compare Laure's candidate container closure/config/unit with the live ones.
+Keep counts/IDs only for her sessions, pairings and jobs. After deployment,
+check both health endpoints, every configured HTTP MCP tool list, the two
+Simon's job declarations and Laure's unchanged process identities and job IDs.
+Run only the hourly job once; never manually run the delivery-enabled brief.
+Inspect tool metadata and Gmail label/INBOX state, not mail content.
+
+Rollback must first disable the persisted `mountainous:mail-not-me` job through
+`cron.update` (Nix rollback alone leaves jobs in SQLite). Then use the guarded
+`/tmp/claw/mail-brief-rollback.sh`, which restores the pre-step closure/profile
+and reconciles the prior brief prompt. Do not erase history or Google state.
+Mailbox undo is separate: remove `Not Me` and add `INBOX` on the recorded IDs
+only if Simon asks; system rollback cannot undo Gmail changes.

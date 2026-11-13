@@ -287,6 +287,7 @@
           };
           pkgs.runCommand "openclaw-in-place-drift" { } "touch $out";
         openclaw =
+          assert import ../tests/openclaw-mail-filing.nix { inherit lib host; };
           assert import ../tests/openclaw-people.nix { inherit lib host; };
           assert import ../tests/openclaw-people.nix {
             inherit lib;
