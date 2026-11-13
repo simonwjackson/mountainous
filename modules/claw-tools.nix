@@ -7,7 +7,7 @@ in
     { config, lib, ... }:
     {
       mountainous.tailnetNames = lib.mapAttrs (_: endpoint: {
-        description = "Read-only OpenClaw ${endpoint.app} MCP endpoint";
+        description = "Filtered OpenClaw ${endpoint.app} MCP endpoint";
         backend = "http://127.0.0.1:${
           toString config.mountainous.features.pi-assistant.people.simon.apps.${endpoint.app}.port
         }";
@@ -33,6 +33,23 @@ in
     {
       checks.claw-tools =
         assert endpoints.claw-calendar.tools == [ "calendar_busy" ];
+        assert
+          endpoints.claw-gmail.tools == [
+            "mail_list"
+            "mail_read"
+            "mail_not_mine"
+            "mail_label"
+            "mail_archive"
+            "mail_draft"
+            "mail_discard_draft"
+          ];
+        assert !(lib.elem "mail_send" rakku.mountainous.tailnetNames.claw-gmail.mcpTools);
+        assert !(mcp ? claw-gmail);
+        assert
+          rakku.systemd.services.assistant-app-simon-google.environment.GOOGLE_LABEL_ALLOWLIST == "Not Me";
+        assert rakku.systemd.services.assistant-app-simon-google.environment.GOOGLE_POLL_DISABLED == "1";
+        assert lib.elem "mail_not_mine"
+          rakku.mountainous.features.pi-assistant.people.simon.apps.google.readOnlyTools;
         assert endpoints.claw-maps.tools == [ "travel_time" ];
         assert endpoints.claw-family-calendar.tools == [ "family_calendar_events" ];
         assert
@@ -50,8 +67,10 @@ in
           && lib.hasInfix "-mcp-tools" unit.serviceConfig.ExecStart
           && lib.hasInfix "-tags tag:claw-tools" unit.serviceConfig.ExecStart
           && lib.hasInfix "-oauth-secret-file" unit.serviceConfig.ExecStart
-          && mcp.${name}.transport == "streamable-http"
-          && mcp.${name}.toolFilter.include == endpoint.tools
+          && (
+            name == "claw-gmail"
+            || (mcp.${name}.transport == "streamable-http" && mcp.${name}.toolFilter.include == endpoint.tools)
+          )
         ) (lib.attrNames endpoints);
         pkgs.runCommand "claw-tools-boundary" { nativeBuildInputs = [ pkgs.go ]; } ''
           export HOME=$TMPDIR GOCACHE=$TMPDIR/go-cache CGO_ENABLED=0

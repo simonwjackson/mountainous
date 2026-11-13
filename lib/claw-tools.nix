@@ -4,6 +4,19 @@
     app = "google";
     tools = [ "calendar_busy" ];
   };
+  # Prepared on Rakku only. No gateway receives mail tools in this step.
+  claw-gmail = {
+    app = "google";
+    tools = [
+      "mail_list"
+      "mail_read"
+      "mail_not_mine"
+      "mail_label"
+      "mail_archive"
+      "mail_draft"
+      "mail_discard_draft"
+    ];
+  };
   # Reads only the Family calendar; the app fixes the calendar ID, not the caller.
   claw-family-calendar = {
     app = "google";

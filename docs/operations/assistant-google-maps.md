@@ -7,7 +7,7 @@ mountainous supplies their units and credentials.
 
 | Service | Loopback port | State | Read-only tools |
 |---|---|---|---|
-| google | 3171 | `/var/lib/pi-assistant-simon/apps/google` | calendar_busy, family_calendar_events, mail_list, mail_read, mail_proposals |
+| google | 3171 | `/var/lib/pi-assistant-simon/apps/google` | calendar_busy, family_calendar_events, mail_list, mail_read, mail_not_mine, mail_proposals |
 | maps | 3172 | none | travel_time |
 
 Google runs as `pi-simon`. HOME is its app folder. The file keyring and gog
@@ -38,8 +38,17 @@ The separate `pi-assistant-google-keyring-password` secret is loaded as
 `gog-keyring-password`. The app and sign-in wizard pass it only to gog's process
 environment. A client and a keyring password do **not** authorize an account.
 No secret values enter a Nix derivation or unit text. Claw receives neither
-client credentials nor tokens; its filtered MCP endpoint forwards only
-`calendar_busy`.
+client credentials nor tokens. `claw-calendar` forwards only `calendar_busy`.
+The prepared `claw-gmail` endpoint has `tag:claw-tools` and forwards exactly
+`mail_list`, `mail_read`, `mail_not_mine`, `mail_label`, `mail_archive`,
+`mail_draft`, `mail_discard_draft`. It excludes `mail_send`, proposal answers
+and calendar writes. No OpenClaw gateway connects to it yet.
+
+`mail_not_mine` uses metadata headers only. Dotted recipients win, then the
+approved googlemail address, then the sender domains in `GOOGLE_NOT_MINE_SENDERS`.
+The configured domains come from Simon's existing Not Me filters. `mail_label`
+can only add the existing user label `Not Me` (`GOOGLE_LABEL_ALLOWLIST`); it
+cannot create or remove labels or change INBOX/TRASH/SPAM. The poll stays off.
 
 ## Sign in or sign in again
 
@@ -106,7 +115,7 @@ It does not revoke other tokens or grants at Google.
 Gmail modify is a restricted scope, so Google shows an unverified-app screen;
 choose Advanced, then continue. The Gmail API must be enabled in the client
 project. The 15-minute Gmail poll is off (`GOOGLE_POLL_DISABLED = "1"` in
-`modules/hosts/rakku.nix`) until OpenClaw's mail endpoint exists (assistant core
+`modules/hosts/rakku.nix`) until the later OpenClaw mail connection is approved (assistant core
 ADR 0021); `mail_list` and `mail_read` still work.
 
 The launcher restarts only `assistant-app-simon-google`, waits for its listener,
@@ -194,3 +203,16 @@ with `nixos-rebuild switch --rollback`; retain persisted OAuth and app state.
   was checked again. No plaintext client values were found in committed source.
   Local deployment/check evidence is in `/tmp/google-client-evidence/` on Zao;
   that evidence directory is not required for future sign-in.
+
+## App-only update through the application profile
+
+`scripts/pi-assistant-deploy` assembles core, tsgo, web, apps and Atlas under the
+application profile. For an apps-only update, keep the other installed components
+pinned to their current store paths instead of rebuilding unrelated branch tips.
+Build the committed local `assistant/apps` flake (there is no remote), assemble
+with the script's `assemble` function and those installed paths, copy the closure
+to Rakku, and set `/nix/var/nix/profiles/per-user/pi-assistant/application` with
+`nix-env --profile ... --set <application>`. Restart only
+`assistant-app-simon-google`. Retain the previous profile path for rollback.
+Rakku does not build. Build the copied source on Unzen, then copy directly
+Unzen -> Rakku with `nix copy --no-check-sigs`.

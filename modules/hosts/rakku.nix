@@ -368,6 +368,7 @@ in
                   "family_calendar_events"
                   "mail_list"
                   "mail_read"
+                  "mail_not_mine"
                   "mail_proposals"
                 ];
                 credentials = {
@@ -379,9 +380,11 @@ in
                 # "Family" (Simon is owner). family_calendar_events reads only this
                 # calendar, for Laure's OpenClaw agent through claw-family-calendar.
                 environment.GOOGLE_FAMILY_CALENDAR_ID = "46g7he3srihobgru1lmoegsar8@group.calendar.google.com";
-                # Gmail is readable (read-only consent, 2026-11-12) but the old
-                # assistant's 15-minute triage stays off until OpenClaw's mail
-                # endpoint exists (assistant core ADR 0021). mail_list still works.
+                environment.GOOGLE_LABEL_ALLOWLIST = "Not Me";
+                environment.GOOGLE_NOT_MINE_SENDERS = "nicholaschamberlaine.co.uk,clearscore.com,platform.quilter.com,spartoo.com,vodacom.co.tz,angelic-messages-guidance.com,globalmoneyline.com,bark.com,bnesim.com,la-meteo-mail.fr,prewards.palladiumhotelgroup.com,actualite.20minutes.fr,actualites.letribunaldunet.fr,mesrecettesfaciles.fr,supertoinette.com,futur-logement.com,minor-hotels.com,oldfonthillabbey.com,keeyns.com";
+                # Gmail modify consent is present, but triage stays off. This
+                # step prepares claw-gmail on Rakku without connecting a gateway
+                # or changing the inbox (assistant core ADR 0021).
                 environment.GOOGLE_POLL_DISABLED = "1";
               };
               apps.maps = {
