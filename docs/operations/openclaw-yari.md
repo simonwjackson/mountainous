@@ -2313,7 +2313,9 @@ Installed 2026.11.3 docs on Yari are the config authority, rooted at
 - `automation/cron-jobs/schedules.md:14-34`: cron expressions, timezone and
   explicit zero stagger.
 - `automation/cron-jobs/payloads.md:29-67,140-143`: agent-turn message, timeout
-  and finite `toolsAllow` policy.
+  and finite `payload.toolsAllow` policy. The installed CLI serializer
+  `dist/cron-cli-BJLw2-Bv.mjs:405-414` confirms the payload nesting; root-level
+  `toolsAllow` is rejected by `cron.add`.
 - `automation/cron-jobs/payloads.md:374-400`: isolated execution and fresh
   conversation history per run.
 - `automation/cron-jobs/delivery.md:16-20,41-53,119-135`: `none` writes no

@@ -23,8 +23,9 @@ assert
   };
 assert job.delivery == { mode = "none"; };
 assert job.failureAlert == false;
+assert !(job ? toolsAllow);
 assert
-  job.toolsAllow == map (t: "claw-gmail__${t}") [
+  job.payload.toolsAllow == map (t: "claw-gmail__${t}") [
     "mail_list"
     "mail_not_mine"
     "mail_label"

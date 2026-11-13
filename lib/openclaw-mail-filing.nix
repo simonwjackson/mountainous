@@ -14,13 +14,13 @@
     tz = "America/Denver";
     staggerMs = 0;
   };
-  toolsAllow = map (tool: "claw-gmail__${tool}") [
-    "mail_list"
-    "mail_not_mine"
-    "mail_label"
-    "mail_archive"
-  ];
   payload = {
+    toolsAllow = map (tool: "claw-gmail__${tool}") [
+      "mail_list"
+      "mail_not_mine"
+      "mail_label"
+      "mail_archive"
+    ];
     kind = "agentTurn";
     message = builtins.readFile ./openclaw-mail-filing.md;
     timeoutSeconds = 600;
