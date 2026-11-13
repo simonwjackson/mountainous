@@ -2214,3 +2214,66 @@ Rollback with the retained pre-step system's `bin/switch-to-configuration switch
 and its profile, after checking for intervening deployments. A rollback does
 not remove persistent mail workspace or test transcripts; delete test sessions
 through the gateway, never by changing SQLite.
+
+### Gmail reader deployment evidence — 2026-11-13 UTC
+
+Code commits `75f74901` and `c5f656fc` landed fast-forward on `cairn` after
+rebasing. Yari built both systems natively with remote builders disabled.
+Generation **44** introduced the reader. Generation **45** adds explicit
+reader exec mode `deny`; the initial audit had treated an empty skills list as
+a host-exec boundary drift despite the tool allowlist. The explicit execution
+deny fixes that warning without granting or removing any mail capability.
+
+Final system:
+`/nix/store/lxzj3skfjng70vpl11ig6ykbvz9sl05s-nixos-system-yari-26.11.20260923.4975466`.
+Before each switch, the running system matched the built output of that commit's
+parent on cairn. No other switch was running, and both gateways had zero
+unfinished audit runs. Both switches stopped **only** Simon's container.
+Health sampling measured **19.4 s** and **60.2 s** between the last healthy
+sample and recovery. Laure had **0 s** interruption and did not restart;
+sharing a definition did not change her generated closure in this step.
+Both gateways' `/healthz` and root returned HTTP 200 afterward, with zero
+gateway automatic restarts.
+
+Passed: x86 `openclaw`, `openclaw-people` and `openclaw-in-place` focused checks;
+Yari toplevel drvPath evaluation; native ARM `openclaw-config` real CLI validation
+for both person configs; both native system builds; Nix formatting and whitespace.
+The new roster assertion failed before implementation, then passed. No aggregate
+flake check ran. ARM config validation reports its existing unwritable sandbox
+log path; configuration validation itself succeeds.
+
+The final real flakey delegation used a disposable `main` session and an
+explicit disposable `mail` session (created through `sessions.create`). Its
+query was `in:inbox is:unread newer_than:1d`, limit 100. Result: **32 unread**;
+newest ownership verdict **unsure** (no approved rule matched). Audit metadata
+shows one successful `mail_list` and one successful `mail_not_mine` by `mail`.
+No label, archive, draft, discard or send tool ran. `tools.effective` on the warm
+reader session shows exactly the seven Gmail tools plus `session_status`;
+its core `toolAccess` list and projected `mcp` group must be combined. `main`'s
+warm preview has no Gmail tool. Directed send lists and agent-only visibility
+match the declared policy. Mail has no scheduled job.
+
+Three disposable conversations (the first probe's parent, and the final probe's
+parent/reader) were deleted with `sessions.delete`; zero explicit test sessions
+remain. **Cleanup limitation:** direct `agentId: "mail"` on the first probe
+selected the protected `agent:mail:main`. OpenClaw refuses main-session deletion.
+That test-only context was reset through `sessions.reset`; OpenClaw retains its
+reset history. No SQLite state was edited. Future tests must create and target
+an explicit reader session key so both sides can be deleted. Private temporary
+response dumps were removed; retained evidence contains counts and metadata.
+
+Laure: **6 sessions (1 archived)** and **4 pairings**, unchanged session/device
+IDs; zero pending pairings; roster only `laure`; no Gmail server or mail agent;
+agent-to-agent disabled; identical private config SHA256 and unchanged container
+and gateway invocation IDs. Her two existing jobs remain. No conversation text
+was read and no test agent run was made on her gateway. All configured HTTP
+MCP endpoints passed `tools/list` as the actual OpenClaw user: six on Simon's
+gateway (Gmail exactly seven tools), four on Laure's. Final security audit:
+**1 critical, 3 warnings, 1 info**, identical finding IDs to the pre-step audit.
+The existing trusted-proxy critical and three existing warnings remain.
+
+Evidence and copied Nix-shebang helpers use `/tmp/claw/mail-reader-*` on Zao and
+Yari. Rollback to the pre-step generation **43** output, not 44:
+`ssh -F /dev/null root@yari /tmp/claw/mail-reader-rollback.sh`.
+The helper refuses a later deployment or an active turn and restores the profile
+and system together. It does not erase persistent reader state or reset history.
