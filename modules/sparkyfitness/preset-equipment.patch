@@ -1,0 +1,29 @@
+diff --git a/SparkyFitnessFrontend/src/types/workout.ts b/SparkyFitnessFrontend/src/types/workout.ts
+index 7f74a1673..209261b85 100644
+--- a/SparkyFitnessFrontend/src/types/workout.ts
++++ b/SparkyFitnessFrontend/src/types/workout.ts
+@@ -28,6 +28,8 @@ export interface WorkoutPresetExercise {
+   sets: WorkoutPresetSet[];
+   category?: string;
+   modality?: ExerciseModality | null; // Populated from backend join
++  /** Library equipment, sent on the preset exercise itself by the presets API. */
++  equipment?: string[];
+   superset_group?: number | null;
+   /** Within-session per-set ramp, kg. Null = off. */
+   ramp_increment?: number | null;
+diff --git a/SparkyFitnessFrontend/src/utils/workoutPlayback.ts b/SparkyFitnessFrontend/src/utils/workoutPlayback.ts
+index cf7b8f072..37298f59f 100644
+--- a/SparkyFitnessFrontend/src/utils/workoutPlayback.ts
++++ b/SparkyFitnessFrontend/src/utils/workoutPlayback.ts
+@@ -460,7 +460,10 @@ export function createWorkoutPlaybackDraftFromPreset(
+         images: exercise.exercise?.images ?? undefined,
+         instructions: exercise.exercise?.instructions ?? undefined,
+         mechanic: exercise.exercise?.mechanic ?? null,
+-        equipment: exercise.exercise?.equipment ?? undefined,
++        // The presets API sends equipment on the preset exercise, with no
++        // nested `exercise`; without it playback hides the plate calculator.
++        equipment:
++          exercise.equipment ?? exercise.exercise?.equipment ?? undefined,
+         modality: resolveExerciseModality(
+           exercise.modality ?? exercise.exercise?.modality,
+           exercise.category ?? exercise.exercise?.category

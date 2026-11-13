@@ -65,7 +65,14 @@
               doCheck = false;
             })
           );
-          frontendPackage = lib.mkDefault packages.sparkyfitness-frontend;
+          # Workouts started from a preset lose the exercise equipment, which
+          # hides the per-set plate calculator. Drop the patch once the pin
+          # contains the upstream fix.
+          frontendPackage = lib.mkDefault (
+            packages.sparkyfitness-frontend.overrideAttrs (old: {
+              patches = (old.patches or [ ]) ++ [ ./sparkyfitness/preset-equipment.patch ];
+            })
+          );
           frontendUrl = lib.mkDefault "https://sparkyfitness.hummingbird-lake.ts.net";
           nginx.virtualHost = lib.mkDefault "sparkyfitness";
           environmentFile = config.sops.templates."sparkyfitness.env".path;
