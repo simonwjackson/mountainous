@@ -2495,3 +2495,106 @@ and reconciles the previous brief without running it. It does not undo Gmail
 changes or erase job history. Rollback was linted and inspected, not executed.
 The bounded window can miss mail during outages over two hours or a sustained
 100-message backlog; this step deliberately does not add a backfill poll.
+
+
+## Simon's wind-down v1 — 2026-11-13 UTC
+
+Code **3f6b7286** and verified-save wording correction **ffa86906** landed on
+`cairn`. The first deployment was generation **49** at 21:11 UTC. Final
+**generation 50**, healthy by 21:25 UTC, is:
+`/nix/store/k8kjdkiwkwcpxkgdwdd9gv3hhw84sgc3-nixos-system-yari-26.11.20260923.4975466`.
+Both systems and ARM config checks built natively on Yari, builders disabled.
+Only `claw-simon` restarted. No reboot, plugin, ClawHub install, API key, or
+Rakku/Pi/Logbook/SparkyFitness change was made.
+
+The Simon descriptor enables `openclaw-wind-down` and adds only `show_widget`
+to its existing exact tool policy. `group:runtime` remains denied. The skill
+is in `lib/openclaw-skills/simon/wind-down/SKILL.md`; Laure gets neither the
+skill, job nor widget permission. Cards use the existing Canvas baseline.
+Ratings, capture and tomorrow notes write only to Flakey's private daily note.
+Unavailable integrations are stated, not replaced with invented measurements.
+
+The actual `openclaw-admin cron list --all --json` contains exactly one enabled
+`mountainous:wind-down`, ID **d963c743-e6fe-47b4-8a67-94df999a735a**, agent
+`main`, session `agent:main:main`, isolated, announce, **0 21 * * ***,
+**America/Denver**, zero stagger, 60-second timeout. Its opener reads the exact
+wind-down day's daily note, suppresses a recorded close with `NO_REPLY`, and
+fails closed if memory cannot be checked. Scheduled openers are text only.
+The five existing jobs' IDs, schedules, payloads, delivery and enablement
+compare unchanged, including the **07:00 morning brief**. Neither delivery job
+was run manually. The new oneshot retried once during startup, then reconciled.
+
+Before each switch, current `origin/cairn`, the built derivation and running
+parent output were checked. Both gateways were audit-idle. The guarded switch
+compared Laure's unit/config bytes and store paths, system closure and private
+config before activation; her process identities, profile, session IDs, device
+IDs and job IDs matched afterward. Her **7 sessions (1 archived)** and **4
+pairings** did not change. Health sampling measured Simon interruptions of
+**61.3 s** and **22.5 s**, Laure **0 s**. The separate offline memory cleanup
+stopped only Simon's gateway. Both gateways are healthy; Simon has zero automatic
+restarts. Both switches returned success, not exit 4.
+
+Verified in agent-browser, in two NEW conversations, not the main conversation:
+
+- `agent:main:dashboard:0db835e8-e462-4668-b7b6-8da39e3ddfcd`
+- `agent:main:dashboard:c398931c-b506-4b22-a69b-985d6dbe04e8`
+
+Every answer was fictional and contained TEST. Both completed Rate, Day,
+lookBack (charge 5), Capture, Tomorrow and Stop. Real `calendar_busy` reads were
+successful empty days, so cards showed no busy blocks and tomorrow's one
+08:00–22:00 calendar-free window. The capture textarea's actual Continue click
+sent its explicit prompt into the same test session. Cards were inspected at
+390×844 and desktop sizes. Progress showed six steps and updated with answers.
+Audit metadata confirms each daily-note write was followed by a successful
+read; no messaging, delegation or runtime tool ran. Each saved exactly one
+Wind-down block with ratings, own-word capture and a date-labelled tomorrow
+note with three must-dos. Screenshots for every step: **21 PNGs** under
+`/tmp/claw/winddown-v1/` on Zao.
+
+The first run said “saved” before Stop, despite not yet writing the file. The
+wording correction was deployed and the whole normal flow rerun. The final run
+said “noted, but not saved yet” while the file was absent, then wrote/read it and
+closed plainly. No early save claim or post-close report remained in that run.
+The installed ask_user schema has a hard four-option limit. Ratings therefore
+show 1, 2, 3, “4 or 5”, followed by a 4/5 choice when needed; free text accepts
+any 1–5 plus the optional note. This costs a follow-up for high button ratings.
+No package or tool policy was expanded to bypass that limit.
+
+Cleanup verified: both TEST blocks and test-created daily files were removed,
+restoring the original absent `memory/2026-11-13.md`. Temporary test-note
+backups were removed. With Simon's gateway stopped, `openclaw memory forget
+--agent main --session <first-key> --session <second-key> --dry-run --json`
+resolved exactly IDs `dbf651ee-17be-47ca-b4e9-1e1c3ce09e4a` and
+`6bec8f7e-df27-4e73-93ca-3f79a8890dfb`; the real command succeeded. A repeated
+preview had no tracked entries, mixed lineage or refusals. The two conversations
+were then deleted through the Gateway; retained transcript archives remain
+excluded by Forget. The browser was closed and its one temporary pairing removed.
+No SQLite writes or deletion of gateway state files were used.
+
+Passed focused x86 checks **openclaw**, **openclaw-people**, **openclaw-in-place**,
+Yari toplevel evaluation, native ARM **openclaw-config** (both person configs),
+both native system builds, Nix formatting and whitespace checks. The new check
+first failed before implementation. Statix passes the new declaration/test and
+person descriptor; the shared container/module retain their existing 7 warnings
+(confirmed against the parent source). Ruff passes the retained Python cleanup,
+proof and rollback helpers. ARM validation retains the existing sandbox log-path
+warning; validation itself succeeds. No aggregate flake check ran.
+
+Limits: midnight short mode, Sunday's weekly chart, nonempty/overlapping calendar
+blocks and failure/skip branches are instructed, not exercised at their real
+times in the browser. The 21:00 opener was deliberately
+not force-run. This is an agent skill, not a deterministic workflow engine;
+model adherence can vary. No disconnected source or burnout scale was tested.
+
+Evidence and copied Nix-shebang operational helpers: `/tmp/claw/winddown-*` on
+Zao/Yari. Immediate rollback is generation **49**:
+`/nix/store/2wxmdfr4ajcm5rhdls60ja8ydrmyvqpc-nixos-system-yari-26.11.20260923.4975466`.
+After checking for intervening deployments:
+`ssh -F /dev/null root@yari /tmp/claw/winddown-rollback.py`.
+That restores the previous skill wording, not removal of the feature. To remove
+the feature, the helper's `--remove-feature` mode first disables the persisted
+wind-down job through `cron.update`, then restores pre-feature **generation 48**:
+`/nix/store/gbw0winmm54djg2y62pdw5y3wk03nwbl-nixos-system-yari-26.11.20260923.4975466`.
+The helper refuses a later deployment or a Laure unit/config change. Nix rollback
+alone does not remove gateway-owned jobs. Neither rollback was executed. Keep
+real memory and job history; never restore the removed TEST data.
