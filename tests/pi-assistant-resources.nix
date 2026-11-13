@@ -45,6 +45,7 @@ assert
     "family_calendar_events"
     "mail_list"
     "mail_read"
+    "mail_not_mine"
     "mail_proposals"
   ];
 assert cfg.people.simon.apps.maps.readOnlyTools == [ "travel_time" ];
