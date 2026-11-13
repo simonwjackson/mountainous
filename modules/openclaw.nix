@@ -288,6 +288,10 @@
           pkgs.runCommand "openclaw-in-place-drift" { } "touch $out";
         openclaw =
           assert import ../tests/openclaw-mail-filing.nix { inherit lib host; };
+          assert import ../tests/openclaw-wind-down.nix {
+            inherit lib;
+            host = productionHost;
+          };
           assert import ../tests/openclaw-people.nix { inherit lib host; };
           assert import ../tests/openclaw-people.nix {
             inherit lib;
@@ -383,6 +387,7 @@
               "claw-scryer-simon__scryer_title"
               "claw-scryer-simon__scryer_add"
               "claw-scryer-simon__scryer_monitor"
+              "show_widget"
               "claw-ebay-simon__ebay_search"
               "claw-ebay-simon__ebay_listings"
               "claw-ebay-simon__ebay_drafts"
@@ -435,6 +440,8 @@
             lib.length gateway.config.skills.load.extraDirs == 2
             && lib.pathExists "${lib.head gateway.config.skills.load.extraDirs}/scryer/SKILL.md";
           assert lib.pathExists "${lib.head gateway.config.skills.load.extraDirs}/research/SKILL.md";
+          assert lib.pathExists
+            "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/wind-down/SKILL.md";
           assert (gateway.config.agents.defaults.subagents.maxChildrenPerAgent or null) == 8;
           assert lib.hasInfix "tell the user the exact error text" (
             builtins.readFile ../lib/openclaw-skills/shared/research/SKILL.md

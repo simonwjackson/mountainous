@@ -40,8 +40,11 @@ in
       claw-calendar.tools = [ "calendar_busy" ];
       claw-scryer-simon.tools = scryerTools;
     };
-    extraToolPermissions =
-      (map (tool: "claw-ebay-simon__${tool}") (import ./openclaw-ebay-tools.nix)) ++ mailPermissions;
+    extraToolPermissions = [
+      "show_widget"
+    ]
+    ++ (map (tool: "claw-ebay-simon__${tool}") (import ./openclaw-ebay-tools.nix))
+    ++ mailPermissions;
     agentTools = {
       deny = [ "claw-gmail__*" ];
       agentToAgent.send = [ "mail" ];
@@ -80,6 +83,7 @@ in
     ];
     morningBriefPrompt = builtins.readFile ./openclaw-morning-brief.md;
     enableMorningBrief = true;
+    enableWindDown = true;
     mailFilingJob = import ./openclaw-mail-filing.nix;
     enableEbaySelling = true;
   };

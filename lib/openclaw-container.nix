@@ -93,6 +93,35 @@ let
       jq -e --arg id "$id" '(.job // .).id == $id' <<< "$result" >/dev/null
     '';
   };
+  windDown = pkgs.writeText "openclaw-wind-down.json" (
+    builtins.toJSON (import ./openclaw-wind-down.nix)
+  );
+  ensureWindDown = pkgs.writeShellApplication {
+    name = "openclaw-ensure-wind-down";
+    runtimeInputs = [
+      admin
+      pkgs.jq
+    ];
+    text = ''
+      call_gateway() {
+        local result
+        if ! result=$(openclaw-admin gateway call "$1" --json --timeout 30000 --params "$2"); then
+          printf '%s\n' "$result" >&2
+          return 1
+        fi
+        printf '%s\n' "$result"
+      }
+      # declarationKey atomically retains the job ID and history across retries.
+      result=$(call_gateway cron.add "$(cat ${windDown})")
+      id=$(jq -er '(.job // .).id' <<< "$result")
+      # 2026.11.3 declarations only converge schedule/payload/delivery/enablement.
+      # Patch the other authored fields too, rather than preserving UI drift.
+      patch=$(jq -n --arg id "$id" --slurpfile job ${windDown} \
+        '{id: $id, patch: ($job[0] | del(.declarationKey))}')
+      result=$(call_gateway cron.update "$patch")
+      jq -e --arg id "$id" '(.job // .).id == $id' <<< "$result" >/dev/null
+    '';
+  };
   ebaySelling = pkgs.writeText "openclaw-ebay-selling.json" (
     builtins.toJSON (import ./openclaw-ebay-selling.nix)
   );
@@ -558,6 +587,21 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = lib.getExe ensureMorningBrief;
+        Restart = "on-failure";
+        RestartSec = 15;
+      };
+      unitConfig.StartLimitIntervalSec = 0;
+    };
+    openclaw-wind-down = lib.mkIf (person.enableWindDown or false) {
+      description = "Reconcile the declarative 21:00 Denver OpenClaw wind-down opener";
+      wantedBy = [ "multi-user.target" ];
+      requires = [ "openclaw-gateway.service" ];
+      after = [ "openclaw-gateway.service" ];
+      partOf = [ "openclaw-gateway.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = lib.getExe ensureWindDown;
         Restart = "on-failure";
         RestartSec = 15;
       };
