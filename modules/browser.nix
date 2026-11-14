@@ -72,6 +72,8 @@ in
             node ${./quickshell/app-model.test.js} ${./quickshell/app-model.js}
             if [ "$EXPECTED_NAVIGATION" = 1 ]; then
               grep -q -- '--remote-debugging-port=0' "$CHROMIUM"
+              # Remote debugging must not tell pages the browser is automated.
+              grep -q -- '--disable-blink-features=AutomationControlled' "$CHROMIUM"
             else
               ! grep -q -- '--remote-debugging-port=0' "$CHROMIUM"
             fi
@@ -171,11 +173,18 @@ in
         };
         # Wrap, do not replace the profile. --remote-debugging-port=0 selects
         # a random loopback port. Both user-data roots keep their own endpoint.
+        # That port alone makes Chromium report navigator.webdriver = true to
+        # every page, which bot checks treat as automation. Turning off the
+        # AutomationControlled Blink feature keeps CDP and hides the flag.
         nixpkgs.overlays = lib.optional (cfg.enable || kiosk.enable) (
           _final: prev: {
             chromium = prev.chromium.override {
               commandLineArgs = lib.concatStringsSep " " (
-                lib.optional cfg.enable "--remote-debugging-port=0" ++ lib.optional kiosk.enable "--kiosk"
+                lib.optionals cfg.enable [
+                  "--remote-debugging-port=0"
+                  "--disable-blink-features=AutomationControlled"
+                ]
+                ++ lib.optional kiosk.enable "--kiosk"
               );
             };
           }
