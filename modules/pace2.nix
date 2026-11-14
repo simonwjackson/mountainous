@@ -106,6 +106,11 @@
           rakku = self.nixosConfigurations.rakku.config;
           yari = self.nixosConfigurations.yari.config;
         };
-        pkgs.runCommand "pace2-contract" { } "touch $out";
+        pkgs.runCommand "pace2-contract" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          cp ${../scripts/pace2-sync-log.py} pace2-sync-log.py
+          cp ${../scripts/test_pace2_sync_log.py} test_pace2_sync_log.py
+          python3 test_pace2_sync_log.py
+          touch $out
+        '';
     };
 }
