@@ -2664,3 +2664,81 @@ revoke Google's grants, or erase persistent state. Undo events separately throug
 the restricted remove tool. Prefer a forward revert if later generations include
 unrelated work; do not restart Laure. App rollback selects the prior application
 profile then restarts **only assistant-app-simon-google**.
+
+
+### Family calendar deployment evidence — awaiting Simon's consent
+
+Implementation **28a28f8a** landed on cairn after fetch/rebase. Apps main contains
+**9363d9f** plus **7bdd96b** (removes the temporary local dependency link from
+tracked source). Final apps source is `7bdd96b6c1b297f8d10b27beab030a8b8c5917c3`.
+
+| Host | Generation | Running system |
+| --- | --- | --- |
+| Rakku | **155** | `/nix/store/r56yg127y7a4p5mkd44y73x23wldbj49-nixos-system-rakku-26.11.20260923.4975466` |
+| Yari | **51** | `/nix/store/l5ijg6gxxxwm55c9qasq8vyavr0gcq7w-nixos-system-yari-26.11.20260923.4975466` |
+
+Rakku was built on Unzen and copied through Zao, then deployed before Yari.
+Yari built natively with remote builders disabled. App profile is
+`/nix/store/s530c35x0l531lswij4gs44dgkqraash-pi-assistant-application`.
+The default deploy script started rebuilding unrelated core main, so that run
+was stopped before installation. The focused helper reuses the deploy script's
+`build_package` and `assemble` seams: only apps came from new committed main;
+core, web, tsgo and Atlas links compare exactly to the previous running profile.
+Only assistant-app-simon-google restarted among assistant/app services.
+The shared proxy binary restarted all 17 existing Rakku proxies; the new one
+is active. SparkyFitness/Logbook application services were not changed.
+All three Pi assistants, tsgo, Atlas, Home Assistant, Z-Wave and ai-gateway kept
+their invocation/start identities. HA HTTP 200 and Z-Wave handshake/version passed.
+Google's private write store was backed up to root-only
+`/var/backups/family-calendar-20261113/google-before.json` and retained in place.
+
+Only claw-simon restarted on Yari; measured interruption **60.5 s**. Laure had
+**0 s** interruption and unchanged container/gateway invocation IDs, byte-identical
+unit/config paths and bytes, identical container closure and app profile.
+Her **7 sessions (1 archived)**, **4 pairings**, zero pending pairings and job IDs
+were unchanged. No Laure conversation was read or agent run created.
+
+Passed: Google app **65 tests** (new regressions failed before implementation),
+app syntax build and Nix app build; **20 OAuth/verifier tests**, wizard shellcheck;
+five Go MCP boundary tests plus go vet; focused x86 `claw-tools`, `claw-google-auth`,
+`tailnet-names`, `openclaw`, `openclaw-people`, `openclaw-in-place`; both host drvPath
+evaluations; native ARM `openclaw-config`; Nix/Go formatting, Ruff and whitespace.
+No aggregate flake check ran. The initial direct Go run lacked gcc; CGO_ENABLED=0
+matched the packaged check and passed. Remote build wrappers initially failed on
+argument/execute-mode errors before corrected direct invocation; no activation
+ran in those failed attempts. Native config validation retains its known sandbox
+log-path warning, but config validation succeeded.
+
+Verified with TLS as the real OpenClaw user in both containers:
+Simon's new endpoint initializes and lists exactly three tools with correct
+read-only hints; Laure's tools/list **and add call return HTTP 403**. Spoofed
+HTTP identity headers cannot bypass the tested node check. Simon's generic
+`calendar_add_event` call returns -32601; a schema-invalid add is rejected before
+execution. A real Family read of **2026-11-14** succeeded with **zero events**.
+All seven Simon and four Laure HTTP MCP tool lists and both health/root routes
+passed. Exact deployed-config CLI probe discovers the three qualified family
+tools, approval `approve`, no diagnostics. Both family-calendar and wind-down
+skills are eligible, enabled and model-visible. No live model write/card click
+was exercised before consent. First TLS provisioning timed out once, then passed.
+
+Untimed `claw-google-auth --check` passes. The scope-only keyring reader verifies
+`ownedEventWriteImported=false`: fresh consent is still required. No OAuth window
+was started, and no actual authorization URL was generated. The wizard now gives
+phone address-bar/callback-copy instructions. Actual phone consent and widget
+rendering are pending Simon/parent; mobile success is not claimed.
+**No Google write occurred.** The real Lego event ID and throwaway Undo proof
+remain pending consent and must be added to this evidence after sign-in.
+
+Helpers/evidence: `/tmp/claw/family-*` on Zao and copied target scripts.
+After consent run `ssh -F /dev/null root@rakku /tmp/claw/family-check-scopes.py --require-write`
+(scope names only, no token export), then the approved real write and throwaway
+Undo verification through Simon's endpoint. Preserve the durable add result ID.
+
+Rollback (guarded, not executed):
+- Yari first: `ssh -F /dev/null root@yari /tmp/claw/family-yari-switch.py /nix/store/l5ijg6gxxxwm55c9qasq8vyavr0gcq7w-nixos-system-yari-26.11.20260923.4975466 /nix/store/k8kjdkiwkwcpxkgdwdd9gv3hhw84sgc3-nixos-system-yari-26.11.20260923.4975466`.
+  This restores generation 50's output with the same Laure continuity guard.
+- Rakku: `ssh -F /dev/null root@rakku /tmp/claw/family-rakku-rollback.py`.
+  It refuses later deployments and restores generation 154's output plus app
+  `/nix/store/8smn0sbsvwx2rhav0zm4ir615zmmz3f2-pi-assistant-application`, restarting
+  only Simon's Google app among assistant services. Keep state, events, grants
+  and tsnet identities. Later deployments require a forward revert instead.
