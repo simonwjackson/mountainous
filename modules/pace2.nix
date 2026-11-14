@@ -50,6 +50,8 @@
           PORT = "3195";
           TZ = "America/Denver";
           PACE_SYNC = "on";
+          # Admission logs name only the person and HTTP method, never financial content.
+          RUST_LOG = "pace=info,pace::http=debug";
         };
         # SimpleFIN uses outbound HTTPS; the sandbox does not restrict destinations.
         serviceConfig = {
