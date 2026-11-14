@@ -20,8 +20,11 @@
       extend = modules: (system.extendModules { inherit modules; }).config;
       before = builtins.fromJSON (builtins.readFile ../tests/ai-mcp-proxy-units-before.json);
       services = lib.filterAttrs (name: _: lib.hasPrefix "tsnet-proxy-" name) c.systemd.services;
-      # Only the routed front door may differ from the before fixture.
-      unchanged = lib.subtractLists [ "tsnet-proxy-ai-staging" ] (lib.attrNames before);
+      # Only the two routed front doors may differ from the before fixture.
+      unchanged = lib.subtractLists [
+        "tsnet-proxy-ai"
+        "tsnet-proxy-ai-staging"
+      ] (lib.attrNames before);
       unit = c.systemd.services.tsnet-proxy-ai-staging;
       table = c.environment.etc."tsnet-proxy-ai-staging-mcp.json".source;
       # A tools/callers-only edit must alter the reload trigger, not ExecStart,
@@ -50,6 +53,37 @@
             )
           ]).environment.etc."tsnet-proxy-ai-staging-mcp.json".source.text
         ).success;
+      # Production ai: one row, flakey's stable node ID only, the shared allowlist.
+      sparkyTools = import ../lib/openclaw-sparkyfitness-tools.nix;
+      prodUnit = c.systemd.services.tsnet-proxy-ai;
+      prodText = c.systemd.units."tsnet-proxy-ai.service".text;
+      prodTable = c.environment.etc."tsnet-proxy-ai-mcp.json".source;
+      prodSecret = c.sops.secrets.sparkyfitness-openclaw-api-key;
+      prodBefore = before.tsnet-proxy-ai;
+      sharedProxy = self.packages.${pkgs.stdenv.hostPlatform.system}.media-tsnet-proxy;
+      # /v1 keeps every flag; only the binary and the table argument change.
+      prodExecStart =
+        lib.replaceStrings
+          [ "${sharedProxy}/bin/" " -port 443 " ]
+          [ "${package}/bin/" " -port 443 -mcp-table /etc/tsnet-proxy-ai-mcp.json " ]
+          prodBefore.ExecStart;
+      lines = text: lib.filter (line: line != "") (lib.splitString "\n" text);
+      prodRemoved = lib.subtractLists (lines prodText) (lines prodBefore.text);
+      prodAdded = lib.filter (
+        line: !(lib.hasPrefix "X-Reload-Triggers=" line) && !(lib.hasPrefix "ExecReload=" line)
+      ) (lib.subtractLists (lines prodBefore.text) (lines prodText));
+      prodChanged = extend [
+        (
+          { lib, ... }:
+          {
+            mountainous.tailnetNames.ai.mcpRoutes.sparkyfitness = {
+              callerNodeIds = lib.mkForce [ "nAiMcpCheckCallerCNTRL" ];
+              mcpTools = lib.mkForce [ "sparky_get_food_diary" ];
+            };
+          }
+        )
+      ];
+      prodChangedUnit = prodChanged.systemd.services.tsnet-proxy-ai;
       emptyConfig =
         (system.extendModules {
           modules = [
@@ -115,7 +149,47 @@
           && services.${name}.restartTriggers == before.${name}.restartTriggers
           && services.${name}.reloadTriggers == before.${name}.reloadTriggers
         ) unchanged;
-        assert c.mountainous.tailnetNames.ai.mcpRoutes == { };
+        assert
+          builtins.fromJSON prodTable.text == {
+            sparkyfitness = {
+              backend = "http://127.0.0.1:3010/mcp";
+              # claw-simon (flakey). Laure's claw and every other node get 403.
+              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+              mcpTools = sparkyTools;
+              bearerCredential = "mcp-sparkyfitness";
+            };
+          };
+        assert lib.length sparkyTools == 23 && lib.unique sparkyTools == sparkyTools;
+        assert
+          !(lib.any (tool: lib.elem tool sparkyTools) [
+            "sparky_manage_profile"
+            "sparky_manage_medications"
+            "sparky_manage_progress_photos"
+            "sparky_log_food_photo"
+            "sparky_get_integrations"
+          ]);
+        assert !(lib.any (tool: lib.hasInfix "sql" (lib.toLower tool)) sparkyTools);
+        assert lib.hasInfix "ai-mcp-tsnet-proxy" prodUnit.serviceConfig.ExecStart;
+        assert prodUnit.serviceConfig.ExecStart == prodExecStart;
+        assert prodRemoved == [ "ExecStart=${prodBefore.ExecStart}" ];
+        assert
+          lib.sort builtins.lessThan prodAdded == [
+            "ExecStart=${prodExecStart}"
+            "LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key"
+          ];
+        assert prodUnit.serviceConfig.ExecReload == unit.serviceConfig.ExecReload;
+        assert prodUnit.restartTriggers == prodBefore.restartTriggers;
+        assert prodBefore.reloadTriggers == [ ] && prodUnit.reloadTriggers == [ prodTable ];
+        assert prodSecret.sopsFile == ../secrets/hosts/rakku.yaml;
+        assert prodSecret.mode == "0400" && prodSecret.owner == null;
+        assert prodSecret.restartUnits == [ "tsnet-proxy-ai.service" ];
+        assert prodSecret.path == "/run/secrets/sparkyfitness-openclaw-api-key";
+        assert prodUnit.serviceConfig == prodChangedUnit.serviceConfig;
+        assert prodUnit.restartTriggers == prodChangedUnit.restartTriggers;
+        assert prodUnit.reloadTriggers != prodChangedUnit.reloadTriggers;
+        assert
+          stripReloadTrigger prodText
+          == stripReloadTrigger prodChanged.systemd.units."tsnet-proxy-ai.service".text;
         assert lib.attrNames c.mountainous.tailnetNames.ai-staging.mcpRoutes == [ "echo" ];
         assert rejected [ ];
         assert rejected [ "claw-simon" ];

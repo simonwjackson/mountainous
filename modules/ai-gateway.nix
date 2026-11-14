@@ -45,6 +45,17 @@ in
             description = "AI gateway production front door";
             egressDescription = "AI gateway provider hostname allowlisting CONNECT proxy";
             tailnetDescription = "AI gateway tailnet proxy";
+            # Path-prefixed MCP (docs/operations/ai-mcp-production.md). /v1 and
+            # every other path still go straight to the front door. Caller and
+            # tool edits reload the table; a new credential restarts the unit.
+            tailnetMCPRouting = true;
+            tailnetMCPRoutes.sparkyfitness = {
+              backend = "http://127.0.0.1:${toString config.services.sparkyfitness.port}/mcp";
+              # flakey only. The front door holds the key; OpenClaw holds none.
+              callerNodeIds = [ (import ../lib/tailnet-nodes.nix).claw-simon ];
+              mcpTools = import ../lib/openclaw-sparkyfitness-tools.nix;
+              bearerCredentialFile = config.sops.secrets.sparkyfitness-openclaw-api-key.path;
+            };
             # Every paid account is prepaid with auto-recharge off (Simon,
             # 2026-10-28), so its balance is the limit and the key caps below
             # do not apply to them. A provider added later stays capped until
@@ -211,6 +222,14 @@ in
         mountainous.features.ai-gateway.providers.elevenlabs = {
           enable = true;
           secret = "elevenlabs-api-key";
+        };
+        # The owner's SparkyFitness API key "openclaw-flakey", for the
+        # /mcp/sparkyfitness row only. systemd copies it at unit start, so a
+        # new key restarts production ai once.
+        sops.secrets.sparkyfitness-openclaw-api-key = {
+          sopsFile = ../secrets/hosts/rakku.yaml;
+          mode = "0400";
+          restartUnits = [ "tsnet-proxy-ai.service" ];
         };
         # The default shell package would add another shadow entry to system.path,
         # changing D-Bus's restart trigger. Use the same nologin executable by path.
