@@ -274,6 +274,8 @@
       key = lib.findFirst (
         k: k.name == "openclaw@yari"
       ) null self.nixosConfigurations.rakku.config.mountainous.features.ai-gateway.settings.gateway_keys;
+      # The rows that admit flakey only (lib/ai-mcp-rows.nix).
+      simonRows = lib.filterAttrs (_: spec: spec.callers == [ "flakey" ]) (import ../lib/ai-mcp-rows.nix);
     in
     {
       checks = {
@@ -466,7 +468,7 @@
           assert lib.all (
             row:
             let
-              spec = (import ../lib/ai-mcp-rows.nix).${row};
+              spec = simonRows.${row};
               server = gateway.config.mcp.servers.${spec.server};
             in
             builtins.removeAttrs server [ "codex" ] == {
@@ -474,13 +476,11 @@
               url = "https://ai.hummingbird-lake.ts.net/mcp/${row}";
               toolFilter.include = spec.tools;
             }
-          ) (lib.attrNames (import ../lib/ai-mcp-rows.nix));
+          ) (lib.attrNames simonRows);
           assert
             lib.attrNames (
               lib.filterAttrs (_: s: lib.hasPrefix "https://ai." (s.url or "")) gateway.config.mcp.servers
-            ) == lib.sort builtins.lessThan (
-              lib.mapAttrsToList (_: spec: spec.server) (import ../lib/ai-mcp-rows.nix)
-            );
+            ) == lib.sort builtins.lessThan (lib.mapAttrsToList (_: spec: spec.server) simonRows);
           assert gateway.config.mcp.servers.claw-ebay-simon.codex.defaultToolsApprovalMode == "approve";
           # Laure keeps her own nodes; none of her servers moves to a row.
           assert

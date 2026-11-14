@@ -89,12 +89,25 @@
                   passwordCredential = "mcp-${tool}";
                 };
               }
+              // lib.optionalAttrs (row.webSearch != null) {
+                webSearch = {
+                  inherit (row.webSearch) url model;
+                  keyCredential = "mcp-${tool}";
+                };
+              }
             ) cfg.mcpRoutes
           )
         );
-      # The secret systemd copies for a row: its Bearer key or its Scryer password.
+      # The secret systemd copies for a row: its Bearer key, its Scryer
+      # password or its web search key.
       rowCredential =
-        row: if row.scryer != null then row.scryer.passwordFile else row.bearerCredentialFile;
+        row:
+        if row.scryer != null then
+          row.scryer.passwordFile
+        else if row.webSearch != null then
+          row.webSearch.keyFile
+        else
+          row.bearerCredentialFile;
       # Scryer's own tools (packages/media-tsnet-proxy/scryer.go, scryer_app.go).
       scryerTools = import ../lib/openclaw-scryer-tools.nix;
       directory = name: "/var/lib/tsnet-proxy-${name}";
@@ -175,7 +188,7 @@
                       backend = lib.mkOption {
                         type = lib.types.nullOr (lib.types.strMatching "http://127\\.0\\.0\\.1:[0-9]+(/[^?#]*)?");
                         default = null;
-                        description = "Fixed loopback MCP URL. An empty path means /mcp. A row has a backend or scryer, never both.";
+                        description = "Fixed loopback MCP URL. An empty path means /mcp. A row has exactly one of backend, scryer or webSearch.";
                       };
                       scryer = lib.mkOption {
                         default = null;
@@ -189,6 +202,28 @@
                               };
                               username = lib.mkOption { type = lib.types.strMatching "[a-zA-Z0-9_-]+"; };
                               passwordFile = lib.mkOption {
+                                type = lib.types.strMatching "/run/[^:]+";
+                                description = "Runtime secret source, copied by systemd LoadCredential.";
+                              };
+                            };
+                          }
+                        );
+                      };
+                      webSearch = lib.mkOption {
+                        default = null;
+                        description = "Serve model-native web search natively, as a webSearchKeyFile endpoint does: no loopback MCP server; the front door's Responses key is the row's credential (mcp-<row>). The only tool is web_search.";
+                        type = lib.types.nullOr (
+                          lib.types.submodule {
+                            options = {
+                              url = lib.mkOption {
+                                type = lib.types.strMatching "http://127\\.0\\.0\\.1:8430/v1/responses";
+                                description = "The fixed loopback front-door Responses URL.";
+                              };
+                              model = lib.mkOption {
+                                type = lib.types.strMatching "[a-zA-Z0-9._-]+";
+                                description = "Fixed granted model.";
+                              };
+                              keyFile = lib.mkOption {
                                 type = lib.types.strMatching "/run/[^:]+";
                                 description = "Runtime secret source, copied by systemd LoadCredential.";
                               };
@@ -263,14 +298,22 @@
               name: cfg:
               lib.mapAttrsToList (tool: row: {
                 assertion =
-                  if row.scryer != null then
-                    row.backend == null
-                    && row.bearerCredentialFile == null
-                    && row.mcpResources == [ ]
-                    && lib.all (t: lib.elem t scryerTools) row.mcpTools
-                  else
-                    row.backend != null;
-                message = "${name}: /mcp/${tool} needs a loopback backend or a Scryer account, not both; a Scryer row has no key or resources and only Scryer's tools (lib/openclaw-scryer-tools.nix).";
+                  lib.count (kind: kind != null) [
+                    row.backend
+                    row.scryer
+                    row.webSearch
+                  ] == 1
+                  && (
+                    if row.scryer != null then
+                      row.bearerCredentialFile == null
+                      && row.mcpResources == [ ]
+                      && lib.all (t: lib.elem t scryerTools) row.mcpTools
+                    else if row.webSearch != null then
+                      row.bearerCredentialFile == null && row.mcpResources == [ ] && row.mcpTools == [ "web_search" ]
+                    else
+                      true
+                  );
+                message = "${name}: /mcp/${tool} needs exactly one of a loopback backend, a Scryer account or web search; a Scryer row has no key or resources and only Scryer's tools (lib/openclaw-scryer-tools.nix); a web search row has no key or resources and only web_search.";
               }) cfg.mcpRoutes
             ) names
           )

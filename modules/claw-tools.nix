@@ -2,7 +2,19 @@
 let
   endpoints = import ../lib/claw-tools.nix;
   rows = import ../lib/ai-mcp-rows.nix;
-  # Simon's Google tools on the production front door, flakey only.
+  nodes = import ../lib/tailnet-nodes.nix;
+  # The rows on the production front door that reach Simon's assistant apps,
+  # keyed by app. The callers and tools come from lib/ai-mcp-rows.nix.
+  appRows = {
+    google = [
+      "calendar"
+      "gmail"
+      "family-calendar"
+      "family-calendar-laure"
+    ];
+    maps = [ "maps" ];
+  };
+  # Simon's own Google rows, flakey only (stage 5).
   googleRows = [
     "calendar"
     "gmail"
@@ -27,13 +39,18 @@ in
             mcpAllowedNodeIds = endpoint.allowedNodeIds or [ ];
           }) endpoints;
         }
-        # No key: the Google app on loopback takes none, as before.
+        # No key: the Google and Maps apps on loopback take none, as before.
         (lib.mkIf config.mountainous.features.ai-gateway.enable {
-          mountainous.tailnetNames.ai.mcpRoutes = lib.genAttrs googleRows (row: {
-            backend = "http://127.0.0.1:${port "google"}/mcp";
-            callerNodeIds = [ (import ../lib/tailnet-nodes.nix).flakey ];
-            mcpTools = rows.${row}.tools;
-          });
+          mountainous.tailnetNames.ai.mcpRoutes = lib.mkMerge (
+            lib.mapAttrsToList (
+              app: names:
+              lib.genAttrs names (row: {
+                backend = "http://127.0.0.1:${port app}/mcp";
+                callerNodeIds = map (node: nodes.${node}) rows.${row}.callers;
+                mcpTools = rows.${row}.tools;
+              })
+            ) appRows
+          );
         })
       ];
     };
@@ -94,6 +111,33 @@ in
           && server.toolFilter.include == rows.${row}.tools
           && !(laureServers ? ${rows.${row}.server})
         ) googleRows;
+        # Stage 7: Laure's family calendar (her node only) and the shared maps
+        # (both gateways), with the same app backends and tools as their nodes.
+        assert
+          builtins.removeAttrs rakku.mountainous.tailnetNames.ai.mcpRoutes.family-calendar-laure [ "_module" ]
+          == {
+            backend = "http://127.0.0.1:3171/mcp";
+            callerNodeIds = [ "nkT3Yhzyy121CNTRL" ];
+            mcpTools = [ "family_calendar_events" ];
+            mcpResources = [ ];
+            bearerCredentialFile = null;
+            scryer = null;
+            webSearch = null;
+          };
+        assert
+          builtins.removeAttrs rakku.mountainous.tailnetNames.ai.mcpRoutes.maps [ "_module" ] == {
+            backend = "http://127.0.0.1:${toString rakku.mountainous.features.pi-assistant.people.simon.apps.maps.port}/mcp";
+            callerNodeIds = [
+              "nbQJZMcewG11CNTRL"
+              "nkT3Yhzyy121CNTRL"
+            ];
+            mcpTools = [ "travel_time" ];
+            mcpResources = [ ];
+            bearerCredentialFile = null;
+            scryer = null;
+            webSearch = null;
+          };
+        assert rakku.mountainous.features.pi-assistant.people.simon.apps.maps.port == 3172;
         assert !(lib.elem "mail_send" rakku.mountainous.tailnetNames.ai.mcpRoutes.gmail.mcpTools);
         assert
           containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers.claw-gmail.toolFilter.include

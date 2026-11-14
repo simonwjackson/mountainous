@@ -51,8 +51,11 @@ in
             tailnetMCPRouting = true;
             tailnetMCPRoutes.sparkyfitness = {
               backend = "http://127.0.0.1:${toString config.services.sparkyfitness.port}/mcp";
-              # flakey only. The front door holds the key; OpenClaw holds none.
-              callerNodeIds = [ (import ../lib/tailnet-nodes.nix).flakey ];
+              # flakey only (lib/ai-mcp-rows.nix). The front door holds the key;
+              # OpenClaw holds none.
+              callerNodeIds = map (
+                node: (import ../lib/tailnet-nodes.nix).${node}
+              ) (import ../lib/ai-mcp-rows.nix).sparkyfitness.callers;
               mcpTools = import ../lib/openclaw-sparkyfitness-tools.nix;
               bearerCredentialFile = config.sops.secrets.sparkyfitness-openclaw-api-key.path;
             };
@@ -219,17 +222,22 @@ in
         ))
       ];
       config = lib.mkIf config.mountainous.features.ai-gateway.enable {
-        # Simon's own tools add their rows from their features (claw-tools,
-        # claw-ebay, claw-scryer). Every row, and every tool of a row, must be in
-        # lib/ai-mcp-rows.nix: an unknown row or tool fails evaluation here.
+        # The tools add their rows from their features (claw-tools, claw-ebay,
+        # claw-scryer, claw-websearch). Every row, and every tool of a row, must
+        # be in lib/ai-mcp-rows.nix, and a row admits exactly the callers named
+        # there: an unknown row or tool, or another caller, fails evaluation here.
         assertions = lib.mapAttrsToList (
           row: route:
           let
             known = import ../lib/ai-mcp-rows.nix;
+            nodes = import ../lib/tailnet-nodes.nix;
           in
           {
-            assertion = known ? ${row} && lib.all (tool: lib.elem tool known.${row}.tools) route.mcpTools;
-            message = "ai: /mcp/${row}, or one of its tools, is not in lib/ai-mcp-rows.nix.";
+            assertion =
+              known ? ${row}
+              && lib.all (tool: lib.elem tool known.${row}.tools) route.mcpTools
+              && route.callerNodeIds == map (node: nodes.${node}) known.${row}.callers;
+            message = "ai: /mcp/${row}, one of its tools, or its callers, is not as lib/ai-mcp-rows.nix names it.";
           }
         ) config.mountainous.tailnetNames.ai.mcpRoutes;
         mountainous.features.ai-gateway.providers.elevenlabs = {

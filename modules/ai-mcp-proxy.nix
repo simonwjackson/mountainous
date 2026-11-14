@@ -64,13 +64,17 @@
             )
           ]).environment.etc."tsnet-proxy-ai-staging-mcp.json".source.text
         ).success;
-      # Production ai: every row admits flakey's stable node ID only, with the
-      # allowlist from lib/ai-mcp-rows.nix.
+      # Production ai: every row admits exactly the callers and tools that
+      # lib/ai-mcp-rows.nix names, by stable node ID.
       sparkyTools = import ../lib/openclaw-sparkyfitness-tools.nix;
       rows = import ../lib/ai-mcp-rows.nix;
-      flakey = (import ../lib/tailnet-nodes.nix).flakey;
+      nodes = import ../lib/tailnet-nodes.nix;
+      flakey = nodes.flakey;
       googlePort = toString c.mountainous.features.pi-assistant.people.simon.apps.google.port;
+      mapsPort = toString c.mountainous.features.pi-assistant.people.simon.apps.maps.port;
       scryerSecret = c.sops.secrets.scryer-password-simon;
+      scryerLaureSecret = c.sops.secrets.scryer-password-laure;
+      webSearchSecret = c.sops.secrets.ai-gateway-key-openclaw-yari;
       # An unknown row or tool on production fails the system's assertions.
       prodRejected =
         module:
@@ -150,12 +154,23 @@
             tool:
             let
               row = rows.${tool};
-              # A Bearer key, or a native Scryer row's password.
-              file = if row.scryer != null then row.scryer.passwordFile else row.bearerCredentialFile;
+              # A Bearer key, a native Scryer row's password or a web search key.
+              file =
+                if row.scryer != null then
+                  row.scryer.passwordFile
+                else if row.webSearch != null then
+                  row.webSearch.keyFile
+                else
+                  row.bearerCredentialFile;
             in
             row.callerNodeIds != [ ]
             && row.mcpTools != [ ]
-            && ((row.backend == null) != (row.scryer == null))
+            &&
+              lib.count (kind: kind != null) [
+                row.backend
+                row.scryer
+                row.webSearch
+              ] == 1
             && (
               file == null
               || (
@@ -184,6 +199,7 @@
           && services.${name}.reloadTriggers == before.${name}.reloadTriggers
         ) unchanged;
         assert flakey == "nbQJZMcewG11CNTRL";
+        assert nodes.claw == "nkT3Yhzyy121CNTRL";
         assert
           builtins.fromJSON prodTable.text == {
             sparkyfitness = {
@@ -235,12 +251,54 @@
                 passwordCredential = "mcp-scryer";
               };
             };
+            # Laure's tools and the two both gateways share (stage 7). Same
+            # backend and server-side key as their old per-tool nodes. Laure's
+            # claw is nkT3Yhzyy121CNTRL.
+            family-calendar-laure = {
+              backend = "http://127.0.0.1:${googlePort}/mcp";
+              callerNodeIds = [ "nkT3Yhzyy121CNTRL" ];
+              mcpTools = [ "family_calendar_events" ];
+            };
+            scryer-laure = {
+              callerNodeIds = [ "nkT3Yhzyy121CNTRL" ];
+              mcpTools = import ../lib/openclaw-scryer-tools.nix;
+              scryer = {
+                url = "https://scryer.hummingbird-lake.ts.net/graphql";
+                username = "laure";
+                passwordCredential = "mcp-scryer-laure";
+              };
+            };
+            maps = {
+              backend = "http://127.0.0.1:${mapsPort}/mcp";
+              callerNodeIds = [
+                "nbQJZMcewG11CNTRL"
+                "nkT3Yhzyy121CNTRL"
+              ];
+              mcpTools = [ "travel_time" ];
+            };
+            websearch = {
+              callerNodeIds = [
+                "nbQJZMcewG11CNTRL"
+                "nkT3Yhzyy121CNTRL"
+              ];
+              mcpTools = [ "web_search" ];
+              webSearch = {
+                url = "http://127.0.0.1:8430/v1/responses";
+                model = "gpt-6.1-sol";
+                keyCredential = "mcp-websearch";
+              };
+            };
           };
-        assert googlePort == "3171";
+        assert googlePort == "3171" && mapsPort == "3172";
         assert lib.attrNames rows == lib.attrNames (builtins.fromJSON prodTable.text);
         assert lib.all (row: rows.${row}.tools == c.mountainous.tailnetNames.ai.mcpRoutes.${row}.mcpTools) (
           lib.attrNames rows
         );
+        assert lib.all (
+          row:
+          map (node: nodes.${node}) rows.${row}.callers
+          == c.mountainous.tailnetNames.ai.mcpRoutes.${row}.callerNodeIds
+        ) (lib.attrNames rows);
         assert !(lib.elem "mail_send" rows.gmail.tools);
         assert lib.length rows.ebay.tools == 14 && lib.length rows.family-calendar.tools == 3;
         assert lib.length sparkyTools == 23 && lib.unique sparkyTools == sparkyTools;
@@ -259,11 +317,15 @@
         assert
           lib.sort builtins.lessThan prodAdded == [
             "ExecStart=${prodExecStart}"
+            "LoadCredential=mcp-scryer-laure:/run/secrets/scryer-password-laure"
             "LoadCredential=mcp-scryer:/run/secrets/scryer-password-simon"
             "LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key"
+            "LoadCredential=mcp-websearch:/run/secrets/ai-gateway-key-openclaw-yari"
             # The defaults keep the unit starting if a sops file is absent.
+            "SetCredential=mcp-scryer-laure:unavailable credential"
             "SetCredential=mcp-scryer:unavailable credential"
             "SetCredential=mcp-sparkyfitness:unavailable credential"
+            "SetCredential=mcp-websearch:unavailable credential"
           ];
         assert prodUnit.serviceConfig.ExecReload == unit.serviceConfig.ExecReload;
         assert prodUnit.restartTriggers == prodBefore.restartTriggers;
@@ -275,6 +337,13 @@
         # A new Scryer password restarts production ai once (credentials load at start).
         assert lib.elem "tsnet-proxy-ai.service" scryerSecret.restartUnits;
         assert scryerSecret.path == "/run/secrets/scryer-password-simon" && scryerSecret.mode == "0400";
+        # Stage 7: Laure's Scryer password and the gateways' Responses key, the
+        # same files their nodes load. A new value restarts production ai once.
+        assert lib.elem "tsnet-proxy-ai.service" scryerLaureSecret.restartUnits;
+        assert
+          scryerLaureSecret.path == "/run/secrets/scryer-password-laure" && scryerLaureSecret.mode == "0400";
+        assert lib.elem "tsnet-proxy-ai.service" webSearchSecret.restartUnits;
+        assert webSearchSecret.path == "/run/secrets/ai-gateway-key-openclaw-yari";
         assert prodRejected (
           { lib, ... }:
           {
@@ -296,6 +365,36 @@
             mcpTools = [ "calendar_busy" ];
           };
         };
+        # Another caller on a row (Zao on the shared maps row, flakey on
+        # Laure's Scryer row) fails the same assertions.
+        assert prodRejected (
+          { lib, ... }:
+          {
+            mountainous.tailnetNames.ai.mcpRoutes.maps.callerNodeIds = lib.mkForce [
+              nodes.flakey
+              nodes.claw
+              nodes.zao
+            ];
+          }
+        );
+        assert prodRejected (
+          { lib, ... }:
+          {
+            mountainous.tailnetNames.ai.mcpRoutes.scryer-laure.callerNodeIds = lib.mkForce [
+              nodes.flakey
+              nodes.claw
+            ];
+          }
+        );
+        assert prodRejected (
+          { lib, ... }:
+          {
+            mountainous.tailnetNames.ai.mcpRoutes.websearch.mcpTools = lib.mkForce [
+              "web_search"
+              "web_fetch"
+            ];
+          }
+        );
         assert !(prodRejected { });
         assert lib.all (
           row:

@@ -737,3 +737,153 @@ func TestMCPRoutesScryerSystemdDefaultKeepsFrontDoor(t *testing.T) {
 		t.Fatalf("row with the systemd default served: %d", w.Code)
 	}
 }
+
+const webSearchRowKey = "row-held-search-key"
+
+func webSearchRow(callers ...string) mcpRoute {
+	return mcpRoute{CallerNodeIDs: callers, Tools: []string{"web_search"}, WebSearch: &webSearchRoute{
+		URL: webSearchResponsesURL, Model: "gpt-6.1-sol", KeyCredential: "mcp-websearch"}}
+}
+
+// A real Responses server on loopback stands in for the front door; the row's
+// fixed URL is checked, then the client is pointed at this server.
+func webSearchRouteFixture(t *testing.T, row mcpRoute, key string) (*mcpRouter, *string, *[]string) {
+	t.Helper()
+	seen := &[]string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		*seen = append(*seen, r.Header.Get("Authorization"))
+		if r.URL.Path != "/v1/responses" || r.Header.Get("Cookie") != "" || r.Header.Get("X-Api-Key") != "" {
+			t.Error("caller headers or another path reached the front door")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, searchPayload("Fresh answer", true))
+	}))
+	t.Cleanup(server.Close)
+	original := newWebSearchRouteClient
+	t.Cleanup(func() { newWebSearchRouteClient = original })
+	newWebSearchRouteClient = func(responses, key, model string) *webSearchClient {
+		if responses != webSearchResponsesURL || model != "gpt-6.1-sol" {
+			t.Errorf("web search client for %q %q, want the row's URL and model", responses, model)
+		}
+		return newWebSearchClient(server.URL+"/v1/responses", key, model)
+	}
+	credentials := t.TempDir()
+	if err := os.WriteFile(filepath.Join(credentials, "mcp-websearch"), []byte(key), 0600); err != nil {
+		t.Fatal(err)
+	}
+	caller := simonNode
+	router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return caller, nil })
+	if err := router.reload(tableFile(t, map[string]mcpRoute{"websearch": row}), credentials); err != nil {
+		t.Fatal(err)
+	}
+	return router, &caller, seen
+}
+
+func TestMCPRoutesWebSearchRowServesBothGatewaysOnly(t *testing.T) {
+	router, caller, seen := webSearchRouteFixture(t, webSearchRow(simonNode, laureNode), webSearchRowKey+"\n")
+	call := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"web_search","arguments":{"query":"news","max_results":1}}}`
+	for _, allowed := range []string{simonNode, laureNode} {
+		*caller = allowed
+		w := routeRequest(router, "/mcp/websearch", `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26"}}`)
+		if w.Code != 200 || !strings.Contains(w.Body.String(), `"claw-websearch"`) {
+			t.Fatalf("initialize for %s: %d %s", allowed, w.Code, w.Body)
+		}
+		w = routeRequest(router, "/mcp/websearch", listRequest)
+		var listed struct {
+			Result struct{ Tools []struct{ Name string } }
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &listed); err != nil || len(listed.Result.Tools) != 1 || listed.Result.Tools[0].Name != "web_search" {
+			t.Fatalf("tools/list for %s: %s", allowed, w.Body)
+		}
+		w = routeRequest(router, "/mcp/websearch", call)
+		if w.Code != 200 || !strings.Contains(w.Body.String(), "Fresh answer") || strings.Contains(w.Body.String(), `"isError":true`) {
+			t.Fatalf("web_search for %s: %d %s", allowed, w.Code, w.Body)
+		}
+		if strings.Contains(w.Body.String(), webSearchRowKey) {
+			t.Fatal("the row's key reached a caller")
+		}
+	}
+	if len(*seen) != 2 || (*seen)[0] != "Bearer "+webSearchRowKey || (*seen)[1] != "Bearer "+webSearchRowKey {
+		t.Fatalf("front door saw %v, want only the row's key twice", *seen)
+	}
+	w := routeRequest(router, "/mcp/websearch", `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"web_fetch","arguments":{}}}`)
+	if !strings.Contains(w.Body.String(), "-32601") {
+		t.Fatalf("another tool answered: %s", w.Body)
+	}
+	for _, denied := range []string{zaoNode, "", "claw", "nOtherNode11CNTRL"} {
+		*caller = denied
+		if w := routeRequest(router, "/mcp/websearch", call); w.Code != 403 {
+			t.Fatalf("caller %q got %d", denied, w.Code)
+		}
+	}
+	if len(*seen) != 2 {
+		t.Fatal("a refused call reached the front door")
+	}
+}
+
+func TestMCPRoutesRejectInvalidWebSearchRows(t *testing.T) {
+	search := func(edit func(*mcpRoute)) mcpRoute {
+		row := webSearchRow(simonNode)
+		row.WebSearch = &webSearchRoute{URL: row.WebSearch.URL, Model: row.WebSearch.Model, KeyCredential: row.WebSearch.KeyCredential}
+		edit(&row)
+		return row
+	}
+	for name, c := range map[string]struct {
+		row mcpRoute
+		key string
+	}{
+		"with-backend":       {search(func(r *mcpRoute) { r.Backend = "http://127.0.0.1:8422" }), "secret"},
+		"with-bearer":        {search(func(r *mcpRoute) { r.BearerCredential = "mcp-websearch" }), "secret"},
+		"with-resources":     {search(func(r *mcpRoute) { r.Resources = []string{"ui://search.html"} }), "secret"},
+		"with-scryer":        {search(func(r *mcpRoute) { r.Scryer = scryerRow("scryer_graphql").Scryer }), "secret"},
+		"another-tool":       {search(func(r *mcpRoute) { r.Tools = []string{"web_fetch"} }), "secret"},
+		"two-tools":          {search(func(r *mcpRoute) { r.Tools = []string{"web_search", "web_fetch"} }), "secret"},
+		"another-port":       {search(func(r *mcpRoute) { r.WebSearch.URL = "http://127.0.0.1:8431/v1/responses" }), "secret"},
+		"https":              {search(func(r *mcpRoute) { r.WebSearch.URL = "https://127.0.0.1:8430/v1/responses" }), "secret"},
+		"remote":             {search(func(r *mcpRoute) { r.WebSearch.URL = "http://ai.hummingbird-lake.ts.net/v1/responses" }), "secret"},
+		"another-path":       {search(func(r *mcpRoute) { r.WebSearch.URL = "http://127.0.0.1:8430/v1/chat/completions" }), "secret"},
+		"query":              {search(func(r *mcpRoute) { r.WebSearch.URL = webSearchResponsesURL + "?x=1" }), "secret"},
+		"empty-model":        {search(func(r *mcpRoute) { r.WebSearch.Model = "" }), "secret"},
+		"bad-model":          {search(func(r *mcpRoute) { r.WebSearch.Model = "gpt 6" }), "secret"},
+		"credential-path":    {search(func(r *mcpRoute) { r.WebSearch.KeyCredential = "/run/secrets/x" }), "secret"},
+		"missing-credential": {search(func(r *mcpRoute) { r.WebSearch.KeyCredential = "missing" }), "secret"},
+		"empty-key":          {search(func(*mcpRoute) {}), ""},
+		"newline-key":        {search(func(*mcpRoute) {}), "\n"},
+		"two-lines":          {search(func(*mcpRoute) {}), "one\ntwo"},
+		// systemd's SetCredential default when the sops file is missing.
+		"systemd-default": {search(func(*mcpRoute) {}), "unavailable credential"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			credentials := t.TempDir()
+			if err := os.WriteFile(filepath.Join(credentials, "mcp-websearch"), []byte(c.key), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(credentials, "mcp-scryer"), []byte("secret"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return simonNode, nil })
+			if router.reload(tableFile(t, map[string]mcpRoute{"websearch": c.row}), credentials) == nil {
+				t.Fatal("invalid row accepted")
+			}
+		})
+	}
+}
+
+// A missing web search key, like a bad SparkyFitness key, must not stop the front door.
+func TestMCPRoutesWebSearchSystemdDefaultKeepsFrontDoor(t *testing.T) {
+	dir, credentials := t.TempDir(), t.TempDir()
+	path := filepath.Join(dir, "table.json")
+	writeTable(t, path, map[string]mcpRoute{"websearch": webSearchRow(simonNode, laureNode)})
+	if err := os.WriteFile(filepath.Join(credentials, "mcp-websearch"), []byte("unavailable credential"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	router := newMCPRouter(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(201) }),
+		func(*http.Request) (string, error) { return simonNode, nil })
+	router.loadInitial(path, credentials)
+	if w := routeRequest(router, "/v1/models", "{}"); w.Code != 201 {
+		t.Fatalf("front door got %d", w.Code)
+	}
+	if w := routeRequest(router, "/mcp/websearch", listRequest); w.Code != 404 {
+		t.Fatalf("row with the systemd default served: %d", w.Code)
+	}
+}

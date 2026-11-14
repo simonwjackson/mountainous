@@ -61,7 +61,9 @@
       mountainous.tailnetNames.ai = lib.mkIf config.mountainous.features.ai-gateway.enable {
         mcpRoutes.ebay = {
           backend = "http://127.0.0.1:3191/mcp";
-          callerNodeIds = [ (import ../lib/tailnet-nodes.nix).flakey ];
+          callerNodeIds = map (
+            node: (import ../lib/tailnet-nodes.nix).${node}
+          ) (import ../lib/ai-mcp-rows.nix).ebay.callers;
           mcpTools = (import ../lib/ai-mcp-rows.nix).ebay.tools;
           # The MCP App views behind the cards.
           mcpResources = [
@@ -142,6 +144,7 @@
             mcpResources = endpoint.mcpResources;
             bearerCredentialFile = null;
             scryer = null;
+            webSearch = null;
           };
         assert simon.mcp.servers.claw-ebay-simon.url == "https://ai.hummingbird-lake.ts.net/mcp/ebay";
         assert simon.mcp.servers.claw-ebay-simon.codex.defaultToolsApprovalMode == "approve";
