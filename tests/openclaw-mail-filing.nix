@@ -56,14 +56,10 @@ assert lib.all (text: lib.hasInfix text instructions) [
   "Brief requests are read-only"
 ];
 assert lib.all (text: lib.hasInfix text brief) [
-  "sessions_send"
-  "agentId: \"mail\""
-  "in:inbox newer_than:1d"
-  "label:\"Not Me\" newer_than:1d"
-  "in:inbox is:unread"
-  "unsure"
-  "at most 8"
-  "Mail reader is unavailable"
+  "claw-gmail__mail_queue {}"
+  "needsYou, unsure and filedToday"
+  "App-only actions belong to Simon's button presses"
+  "Mail unavailable; try again"
 ];
 assert !(lib.hasInfix "overnight Mail are not connected" brief);
 assert !(lib.hasInfix "No mail reads" brief);

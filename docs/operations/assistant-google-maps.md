@@ -227,3 +227,41 @@ to Rakku, and set `/nix/var/nix/profiles/per-user/pi-assistant/application` with
 `assistant-app-simon-google`. Retain the previous profile path for rollback.
 Rakku does not build. Build the copied source on Unzen, then copy directly
 Unzen -> Rakku with `nix copy --no-check-sigs`.
+
+## Gmail cards (prepared, not deployed)
+
+The gmail row now adds two model tools, mail_queue and mail_send_card, and seven
+app-only tools, including mail_card_undo. Its exact resources are
+ui://gmail/queue.html, ui://gmail/send.html and ui://gmail/triage.html. Actual
+resource wiring belongs in modules/claw-tools.nix; modules/ai-mcp-proxy.nix checks
+the rendered table. The connector excludes legacy mail_send from registration.
+The row still refuses it. App-only visibility must survive proxy forwarding.
+Main's blanket Gmail deny is replaced by denies for the seven reader tools and
+legacy mail_send: a blanket deny also rejects card tool calls under MCP Apps'
+run policy. The row's closed allowlist and this deny leave exactly the two model
+and seven app-only tools for main. The reader's seven tools stay unchanged.
+
+The app profile, not mountainous, supplies Google source and built HTML. The apps
+package.json files list includes views/dist/*.html. The views builder must commit
+its self-contained dist output before packaging the combined app; no production
+placeholder exists. Connector tests use test/views through GOOGLE_VIEWS_DIR.
+Use the app-only application-profile update above when a deployment is approved.
+These changes do not restart anything by themselves.
+
+The 07:00 brief now shows mail_queue and its three counts rather than copying
+mail text through main. Requested replies still go through the restricted reader,
+which returns a draftId for mail_send_card. Only Simon's card button sends.
+
+### Urgent phone notifications: blocked by current tool policy
+
+Read-only inspection of OpenClaw 2026.11.3 docs on Yari confirmed that Android's
+platform ceiling includes system.notify (docs/nodes/command-policy.md:33).
+That is not proof that a paired phone declares and has approval for the command;
+the same document requires declared, approved and gateway-allowed commands.
+The nodes tool is a separate agent tool (docs/tools/index.md, Gateway and nodes).
+Simon's generated gateway tools.allow has neither nodes nor a node tool group;
+main therefore cannot call system.notify. No other approved notification path was
+found. No urgent-mail job was added and no notification policy was widened.
+The existing :15 mail-not-me reader-owned filing job is unchanged. Enabling an
+hourly main-owned :45 urgent check needs a narrow permitted notification path
+first; it must not post nonurgent results to chat.

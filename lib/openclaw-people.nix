@@ -5,6 +5,17 @@ let
   rows = import ./ai-mcp-rows.nix;
   mailTools = rows.gmail.tools;
   mailPermissions = map (tool: "claw-gmail__${tool}") mailTools;
+  # Keep the restricted reader's seven tools fixed as the shared row grows.
+  mailReaderTools = [
+    "mail_list"
+    "mail_read"
+    "mail_not_mine"
+    "mail_label"
+    "mail_archive"
+    "mail_draft"
+    "mail_discard_draft"
+  ];
+  mailReaderPermissions = map (tool: "claw-gmail__${tool}") mailReaderTools;
   sparkyfitnessTools = import ./openclaw-sparkyfitness-tools.nix;
 in
 {
@@ -57,7 +68,9 @@ in
     ++ (map (tool: "claw-calendar__${tool}") rows.calendar.tools)
     ++ (map (tool: "sparkyfitness__${tool}") sparkyfitnessTools);
     agentTools = {
-      deny = [ "claw-gmail__*" ];
+      # A wildcard deny would also block app-only tools in the card lease.
+      # The row rejects all other tools; main denies every reader-only tool.
+      deny = mailReaderPermissions ++ [ "claw-gmail__mail_send" ];
       agentToAgent.send = [ "mail" ];
     };
     agentToAgent = {
@@ -75,7 +88,7 @@ in
       model.primary = "front-door/claude-opus-5-5";
       skills = [ ];
       tools = {
-        allow = mailPermissions ++ [ "session_status" ];
+        allow = mailReaderPermissions ++ [ "session_status" ];
         # Also deny at exec's own boundary, not only at tool discovery.
         exec.mode = "deny";
         agentToAgent.send = [ ];
