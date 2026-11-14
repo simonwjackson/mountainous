@@ -15,6 +15,17 @@ and the sparkyfitness row as deployed then; where they say "one row", read
 "ten rows" since stage 7, and where they say "flakey only", read "the row's
 callers in `lib/ai-mcp-rows.nix`".
 
+## Current calendar follow-up
+
+Simon's `/mcp/calendar` now exposes `calendar_busy`, `calendars_list`,
+`calendar_events`, `calendar_add` and restricted `calendar_remove`, only to
+flakey. His old `/mcp/family-calendar` row is retired; Family is one owned-calendar
+choice. Laure's `/mcp/family-calendar-laure` stays read-only and unchanged.
+See [calendar cards](calendar-cards.md) for the app/ledger contract, Rakku 167 and
+Yari 63 deployment, browser acceptance, cleanup and forward rollback. Pace's two
+rows also remain; the complete current table is `lib/ai-mcp-rows.nix`, rather
+than the historical stage-2 table below.
+
 ## Contract
 
 | Part | Value |

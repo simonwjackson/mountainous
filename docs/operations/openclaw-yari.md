@@ -3460,3 +3460,10 @@ unchanged-snowy and no-container-restart guards. Rakku and Google need no change
 Keep real Google events, OAuth/keyring data and the durable write ledger. No
 pending draft was persisted, and the sole TEST event is already removed. A
 skill rollback does not undo a real event or recreate a skipped draft.
+
+## Owned-calendar cards — 2026-11-14
+
+Simon's Family-only calendar skill/row is superseded by the owned-calendar picker.
+See [calendar-cards.md](calendar-cards.md) for commits, Rakku 167 / Yari 63,
+ledger continuity (Lego retained), real desktop/phone acceptance, TEST cleanup
+and forward rollback. Snowy and her read-only Family row remain unchanged.
