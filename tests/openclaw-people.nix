@@ -2,6 +2,7 @@
 # This allowlist names every permitted difference. A new unlisted difference fails.
 { lib, host }:
 let
+  rows = import ../lib/ai-mcp-rows.nix;
   people = import ../lib/openclaw-instances.nix {
     legacyEnabled = host.mountainous.features.openclaw.legacy.enable;
   };
@@ -97,6 +98,8 @@ let
       c = configs.${name};
       unit = container.config.systemd.services.openclaw-gateway.serviceConfig;
       node = container.config.systemd.services.openclaw-session-share;
+      # The rows on the production front door that admit this gateway's node.
+      mine = lib.filterAttrs (_: spec: lib.elem person.nodeName spec.callers) rows;
     in
     assert
       lib.attrNames c.agents.entries
@@ -131,6 +134,26 @@ let
         ++ lib.attrNames person.mcpServers
         ++ map (server: server.name) (person.extraMcpServers or [ ])
       );
+    # Every tool server is a row that admits this node (lib/ai-mcp-rows.nix):
+    # the row's server name, its URL, exactly its tools, and no credential.
+    # A server on a row that does not admit this node, or left on a per-tool
+    # node, fails here.
+    assert lib.all (
+      row:
+      let
+        spec = mine.${row};
+      in
+      c.mcp.servers ? ${spec.server}
+      &&
+        builtins.removeAttrs c.mcp.servers.${spec.server} [ "codex" ] == {
+          transport = "streamable-http";
+          url = "https://ai.hummingbird-lake.ts.net/mcp/${row}";
+          toolFilter.include = spec.tools;
+        }
+    ) (lib.attrNames mine);
+    assert
+      lib.attrNames (lib.filterAttrs (_: server: server ? url) c.mcp.servers)
+      == lib.sort builtins.lessThan (lib.mapAttrsToList (_: spec: spec.server) mine);
     assert c.plugins.entries.session-share.config.share.groups == [ "Shared" ];
     assert c.plugins.entries.session-share.enabled && lib.elem "session-share" c.plugins.allow;
     assert node.serviceConfig.User == "openclaw";
@@ -140,6 +163,11 @@ let
     assert c.gateway.publicOrigin == "https://${person.nodeName}.hummingbird-lake.ts.net";
     assert c.mcp.apps.sandboxOrigin == "https://${person.nodeName}.hummingbird-lake.ts.net:8443";
     assert unit.MemoryMax == "8G" && unit.KillMode == "mixed" && unit.TimeoutStopSec == 35;
+    # A config change restarts the gateway, also when its container switches in place.
+    assert
+      container.config.systemd.services.openclaw-gateway.restartTriggers == [
+        container.config.environment.etc."openclaw/openclaw.json".source
+      ];
     assert container.bindMounts."/nix/var/nix/profiles/apps".isReadOnly;
     assert lib.length c.skills.load.extraDirs == 2 + lib.length (person.extraSkillFolders or [ ]);
     assert lib.drop 2 c.skills.load.extraDirs == (person.extraSkillFolders or [ ]);

@@ -98,6 +98,9 @@ in
           cfg.systemd.services.tsnet-proxy-ai.serviceConfig.LoadCredential;
         assert lib.elem "tsnet-proxy-ai.service" cfg.sops.secrets.scryer-password-laure.restartUnits;
         assert
+          self.nixosConfigurations.yari.config.containers.openclaw.config.services.openclaw-gateway.config.mcp.servers.claw-scryer-laure.url
+          == "https://ai.hummingbird-lake.ts.net/mcp/scryer-laure";
+        assert
           self.nixosConfigurations.yari.config.containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers.claw-scryer-simon.url
           == "https://ai.hummingbird-lake.ts.net/mcp/scryer";
         assert builtins.all

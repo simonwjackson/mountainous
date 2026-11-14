@@ -138,6 +138,13 @@ in
             webSearch = null;
           };
         assert rakku.mountainous.features.pi-assistant.people.simon.apps.maps.port == 3172;
+        assert
+          laureServers.claw-family-calendar.url
+          == "https://ai.hummingbird-lake.ts.net/mcp/family-calendar-laure";
+        assert lib.all (servers: servers.claw-maps.url == "https://ai.hummingbird-lake.ts.net/mcp/maps") [
+          containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers
+          laureServers
+        ];
         assert !(lib.elem "mail_send" rakku.mountainous.tailnetNames.ai.mcpRoutes.gmail.mcpTools);
         assert
           containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers.claw-gmail.toolFilter.include

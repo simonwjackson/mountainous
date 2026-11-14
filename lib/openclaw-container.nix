@@ -36,6 +36,18 @@ let
     "scryer_add"
     "scryer_monitor"
   ];
+  # Both gateways' shared tools, on rows that admit both nodes (lib/ai-mcp-rows.nix).
+  rows = import ./ai-mcp-rows.nix;
+  sharedMcpServers = {
+    claw-maps = {
+      row = "maps";
+      inherit (rows.maps) tools;
+    };
+    claw-websearch = {
+      row = "websearch";
+      inherit (rows.websearch) tools;
+    };
+  };
   bootstrapDns = pkgs.writeText "claw-overlay-resolv.conf" "nameserver 1.1.1.1\nnameserver 8.8.8.8\n";
   exitNode = "100.88.212.117"; # Rakku's stable tailnet address, not a LAN route.
   admin = pkgs.writeShellApplication {
@@ -380,24 +392,15 @@ in
               name: endpoint:
               {
                 transport = "streamable-http";
-                # A server with a row is on the production front door
-                # (lib/ai-mcp-rows.nix); the others have their own node.
-                url =
-                  if endpoint ? row then
-                    "https://ai.hummingbird-lake.ts.net/mcp/${endpoint.row}"
-                  else
-                    "https://${name}.hummingbird-lake.ts.net/mcp";
+                # Every tool server is a row on the production front door
+                # (lib/ai-mcp-rows.nix). No per-tool node remains.
+                url = "https://ai.hummingbird-lake.ts.net/mcp/${
+                  endpoint.row or (throw "${person.name}: MCP server ${name} names no row in lib/ai-mcp-rows.nix")
+                }";
                 toolFilter.include = endpoint.tools;
               }
               // lib.optionalAttrs (endpoint ? codex) { inherit (endpoint) codex; }
-            ) ((lib.filterAttrs (name: _: name == "claw-maps") (import ./claw-tools.nix)) // person.mcpServers)
-            // {
-              claw-websearch = {
-                transport = "streamable-http";
-                url = "https://claw-websearch.hummingbird-lake.ts.net/mcp";
-                toolFilter.include = [ "web_search" ];
-              };
-            }
+            ) (sharedMcpServers // person.mcpServers)
             // lib.listToAttrs (
               map (
                 server:
@@ -752,6 +755,10 @@ in
       unitConfig.StartLimitIntervalSec = 0;
     };
     openclaw-gateway = {
+      # A container that switches in place (reloadContainerInPlace) restarts
+      # only its changed units. A new config must restart the gateway once,
+      # not wait for its file watcher: systemd stops it before /etc changes.
+      restartTriggers = [ config.environment.etc."openclaw/openclaw.json".source ];
       after = [
         "claw-tailnet.service"
         "nftables.service"

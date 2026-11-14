@@ -1,7 +1,7 @@
 # All differences between the two new gateways belong here.
 let
-  scryerTools = import ./openclaw-scryer-tools.nix;
-  # Simon's own tools: rows on the production front door ai, flakey only.
+  # Every tool server is a row on the production front door ai
+  # (lib/ai-mcp-rows.nix), which admits only the row's callers.
   rows = import ./ai-mcp-rows.nix;
   mailTools = rows.gmail.tools;
   mailPermissions = map (tool: "claw-gmail__${tool}") mailTools;
@@ -123,9 +123,17 @@ in
       theme = "Calm and clear-headed, a bit dry, and quietly on top of things.";
       avatar = "avatars/avatar.png";
     };
+    # Her servers keep their names and reach her rows on the production front
+    # door; each row admits this node's stable ID only (stage 7).
     mcpServers = {
-      claw-family-calendar.tools = [ "family_calendar_events" ];
-      claw-scryer-laure.tools = scryerTools;
+      claw-family-calendar = {
+        row = "family-calendar-laure";
+        inherit (rows.family-calendar-laure) tools;
+      };
+      claw-scryer-laure = {
+        row = "scryer-laure";
+        inherit (rows.scryer-laure) tools;
+      };
     };
     morningBriefPrompt = builtins.readFile ./openclaw-morning-brief-laure.md;
     # Prepared only. Keep disabled: an unsolicited new brief would break continuity.

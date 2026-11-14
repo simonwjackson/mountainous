@@ -75,6 +75,21 @@ in
         assert lib.elem "mcp-websearch:${route.webSearch.keyFile}"
           cfg.systemd.services.tsnet-proxy-ai.serviceConfig.LoadCredential;
         assert lib.elem "tsnet-proxy-ai.service" cfg.sops.secrets.ai-gateway-key-openclaw-yari.restartUnits;
+        # Both gateways' claw-websearch server reaches the row; neither holds a key.
+        assert lib.all
+          (
+            container:
+            self.nixosConfigurations.yari.config.containers.${container}.config.services.openclaw-gateway.config.mcp.servers.claw-websearch
+            == {
+              transport = "streamable-http";
+              url = "https://ai.hummingbird-lake.ts.net/mcp/websearch";
+              toolFilter.include = [ "web_search" ];
+            }
+          )
+          [
+            "claw-simon"
+            "openclaw"
+          ];
         assert lib.any (
           grant:
           grant.name == "openclaw@yari"

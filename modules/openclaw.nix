@@ -274,8 +274,10 @@
       key = lib.findFirst (
         k: k.name == "openclaw@yari"
       ) null self.nixosConfigurations.rakku.config.mountainous.features.ai-gateway.settings.gateway_keys;
-      # The rows that admit flakey only (lib/ai-mcp-rows.nix).
-      simonRows = lib.filterAttrs (_: spec: spec.callers == [ "flakey" ]) (import ../lib/ai-mcp-rows.nix);
+      # The rows that admit flakey (lib/ai-mcp-rows.nix): its own and the shared.
+      simonRows = lib.filterAttrs (_: spec: lib.elem "flakey" spec.callers) (
+        import ../lib/ai-mcp-rows.nix
+      );
     in
     {
       checks = {
@@ -463,8 +465,9 @@
               "scryer_monitor"
             ];
           assert !(gateway.config.mcp.servers.claw-scryer-simon ? codex);
-          # Simon's own tools (stage 5): each keeps its server name and reaches
-          # its row on the production front door. No key, header or environment.
+          # Simon's own tools (stage 5) and the shared ones (stage 7): each keeps
+          # its server name and reaches its row on the production front door.
+          # No key, header or environment.
           assert lib.all (
             row:
             let
@@ -482,18 +485,44 @@
               lib.filterAttrs (_: s: lib.hasPrefix "https://ai." (s.url or "")) gateway.config.mcp.servers
             ) == lib.sort builtins.lessThan (lib.mapAttrsToList (_: spec: spec.server) simonRows);
           assert gateway.config.mcp.servers.claw-ebay-simon.codex.defaultToolsApprovalMode == "approve";
-          # Laure keeps her own nodes; none of her servers moves to a row.
+          # Stage 7: Laure's servers and the shared ones keep their names and
+          # reach their rows; no server of either gateway uses a per-tool node.
           assert
-            laure.mcp.servers.claw-scryer-laure.url == "https://claw-scryer-laure.hummingbird-lake.ts.net/mcp";
+            laure.mcp.servers.claw-scryer-laure == {
+              transport = "streamable-http";
+              url = "https://ai.hummingbird-lake.ts.net/mcp/scryer-laure";
+              toolFilter.include = import ../lib/openclaw-scryer-tools.nix;
+            };
           assert
-            laure.mcp.servers.claw-family-calendar.url
-            == "https://claw-family-calendar.hummingbird-lake.ts.net/mcp";
-          assert !(lib.any (s: lib.hasPrefix "https://ai." (s.url or "")) (lib.attrValues laure.mcp.servers));
-          assert gateway.config.mcp.servers.claw-websearch.transport == "streamable-http";
-          assert
-            gateway.config.mcp.servers.claw-websearch.url
-            == "https://claw-websearch.hummingbird-lake.ts.net/mcp";
-          assert gateway.config.mcp.servers.claw-websearch.toolFilter.include == [ "web_search" ];
+            laure.mcp.servers.claw-family-calendar == {
+              transport = "streamable-http";
+              url = "https://ai.hummingbird-lake.ts.net/mcp/family-calendar-laure";
+              toolFilter.include = [ "family_calendar_events" ];
+            };
+          assert lib.all
+            (
+              servers:
+              servers.claw-maps == {
+                transport = "streamable-http";
+                url = "https://ai.hummingbird-lake.ts.net/mcp/maps";
+                toolFilter.include = [ "travel_time" ];
+              }
+              &&
+                servers.claw-websearch == {
+                  transport = "streamable-http";
+                  url = "https://ai.hummingbird-lake.ts.net/mcp/websearch";
+                  toolFilter.include = [ "web_search" ];
+                }
+            )
+            [
+              gateway.config.mcp.servers
+              laure.mcp.servers
+            ];
+          assert lib.all (s: !(s ? url) || lib.hasPrefix "https://ai.hummingbird-lake.ts.net/mcp/" s.url) (
+            lib.attrValues gateway.config.mcp.servers ++ lib.attrValues laure.mcp.servers
+          );
+          assert !(lib.hasInfix "ai-gateway-key" (builtins.toJSON laure.mcp));
+          assert !(lib.hasInfix "scryer-password" (builtins.toJSON laure.mcp));
           assert lib.all (a: !(lib.any (d: lib.hasPrefix "claw-websearch" d) (a.tools.deny or [ ]))) (
             lib.attrValues gateway.config.agents.entries
           );
