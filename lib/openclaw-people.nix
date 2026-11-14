@@ -128,5 +128,8 @@ in
     morningBriefPrompt = builtins.readFile ./openclaw-morning-brief-laure.md;
     # Prepared only. Keep disabled: an unsolicited new brief would break continuity.
     enableMorningBrief = false;
+    # Her gateway stays up through deploys: a changed container switches in
+    # place, so only its changed units restart (modules/openclaw.nix).
+    reloadContainerInPlace = true;
   };
 }

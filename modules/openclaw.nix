@@ -201,16 +201,21 @@
             }
           ) people;
         systemd.services =
-          lib.genAttrs (map (name: "container@${name}") newNames) (name: {
-            after = [ "sops-install-secrets.service" ];
-            serviceConfig = {
-              MemoryMax = "8G";
-              TimeoutStopSec = 180;
-            };
-            unitConfig.RequiresMountsFor = [
-              "/var/lib/nixos-containers/${lib.removePrefix "container@" name}"
-            ];
-          })
+          lib.mapAttrs' (
+            _: person:
+            lib.nameValuePair "container@${person.containerName}" {
+              after = [ "sops-install-secrets.service" ];
+              # Reload runs switch-to-configuration inside the running container:
+              # only its changed units restart, never the whole container. nspawn
+              # settings (bind mounts, addresses) wait for a deliberate restart.
+              reloadIfChanged = person.reloadContainerInPlace or false;
+              serviceConfig = {
+                MemoryMax = "8G";
+                TimeoutStopSec = 180;
+              };
+              unitConfig.RequiresMountsFor = [ "/var/lib/nixos-containers/${person.containerName}" ];
+            }
+          ) people
           // lib.optionalAttrs legacyEnabled {
             "container@openclaw" = {
               after = [ "sops-install-secrets.service" ];
@@ -485,6 +490,10 @@
             );
           assert !gateway.config.tools.codeMode.enabled && gateway.config.tools.fs.workspaceOnly;
           assert host.systemd.services."container@claw-simon".serviceConfig.MemoryMax == "8G";
+          # A changed Laure container switches in place; flakey's still restarts.
+          assert host.systemd.services."container@openclaw".reloadIfChanged;
+          assert lib.hasInfix "X-ReloadIfChanged=true" host.systemd.units."container@openclaw.service".text;
+          assert !host.systemd.services."container@claw-simon".reloadIfChanged;
           # Stop limits. The gateway's limit funds one full ordinary stop. The
           # host's limit outlasts it plus one more guest unit at systemd's 90 s.
           assert unit.KillMode == "mixed" && unit.TimeoutStopSec == 35;
