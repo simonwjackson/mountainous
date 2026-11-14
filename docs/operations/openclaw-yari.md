@@ -2891,8 +2891,71 @@ once (the restart trigger returns). Only with Laure idle and her agreement:
 
 ```sh
 ssh -F /dev/null root@yari /tmp/claw/flakey-launch.sh yari-rollback-full \
-  /tmp/claw/flakey-yari-switch.py rollback <running system> <previous generation system> --allow-laure-restart
+  /tmp/claw/flakey-yari-switch.py rollback \
+  /nix/store/rfvqx5amjsyd6qcjf22fnv75nzap42a2-nixos-system-yari-26.11.20260923.4975466 \
+  /nix/store/hxkrg1n16j4zds2py72j6w5nx09pw7cw-nixos-system-yari-26.11.20260923.4975466 \
+  --allow-laure-restart
 ```
+
+Without `--allow-laure-restart` the script refuses that target (checked).
+
+### Deployment evidence — 2026-11-14 UTC
+
+Landed on cairn as `672ead00` (in-place switch for Laure's container) and
+`bc06d3bd` (rename), fast-forward from `54e37497`. Yari built natively,
+builders off, both gateways idle. Rakku: evaluated only; its derivation
+`mgqr767f0x4jd7wivch1j6m3wm3hdnb6` equals the running generation 158, so Rakku
+was not built or switched.
+
+| Host | Before | After |
+| --- | --- | --- |
+| Yari | 52 `/nix/store/hxkrg1n16j4zds2py72j6w5nx09pw7cw-nixos-system-yari-26.11.20260923.4975466` | 53 `/nix/store/rfvqx5amjsyd6qcjf22fnv75nzap42a2-nixos-system-yari-26.11.20260923.4975466` |
+| Rakku | 158 `/nix/store/11a2g7zh8zmb286903b35js57znqrmi2-nixos-system-rakku-26.11.20260923.4975466` | unchanged |
+| REVERT (not active; GC root `/nix/var/nix/gcroots/flakey-rename-revert`) | | `/nix/store/6s1ccb47lmal04bczra56d64ldy5fhmv-nixos-system-yari-26.11.20260923.4975466` |
+
+- Built unit files, generation 52 → 53: on the host only `container@claw-simon`
+  (restart trigger) and `container@openclaw` (restart trigger plus
+  `X-ReloadIfChanged=true`), of 393. In Laure's container only
+  `openclaw-session-share.service` (`--host flakey.hummingbird-lake.ts.net`),
+  of 333; her `openclaw.json` SHA256 `00c26526…` is the same. In flakey's
+  container `claw-tailnet`, `dnsmasq` and `nftables` (the hostname reaches
+  `/etc/hosts`, which their triggers and the ruleset check include), of 345.
+- Checks: x86 `openclaw`, `openclaw-people`, `openclaw-in-place`, `claw-tools`,
+  `ai-mcp-proxy`, `tailnet-names`, `claw-ebay` on both commits; native ARM
+  `openclaw-config` and `openclaw-in-place-config`; nixfmt 1.2.0; no whitespace
+  errors. The new assertions failed before each change.
+- Switch at 07:31:17 UTC under `flakey-yari-switch`: the rename converged in
+  1.5 s (`claw-simon` → `flakey`, ID `nbQJZMcewG11CNTRL`), Serve reset, switch
+  rc 0. Laure's container reloaded in place; her source restarted once at
+  07:31:33–34 (`44c01861…` → `236a1175…`, NRestarts 0). flakey unhealthy
+  60.9 s; Laure 0 s. Her gateway `5dbd700ddc1f4214b772e5a0522652ff` (PID 391)
+  and container `16c35f6d…` kept their identities; her uptime kept growing.
+  Her 8 sessions, 4 pairings, jobs and config did not change. No rollback.
+- Acceptance 19/19 on Yari and 5/5 on Zao: node ID unchanged; DNS name,
+  hostname preference, OS hostname and Serve (`flakey:443`, `flakey:8443`) all
+  flakey; flakey's origins name flakey; every MCP server initialize and
+  `tools/list` exactly its filter (sparkyfitness 23, ebay 14, gmail 7,
+  scryer 5, family calendar 3, calendar, maps, web search, two demos) and one
+  read call each (30/30); OpenClaw's CLI `mcp probe` lists all ten servers, no
+  diagnostics; Session Share both ways (each side's source connected, one
+  `sessions.list` each: 0 shared sessions on either side); keyed `/v1/models`
+  200 with five models from both containers; no failed units; paired devices
+  unchanged on both gateways. From Zao: `https://flakey.hummingbird-lake.ts.net/`
+  is the OpenClaw Control page (HTTP 200, TLS verified), the Let's Encrypt
+  certificate names `flakey.hummingbird-lake.ts.net`, `:8443` answers, and
+  `/control-ui-config.json` returns 200 for Simon (trusted-proxy sign-in at the
+  new origin). `claw-simon.hummingbird-lake.ts.net` resolves nowhere (Zao, both
+  containers): `curl: (6) Could not resolve host`.
+- Laure's source kept its pairing: it connected to flakey with its stored node
+  token, no new pairing. Phone app and browsers have not paired again yet.
+- Finding (not caused by the rename): at flakey's container start, tailscaled
+  stayed in `NoState` for 48 s because it did not load its netmap cache, and
+  `claw-tailnet` took the first-join `tailscale up --auth-key` branch. It
+  failed before it reached Tailscale (no DNS yet), retried 15 s later in
+  `Running`, and only set prefs and Serve. The node key and ID did not change.
+  A successful `up` there would mint an auth key; treat a transient `NoState`
+  as "wait", not "log in".
+- Scripts, logs and evidence: `/tmp/claw/flakey-*` on Zao; copies on Yari.
 
 ### Re-pair after the rename (Simon)
 
