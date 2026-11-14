@@ -4,6 +4,14 @@ Deployed to `ai-staging` only on 2026-11-14 UTC (Rakku generation 157); see
 the deployment record below. Production `ai`, its backend, client keys and
 other proxy units are out of scope and did not change.
 
+**Stage 5** (see `ai-mcp-production.md`) widens the row contract: a row has a
+loopback `backend` or a native `scryer` account (the proxy serves that Scryer
+account itself; its password is the row's `mcp-<row>` credential), and a
+loopback row may list exact `ui://` views (`mcpResources`). `routing.patch`
+now also patches `scryer.go`; regenerate it when the shared `main.go`,
+`mcp-filter.go` or `scryer.go` changes. The staging row and its table do not
+change; staging restarts once for the new binary.
+
 **Stage 2** (prepared, see `ai-mcp-production.md`) changes two things here.
 Rows now match callers by stable Tailscale node ID, not node name, and the
 staging row moves to IDs. Production `ai` also runs this router, with one

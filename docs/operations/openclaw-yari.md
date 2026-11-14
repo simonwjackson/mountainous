@@ -17,6 +17,14 @@ his decision. His workspace files, Markdown memory and research runs were
 copied and checksum-compared, not deleted from the old gateway. His old
 conversations remain in the verified root-only backup, not in the new UI.
 
+Since stage 5 (`ai-mcp-production.md`), Simon's own tool servers keep their
+names but reach rows on the production front door, locked to flakey's node ID:
+`claw-calendar`, `claw-gmail`, `claw-family-calendar-simon`, `claw-ebay-simon`
+and `claw-scryer-simon` use `https://ai.hummingbird-lake.ts.net/mcp/<row>`
+(`calendar`, `gmail`, `family-calendar`, `ebay`, `scryer`). Their old per-tool
+tailnet nodes are retired in the same stage; sections below that name them are history.
+Laure's servers and the shared `claw-maps` and `claw-websearch` did not move.
+
 The temporary rehearsal container and tailnet node `claw-laure` have been
 retired. Its cloned private state and synthetic profile were wiped before the
 real handoff. Its old node pairing was removed from Simon's gateway.

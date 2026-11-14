@@ -44,6 +44,12 @@ The prepared `claw-gmail` endpoint has `tag:claw-tools` and forwards exactly
 `mail_draft`, `mail_discard_draft`. It excludes `mail_send`, proposal answers
 and calendar writes. No OpenClaw gateway connects to it yet.
 
+Since stage 5 (`ai-mcp-production.md`) flakey reaches the Google app through
+rows on the production front door instead: `/mcp/calendar`, `/mcp/gmail` and
+`/mcp/family-calendar`, each locked to flakey's node ID with the same tool
+lists. The `claw-calendar`, `claw-gmail` and `claw-family-calendar-simon` nodes
+are retired in the same stage; Laure's read-only `claw-family-calendar` stays.
+
 `mail_not_mine` uses metadata headers only. Dotted recipients win, then the
 approved googlemail address, then the sender domains in `GOOGLE_NOT_MINE_SENDERS`.
 The configured domains come from Simon's existing Not Me filters. `mail_label`

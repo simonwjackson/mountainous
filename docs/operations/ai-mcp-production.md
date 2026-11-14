@@ -6,6 +6,11 @@ on `ai-staging` only (see `ai-mcp-staging.md`). This stage moves production
 `ai` onto the same router with one row, `/mcp/sparkyfitness`, for flakey only.
 SparkyFitness stays on Rakku; this is a new route, not a controlled move.
 
+**Stage 5** (section "Stage 5: Simon's own tools on /mcp rows" below) adds
+five rows for Simon's own tools and retires their per-tool tailnet nodes.
+The stage-2 sections describe the router and the sparkyfitness row as
+deployed then; where they say "one row", read "six rows" since stage 5.
+
 ## Contract
 
 | Part | Value |
@@ -77,6 +82,212 @@ no row changed, only the key in `lib/tailnet-nodes.nix`, and Rakku's system
 did not change. If the node ever registers again instead, it gets a new ID:
 put the new ID in `lib/tailnet-nodes.nix` and in the literal in
 `checks.ai-mcp-proxy`. Until then the row returns 403 to it.
+
+## Stage 5: Simon's own tools on /mcp rows
+
+Simon's own assistant tools move from their per-tool tailnet nodes to rows on
+this front door. Each row admits flakey's stable node ID `nbQJZMcewG11CNTRL`
+only and keeps the backend, tools and server-side key of the node it replaces.
+flakey keeps every MCP server name, so tool names (`<server>__<tool>`),
+permissions, the mail agent, main's `claw-gmail__*` deny, the agent-to-agent
+rules, the wind-down and morning-brief skills and the approval modes do not
+change. Only the URLs move. OpenClaw holds no key.
+
+| Row | flakey server (unchanged name) | Backend | Tools | Server-side key | Old node (retired) |
+| --- | --- | --- | --- | --- | --- |
+| `/mcp/calendar` | `claw-calendar` | Google app `127.0.0.1:3171/mcp` | `calendar_busy` | none (loopback) | `claw-calendar` |
+| `/mcp/gmail` | `claw-gmail` | Google app | the 7 mail tools, no `mail_send` | none | `claw-gmail` |
+| `/mcp/family-calendar` | `claw-family-calendar-simon` | Google app | events, add, remove | none | `claw-family-calendar-simon` |
+| `/mcp/ebay` | `claw-ebay-simon` | `ebay-server` `127.0.0.1:3191/mcp` | the 14 eBay tools, plus the 7 `ui://ebay/*.html` views | none | `claw-ebay-simon` |
+| `/mcp/scryer` | `claw-scryer-simon` | native: `https://scryer.hummingbird-lake.ts.net/graphql` as `simon` | the 5 Scryer tools, plus `ui://scryer/media.html` | sops `scryer-password-simon` as `mcp-scryer` | `claw-scryer-simon` |
+| `/mcp/sparkyfitness` | `sparkyfitness` | unchanged (stage 2) | 23 | `mcp-sparkyfitness` | none |
+
+The dead, offline node `claw-scryer` (`nWonQ4d7xB11CNTRL`, not in Nix since
+the per-account split) is deleted with the five. Shared and Laure-owned nodes
+stay: `claw-maps`, `claw-websearch`, `claw-family-calendar` and
+`claw-scryer-laure`. Laure's servers do not move.
+
+### How the rows work
+
+- `lib/ai-mcp-rows.nix` names every production row, its tools and the flakey
+  server that uses it. It is the one allowlist for the row and for flakey's
+  `toolFilter`. Each feature adds its own row: `claw-tools` (the three Google
+  rows), `claw-ebay`, `claw-scryer`; `ai-gateway` keeps sparkyfitness.
+- `lib/openclaw-people.nix` gives each moved server `row = "<row>"`;
+  `lib/openclaw-container.nix` then writes
+  `https://ai.hummingbird-lake.ts.net/mcp/<row>`. A server without `row` keeps
+  `https://<name>.hummingbird-lake.ts.net/mcp`, so Laure's entries are
+  byte-identical.
+- A row has a loopback `backend` or a native `scryer` account, never both. The
+  old `claw-scryer-<user>` endpoint was native code in the proxy (no loopback
+  MCP server exists), so a Scryer row serves the same handler (`scryer.go`)
+  against the same GraphQL URL, limited to the row's tools. The password is
+  the row's credential: `LoadCredential=mcp-scryer:/run/secrets/scryer-password-simon`
+  with the `SetCredential=mcp-scryer:unavailable credential` default. The router
+  strips only the final newline (as the endpoint mode does) and refuses an
+  empty value, a line break or the systemd default.
+- A loopback row may list exact `ui://` views (`mcpResources`): eBay's MCP App
+  cards need `resources/list` and `resources/read`. Other resources, and
+  resource methods on rows without views, return `-32601`.
+- `routing.patch` now also patches `scryer.go` (an allowlist parameter;
+  `scryerHandler` keeps the endpoint mode). The shared `media-tsnet-proxy`
+  source and derivation still do not change, so no other proxy restarts.
+- Guards, each proved by `/tmp/claw/simon-tools-negative.py` (12 cases): a row
+  with no callers or a node name fails the table's type; a row or tool not in
+  `lib/ai-mcp-rows.nix` (for example `mail_send`, `scryer_delete`, a 15th eBay
+  tool, an unnamed row) and a Scryer row that also has a backend fail the
+  system's assertions; an extra caller fails `checks.ai-mcp-proxy` (exact
+  table); a Laure server on a row, or a moved flakey server left on its node,
+  fails `checks.openclaw`. The router itself refuses unknown Scryer tools,
+  non-`ui://` views and the credential cases above (Go tests).
+- The whole table loads or none of it does: a bad Scryer password, like a bad
+  SparkyFitness key, leaves every row at 404 and `/v1` up.
+- The new credential restarts production `ai` once (about 22 s of `/v1`
+  downtime for every agent). Later caller or tool edits only reload the table.
+  `scryer-password-simon` restarts `tsnet-proxy-ai` when its value changes.
+- The Tailscale policy does not change: flakey already reaches `ai`, and the
+  Scryer request leaves Rakku's host network exactly as the old node's did.
+
+### Verification before approval
+
+On Zao, one at a time. Never the aggregate flake check; Rakku never builds.
+
+```sh
+/tmp/claw/ai-mcp-go-check.sh "$PWD"   # gofmt, go test (46), go vet, race
+for c in ai-mcp-proxy tailnet-names ai-gateway ai-gateway-staging openclaw \
+         openclaw-people openclaw-in-place claw-tools claw-ebay claw-scryer claw-websearch; do
+  nix build --no-link .#checks.x86_64-linux.$c
+done
+/tmp/claw/simon-tools-identity.sh "$PWD" after   # then simon-tools-identity-compare.py BEFORE AFTER
+/tmp/claw/simon-tools-negative.py "$PWD"
+# The real router, real table and real credentials on Rakku, as user
+# tsnet-proxy under systemd-run, on loopback; never joins the tailnet.
+/tmp/claw/simon-tools-rehearse-build.sh "$PWD"   # then run simon-tools-rehearse-rakku.sh on Rakku
+```
+
+The identity comparison must show Laure's container system, gateway JSON,
+gateway unit, `claw-tailnet` unit, host `container@openclaw` unit and
+container conf unchanged; on Rakku only `tsnet-proxy-ai` and
+`tsnet-proxy-ai-staging` differ; on Yari only `container@claw-simon`.
+
+### Deploy
+
+Rakku first, then Yari, then acceptance. Pin the approved commit. Same
+machinery as stage 2: build on Unzen and copy through Zao with
+`--no-check-sigs`; every switch and rollback runs under `systemd-run` with a
+fixed unit name (`simon-tools-<step>`); the Rakku switch waits for both
+gateways to be idle and for a `go` holding its nonce; automatic rollback in
+the same unit.
+
+```sh
+EXPECTED_SOURCE_SHA=<approved-full-commit-sha>
+/tmp/claw/simon-tools-build.sh rows "$PWD" "$EXPECTED_SOURCE_SHA"   # also builds aarch64 openclaw-config on Yari
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" rehearse-gate
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" rakku
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" accept-rakku
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" check-yari
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" yari
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" accept-yari
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" mail-agent
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" check-rollback-yari
+```
+
+- `rakku`: preflight (exactly the two proxy units differ; keyed `/v1/models`
+  baseline), idle gate, ready/go. Afterwards only the two proxies may change
+  identity. `ai-gateway`, SparkyFitness, `ebay-server`, the Google and Maps
+  apps, Laure's tool proxies, the five old nodes (still running), Home
+  Assistant and Z-Wave must keep theirs; keyed `/v1/models` must match the
+  baseline; all six rows must answer this host (not a caller) with 403. Any
+  problem rolls back at once. All six 404 (table rejected, `/v1` healthy)
+  exits 5: fix forward with one restart. `ai-mcp-rakku-health.py` then checks
+  Home Assistant and the Z-Wave server handshake.
+- `yari`: the stage-2 guards: Laure byte-identical, both gateways healthy and
+  idle, checked again right before activation; flakey restarts onto the new
+  config, Laure's gateway keeps its InvocationID.
+
+### Acceptance
+
+All read-only. No email sent, no eBay change, no calendar edit, no Scryer change.
+
+1. From inside flakey as `openclaw` (`accept-rakku`): every row answers
+   initialize and `tools/list` with exactly its allowlist; an unlisted tool
+   returns `-32601`; a forged `Authorization` changes nothing; eBay lists
+   exactly its 7 views and Scryer its one.
+2. Laure's container and Zao (also with forged headers) get 403 on every row;
+   `/mcp/missing` and `/mcp` 404; `/v1/models` without a key 401; keyed
+   `/v1/models` 200 from both containers.
+3. `accept-yari`: the above, plus `flakey-mcp.py accept` (every flakey server:
+   initialize, exact list, one read: `calendar_busy`, `mail_list` limit 1,
+   `family_calendar_events`, `ebay_listings` limit 1, `scryer_search`,
+   `sparky_get_food_diary`, and the shared servers), OpenClaw's own CLI probe
+   lists every server with no diagnostics, the live entries hold the row URL
+   and no credential, Laure's own four servers answer her container, her
+   gateway InvocationID is `5dbd700ddc1f4214b772e5a0522652ff`, and no unit has
+   failed on Yari or in either container.
+4. `mail-agent`: one real delegation from a disposable main session to a
+   disposable reader session ("how many unread in the last 24 hours", mail_list
+   only). The reader's `claw-gmail__mail_list` succeeds through `/mcp/gmail`;
+   no write tool runs; main calls no Gmail tool; `tools.effective` gives the
+   reader exactly the 7 Gmail tools and `session_status`, and main none. Both
+   sessions are deleted with `sessions.delete`.
+
+### Retire the old nodes
+
+Only after acceptance passes on every new path. A second commit removes the
+five old tailnet names from Nix (`lib/claw-tools.nix`, `claw-ebay`,
+`claw-scryer`); Yari does not change and production `ai` does not restart.
+
+```sh
+EXPECTED_SOURCE_SHA=<retire-commit-sha>
+/tmp/claw/simon-tools-build.sh retire "$PWD" "$EXPECTED_SOURCE_SHA"   # refuses if Yari would change
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" retire-rakku
+/tmp/claw/simon-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" accept-retire
+# Then delete the six nodes from the tailnet (OAuth client, device scope).
+/tmp/claw/simon-tools-delete-nodes.sh dry-run
+/tmp/claw/simon-tools-delete-nodes.sh delete
+```
+
+`simon-tools-delete-nodes.sh` first checks, on Yari, that neither gateway's
+live config names any of the six hosts (exact `<name>.hummingbird-lake.ts.net`),
+then on Rakku lists the tailnet's devices through the fleet OAuth client and
+deletes a device only if exactly one device has that exact name, its node ID
+is the recorded one, it carries only `tag:claw-tools`, and it is not
+connected. Anything else stops the run before that device.
+
+| Node | Node ID |
+| --- | --- |
+| `claw-calendar` | `nfm68HkCdg11CNTRL` |
+| `claw-gmail` | `njBnm9PE4S11CNTRL` |
+| `claw-ebay-simon` | `nwHWf8RDwt11CNTRL` |
+| `claw-scryer-simon` | `nANYvp9y2X11CNTRL` |
+| `claw-family-calendar-simon` | `nCziJXC7GY11CNTRL` |
+| `claw-scryer` (dead since 2026-11-11) | `nWonQ4d7xB11CNTRL` |
+
+The old nodes' tsnet state stays on Rakku under
+`/tundra/permafrost/var/lib/tsnet-proxy-<name>`; nothing deletes it.
+
+### Rollback (stage 5)
+
+A deleted tailnet node cannot come back with its identity. After the
+deletion, the rollback is a redeploy of the old units, which registers new
+nodes with new IDs.
+
+- Before the retire step: `rollback-yari`, then `rollback-rakku` (production
+  `ai` restarts once onto the stage-2 binary and table; the old nodes still
+  run). Both are `simon-tools-deploy.sh` steps with Laure's guards only.
+- After the retire step, before the deletion: `rollback-retire` brings the
+  old units back on their saved identities.
+- After the deletion: move each old node's state aside on Rakku, as root,
+  `mv /tundra/permafrost/var/lib/tsnet-proxy-<name> /tundra/permafrost/var/lib/tsnet-proxy-<name>.deleted`
+  (a saved identity of a deleted node never joins again), then
+  `rollback-retire` (or revert the retire commit and deploy). Each unit
+  enrolls a new node through the OAuth client. `claw-family-calendar-simon`
+  still admits only flakey's ID. Then `rollback-yari` and `rollback-rakku` if
+  the rows must go too.
+- Without `/tmp/claw`, use the pinned systems from the deployment record with
+  `nix-env -p /nix/var/nix/profiles/system --set <system>` and
+  `systemd-run --wait --collect --unit simon-tools-manual-rollback <system>/bin/switch-to-configuration switch`,
+  while Laure's gateway is idle. Do not use `nixos-rebuild switch --rollback`.
 
 ## The key
 
