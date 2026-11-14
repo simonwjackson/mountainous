@@ -1,7 +1,8 @@
 # Path-prefixed MCP on the staging AI front door
 
-Prepared only. This runbook does not authorize landing, pushing or deployment.
-Production `ai`, its backend, client keys and other proxy units are out of scope.
+Deployed to `ai-staging` only on 2026-11-14 UTC (Rakku generation 157); see
+the deployment record below. Production `ai`, its backend, client keys and
+other proxy units are out of scope and did not change.
 
 ## Contract and cost
 
@@ -95,6 +96,12 @@ nix eval --json .#nixosConfigurations.rakku.config --apply 'c:
 
 ## Prepared evidence
 
+Re-verified after the rebase onto `89ccdd6b`: 38 top-level Go tests pass,
+`go vet` passes, all tests pass with `-race`, and the seven route groups pass
+600 race runs under four-process contention. The three focused checks pass.
+The 18-unit fixture matches; only `tsnet-proxy-ai-staging` differs. The
+items below are the original preparation on `ea3a20b0`.
+
 - Go: 36 top-level tests pass, including seven route test groups. The seven
   route groups also pass with `-race`; `go vet ./...` passes.
 - Focused checks: `ai-mcp-proxy`, `tailnet-names`, `ai-gateway-staging` pass.
@@ -112,7 +119,10 @@ nix eval --json .#nixosConfigurations.rakku.config --apply 'c:
   `claw-simon.hummingbird-lake.ts.net.`. Existing staging `/v1/models` returned
   the 401 baseline below. No new MCP route was installed or tested on Rakku.
 
-## Approved staging deployment only — commands not yet run
+## Approved staging deployment only
+
+The 2026-11-14 deployment ran this sequence through copied Nix-shebang
+scripts, not inline SSH (see the deployment record).
 
 First review the committed diff and get separate deployment approval. Pin the
 approved full commit SHA. Do not substitute another branch tip. On Zao:
@@ -197,20 +207,68 @@ diff. Inspect those live unit differences separately before this switch.
    calling `echo` returns `-32601`. Restore `[ "echo" ]` with the same approved
    procedure. Do not edit the immutable `/etc` symlink target or production.
 
-No new live MCP behavior has been verified until this acceptance plan runs.
+## Deployment record — 2026-11-14 UTC
+
+Simon approved stage 1. Commits on cairn: `953f823e` (this change, rebased onto
+`89ccdd6b`) and `b4c0e502` (adds `zao` as a caller). Rakku was evaluated on
+Zao, built on Unzen and copied Unzen → Rakku with `--no-check-sigs`.
+
+| Generation | System | Change |
+| --- | --- | --- |
+| 155 | `/nix/store/r56yg127y7a4p5mkd44y73x23wldbj49-nixos-system-rakku-26.11.20260923.4975466` | before; rollback target |
+| 156 | `/nix/store/jw6dbfjas0rsngdar70drx6fcmjkv02s-nixos-system-rakku-26.11.20260923.4975466` | `953f823e`: staging proxy restarted once (about 22 s), echo backend started |
+| 157 | `/nix/store/hj78p74d5jgjxb9ica4bwimw9g1x2k11-nixos-system-rakku-26.11.20260923.4975466` | `b4c0e502`: table only, staging proxy **reloaded** |
+
+- Closure diff 155 → 156: only new paths `ai-mcp-tsnet-proxy` (23.7 MiB),
+  `ai-mcp-echo.py`, the MCP table, the staging reload trigger, two units,
+  `system-units` and `etc`. No other session's work was pending on Rakku.
+  156 → 157: the table, the reload trigger, the staging unit (only its
+  `X-Reload-Triggers` line), `system-units` and `etc`.
+- Production `tsnet-proxy-ai` kept MainPID 1148002 and InvocationID
+  `aac522588f3d4f8ea474030583cd29c1` through both switches. `ai-gateway`,
+  `home-assistant` and `zwave-js` also kept their identities. Of 18 proxies,
+  only `tsnet-proxy-ai-staging` got a new identity, once. Home Assistant HTTP
+  200, Z-Wave server handshake (driver 15.15.0, server 3.4.0), no failed units.
+- Generation 157 reloaded the staging proxy: MainPID 1152269 and InvocationID
+  `8dfcd5b25f2f43a9a2a3e91eb072cc0b` unchanged, `MCP table reloaded` logged.
+  Two manual `systemctl reload` runs also kept them. A Zao keep-alive HTTPS
+  socket served requests before and after a reload.
+- From Zao before `zao` joined the row: `/mcp/echo` 403, also with forged
+  `Authorization` and `X-Forwarded-For`; `/mcp/missing` 404; `/mcp` and
+  `/v1/models` unchanged (404 front door and 401). Rakku and Unzen hosts still
+  get 403 on `/mcp/echo`.
+- From Zao as an allowed caller: initialize returns `ai-staging-echo`,
+  `tools/list` is exactly `[echo]`, the `echo` call returns `ok`, an unlisted
+  tool returns `-32601 tool not allowed` from the proxy, forged caller headers
+  change nothing.
+- Keyed `/v1/models` from Rakku through the new binary: `ai-staging-test-a`
+  200 (11 models), `ai-staging-test-b` 403 `dialect_not_allowed`. No keyed
+  capture was taken before the switch, and no paid streaming call was made.
+- **claw-simon positive path: blocked by design.** From `claw-simon` (as
+  `openclaw`), TCP to `ai-staging:443` times out while production `ai` returns
+  401. The `tag:claw` policy reaches only the production `ai` front door. The
+  policy was not changed. The next stage makes the first claw-simon check on
+  production `ai`.
+- Laure's `container@openclaw` was not touched (active since 2026-11-12 04:38 UTC).
+
+Scripts and logs: `/tmp/claw/ai-mcp-*` on Zao; copied scripts in `/tmp/claw`
+on Rakku and Yari.
 
 ## Rollback
 
-On Zao, use the saved system path. No build, state deletion or tailnet reenrollment
-is needed:
+Rollback target: generation 155,
+`/nix/store/r56yg127y7a4p5mkd44y73x23wldbj49-nixos-system-rakku-26.11.20260923.4975466`
+(also saved on Zao in `/tmp/ai-mcp-rakku-rollback-system`). No build, state
+deletion or tailnet reenrollment is needed. The copied guarded script refuses
+when a later deployment replaced generation 156/157 (use a forward revert then),
+waits for another switch, switches and prints production identities and health:
 
 ```sh
-OLD=$(cat /tmp/ai-mcp-rakku-rollback-system)
-ssh -F /dev/null simonwjackson@rakku "sudo nix-env --profile /nix/var/nix/profiles/system --set '$OLD'"
-ssh -F /dev/null simonwjackson@rakku "sudo '$OLD/bin/switch-to-configuration' switch"
-ssh -F /dev/null simonwjackson@rakku \
-  'systemctl is-active tsnet-proxy-ai tsnet-proxy-ai-staging ai-gateway-staging home-assistant zwave-js'
+ssh -F /dev/null root@rakku /tmp/claw/ai-mcp-rakku-rollback.py
 ```
+
+If `/tmp/claw` is gone, copy `/tmp/claw/ai-mcp-rakku-rollback.py` from Zao to
+Rakku and run it the same way. The rollback has not been executed.
 
 Repeat front-door, Home Assistant and Z-Wave health checks. Keep all tsnet state
 and gateway state directories. Rollback restores the old staging binary and
