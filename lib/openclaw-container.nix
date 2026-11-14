@@ -380,7 +380,13 @@ in
               name: endpoint:
               {
                 transport = "streamable-http";
-                url = "https://${name}.hummingbird-lake.ts.net/mcp";
+                # A server with a row is on the production front door
+                # (lib/ai-mcp-rows.nix); the others have their own node.
+                url =
+                  if endpoint ? row then
+                    "https://ai.hummingbird-lake.ts.net/mcp/${endpoint.row}"
+                  else
+                    "https://${name}.hummingbird-lake.ts.net/mcp";
                 toolFilter.include = endpoint.tools;
               }
               // lib.optionalAttrs (endpoint ? codex) { inherit (endpoint) codex; }

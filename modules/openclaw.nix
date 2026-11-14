@@ -452,23 +452,43 @@
           assert lib.pathExists
             "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/family-calendar/SKILL.md";
           assert !(gateway.config.mcp.servers ? claw-scryer);
+          assert
+            gateway.config.mcp.servers.claw-scryer-simon.toolFilter.include == [
+              "scryer_graphql"
+              "scryer_search"
+              "scryer_title"
+              "scryer_add"
+              "scryer_monitor"
+            ];
+          assert !(gateway.config.mcp.servers.claw-scryer-simon ? codex);
+          # Simon's own tools (stage 5): each keeps its server name and reaches
+          # its row on the production front door. No key, header or environment.
           assert lib.all (
-            username:
+            row:
             let
-              server = gateway.config.mcp.servers."claw-scryer-${username}";
+              spec = (import ../lib/ai-mcp-rows.nix).${row};
+              server = gateway.config.mcp.servers.${spec.server};
             in
-            server.url == "https://claw-scryer-${username}.hummingbird-lake.ts.net/mcp"
-            && server.transport == "streamable-http"
-            && !(server ? codex)
-            &&
-              server.toolFilter.include == [
-                "scryer_graphql"
-                "scryer_search"
-                "scryer_title"
-                "scryer_add"
-                "scryer_monitor"
-              ]
-          ) [ "simon" ];
+            builtins.removeAttrs server [ "codex" ] == {
+              transport = "streamable-http";
+              url = "https://ai.hummingbird-lake.ts.net/mcp/${row}";
+              toolFilter.include = spec.tools;
+            }
+          ) (lib.attrNames (import ../lib/ai-mcp-rows.nix));
+          assert
+            lib.attrNames (
+              lib.filterAttrs (_: s: lib.hasPrefix "https://ai." (s.url or "")) gateway.config.mcp.servers
+            ) == lib.sort builtins.lessThan (
+              lib.mapAttrsToList (_: spec: spec.server) (import ../lib/ai-mcp-rows.nix)
+            );
+          assert gateway.config.mcp.servers.claw-ebay-simon.codex.defaultToolsApprovalMode == "approve";
+          # Laure keeps her own nodes; none of her servers moves to a row.
+          assert
+            laure.mcp.servers.claw-scryer-laure.url == "https://claw-scryer-laure.hummingbird-lake.ts.net/mcp";
+          assert
+            laure.mcp.servers.claw-family-calendar.url
+            == "https://claw-family-calendar.hummingbird-lake.ts.net/mcp";
+          assert !(lib.any (s: lib.hasPrefix "https://ai." (s.url or "")) (lib.attrValues laure.mcp.servers));
           assert gateway.config.mcp.servers.claw-websearch.transport == "streamable-http";
           assert
             gateway.config.mcp.servers.claw-websearch.url

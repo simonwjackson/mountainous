@@ -1,21 +1,9 @@
 # All differences between the two new gateways belong here.
 let
-  scryerTools = [
-    "scryer_graphql"
-    "scryer_search"
-    "scryer_title"
-    "scryer_add"
-    "scryer_monitor"
-  ];
-  mailTools = [
-    "mail_list"
-    "mail_read"
-    "mail_not_mine"
-    "mail_label"
-    "mail_archive"
-    "mail_draft"
-    "mail_discard_draft"
-  ];
+  scryerTools = import ./openclaw-scryer-tools.nix;
+  # Simon's own tools: rows on the production front door ai, flakey only.
+  rows = import ./ai-mcp-rows.nix;
+  mailTools = rows.gmail.tools;
   mailPermissions = map (tool: "claw-gmail__${tool}") mailTools;
   sparkyfitnessTools = import ./openclaw-sparkyfitness-tools.nix;
 in
@@ -34,27 +22,39 @@ in
       name = "flakey";
       emoji = "❄️";
     };
+    # Each server keeps its old name and reaches its row on the production
+    # front door: https://ai.hummingbird-lake.ts.net/mcp/<row>. The row admits
+    # this node's stable ID only; this gateway holds no key.
     mcpServers = {
       claw-ebay-simon = {
-        tools = import ./openclaw-ebay-tools.nix;
+        row = "ebay";
+        inherit (rows.ebay) tools;
         codex.defaultToolsApprovalMode = "approve";
       };
-      claw-gmail.tools = mailTools;
-      claw-calendar.tools = [ "calendar_busy" ];
+      claw-gmail = {
+        row = "gmail";
+        tools = mailTools;
+      };
+      claw-calendar = {
+        row = "calendar";
+        inherit (rows.calendar) tools;
+      };
       claw-family-calendar-simon = {
-        tools = (import ./claw-tools.nix).claw-family-calendar-simon.tools;
+        row = "family-calendar";
+        inherit (rows.family-calendar) tools;
         codex.defaultToolsApprovalMode = "approve";
       };
-      claw-scryer-simon.tools = scryerTools;
+      claw-scryer-simon = {
+        row = "scryer";
+        inherit (rows.scryer) tools;
+      };
     };
     extraToolPermissions = [
       "show_widget"
     ]
-    ++ (map (tool: "claw-ebay-simon__${tool}") (import ./openclaw-ebay-tools.nix))
+    ++ (map (tool: "claw-ebay-simon__${tool}") rows.ebay.tools)
     ++ mailPermissions
-    ++ (map (tool: "claw-family-calendar-simon__${tool}")
-      (import ./claw-tools.nix).claw-family-calendar-simon.tools
-    )
+    ++ (map (tool: "claw-family-calendar-simon__${tool}") rows.family-calendar.tools)
     ++ (map (tool: "sparkyfitness__${tool}") sparkyfitnessTools);
     agentTools = {
       deny = [ "claw-gmail__*" ];

@@ -65,7 +65,7 @@ in
           ];
         assert !(lib.elem "mail_send" rakku.mountainous.tailnetNames.claw-gmail.mcpTools);
         # Stage 5: the Google rows on production ai, flakey's stable ID only,
-        # the same Google app backend and tools as flakey's filter.
+        # the same Google app backend and tools; flakey's servers point there.
         assert lib.all (
           row:
           let
@@ -79,6 +79,7 @@ in
           && route.mcpTools == rows.${row}.tools
           && route.bearerCredentialFile == null
           && route.mcpResources == [ ]
+          && server.url == "https://ai.hummingbird-lake.ts.net/mcp/${row}"
           && server.toolFilter.include == rows.${row}.tools
           && !(laureServers ? ${rows.${row}.server})
         ) googleRows;

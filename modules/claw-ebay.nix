@@ -155,6 +155,7 @@
             bearerCredentialFile = null;
             scryer = null;
           };
+        assert simon.mcp.servers.claw-ebay-simon.url == "https://ai.hummingbird-lake.ts.net/mcp/ebay";
         assert simon.mcp.servers.claw-ebay-simon.codex.defaultToolsApprovalMode == "approve";
         assert import ../tests/openclaw-ebay-selling.nix {
           inherit lib;

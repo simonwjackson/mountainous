@@ -69,6 +69,9 @@
         assert lib.elem "mcp-scryer:${cfg.sops.secrets.scryer-password-simon.path}"
           cfg.systemd.services.tsnet-proxy-ai.serviceConfig.LoadCredential;
         assert lib.elem "tsnet-proxy-ai.service" cfg.sops.secrets.scryer-password-simon.restartUnits;
+        assert
+          self.nixosConfigurations.yari.config.containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers.claw-scryer-simon.url
+          == "https://ai.hummingbird-lake.ts.net/mcp/scryer";
         assert builtins.all
           (
             username:
