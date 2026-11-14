@@ -52,9 +52,9 @@ in
     in
     {
       checks.claw-tools =
-        assert endpoints.claw-calendar.tools == [ "calendar_busy" ];
+        assert rows.calendar.tools == [ "calendar_busy" ];
         assert
-          endpoints.claw-gmail.tools == [
+          rows.gmail.tools == [
             "mail_list"
             "mail_read"
             "mail_not_mine"
@@ -63,7 +63,18 @@ in
             "mail_draft"
             "mail_discard_draft"
           ];
-        assert !(lib.elem "mail_send" rakku.mountainous.tailnetNames.claw-gmail.mcpTools);
+        # Stage 5 retired Simon's per-tool Google nodes; only Laure's and the
+        # shared node remain as tailnet names.
+        assert
+          lib.attrNames endpoints == [
+            "claw-family-calendar"
+            "claw-maps"
+          ];
+        assert lib.all (name: !(rakku.mountainous.tailnetNames ? ${name})) [
+          "claw-calendar"
+          "claw-gmail"
+          "claw-family-calendar-simon"
+        ];
         # Stage 5: the Google rows on production ai, flakey's stable ID only,
         # the same Google app backend and tools; flakey's servers point there.
         assert lib.all (
@@ -86,7 +97,7 @@ in
         assert !(lib.elem "mail_send" rakku.mountainous.tailnetNames.ai.mcpRoutes.gmail.mcpTools);
         assert
           containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers.claw-gmail.toolFilter.include
-          == endpoints.claw-gmail.tools;
+          == rows.gmail.tools;
         assert
           !(lib.elem "mail_send" containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers.claw-gmail.toolFilter.include);
         assert
@@ -99,16 +110,11 @@ in
         assert endpoints.claw-maps.tools == [ "travel_time" ];
         assert endpoints.claw-family-calendar.tools == [ "family_calendar_events" ];
         assert
-          endpoints.claw-family-calendar-simon.tools == [
+          rows.family-calendar.tools == [
             "family_calendar_events"
             "family_calendar_add"
             "family_calendar_remove"
           ];
-        assert
-          rakku.mountainous.tailnetNames.claw-family-calendar-simon.mcpAllowedNodeIds
-          == [ "nbQJZMcewG11CNTRL" ];
-        assert lib.hasInfix "-mcp-allowed-node-ids nbQJZMcewG11CNTRL"
-          rakku.systemd.services.tsnet-proxy-claw-family-calendar-simon.serviceConfig.ExecStart;
         assert
           !(
             containers.${laureContainer}.config.services.openclaw-gateway.config.mcp.servers
@@ -138,10 +144,8 @@ in
           && lib.hasInfix "-mcp-tools" unit.serviceConfig.ExecStart
           && lib.hasInfix "-tags tag:claw-tools" unit.serviceConfig.ExecStart
           && lib.hasInfix "-oauth-secret-file" unit.serviceConfig.ExecStart
-          && (
-            name == "claw-gmail"
-            || (mcp.${name}.transport == "streamable-http" && mcp.${name}.toolFilter.include == endpoint.tools)
-          )
+          && mcp.${name}.transport == "streamable-http"
+          && mcp.${name}.toolFilter.include == endpoint.tools
         ) (lib.attrNames endpoints);
         pkgs.runCommand "claw-tools-boundary" { nativeBuildInputs = [ pkgs.go ]; } ''
           export HOME=$TMPDIR GOCACHE=$TMPDIR/go-cache CGO_ENABLED=0

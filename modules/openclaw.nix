@@ -446,7 +446,7 @@
             !(lib.pathExists "${builtins.elemAt laure.skills.load.extraDirs 1}/nutrition-fitness/SKILL.md");
           assert
             gateway.config.mcp.servers.claw-family-calendar-simon.toolFilter.include
-            == (import ../lib/claw-tools.nix).claw-family-calendar-simon.tools;
+            == (import ../lib/ai-mcp-rows.nix).family-calendar.tools;
           assert
             gateway.config.mcp.servers.claw-family-calendar-simon.codex.defaultToolsApprovalMode == "approve";
           assert lib.pathExists

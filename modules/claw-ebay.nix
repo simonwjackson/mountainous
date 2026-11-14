@@ -56,30 +56,23 @@
       };
       sops.secrets.ebay-api-env.restartUnits = [ "ebay-server.service" ];
       sops.secrets.ebay-refresh-token.restartUnits = [ "ebay-server.service" ];
-      mountainous.tailnetNames.claw-ebay-simon = {
-        description = "Simon's eBay approval MCP endpoint for OpenClaw";
-        backend = "http://127.0.0.1:3191";
-        after = [ "ebay-server.service" ];
-        tags = [ "tag:claw-tools" ];
-        mcpTools = import ../lib/openclaw-ebay-tools.nix;
-        mcpResources = [
-          "ui://ebay/search.html"
-          "ui://ebay/listings.html"
-          "ui://ebay/needs.html"
-          "ui://ebay/price.html"
-          "ui://ebay/reply.html"
-          "ui://ebay/offer.html"
-          "ui://ebay/listing.html"
-        ];
-      };
-      # flakey's eBay server, on the production front door. Same backend, tools
-      # and views as claw-ebay-simon; ebay-server takes no key on loopback.
+      # flakey's eBay server, on the production front door (stage 5; the
+      # claw-ebay-simon node is retired). ebay-server takes no key on loopback.
       mountainous.tailnetNames.ai = lib.mkIf config.mountainous.features.ai-gateway.enable {
         mcpRoutes.ebay = {
           backend = "http://127.0.0.1:3191/mcp";
           callerNodeIds = [ (import ../lib/tailnet-nodes.nix).flakey ];
           mcpTools = (import ../lib/ai-mcp-rows.nix).ebay.tools;
-          inherit (config.mountainous.tailnetNames.claw-ebay-simon) mcpResources;
+          # The MCP App views behind the cards.
+          mcpResources = [
+            "ui://ebay/search.html"
+            "ui://ebay/listings.html"
+            "ui://ebay/needs.html"
+            "ui://ebay/price.html"
+            "ui://ebay/reply.html"
+            "ui://ebay/offer.html"
+            "ui://ebay/listing.html"
+          ];
         };
       };
     };
@@ -87,9 +80,8 @@
     { pkgs, lib, ... }:
     let
       cfg = self.nixosConfigurations.rakku.config;
-      endpoint = cfg.mountainous.tailnetNames.claw-ebay-simon;
+      endpoint = cfg.mountainous.tailnetNames.ai.mcpRoutes.ebay;
       unit = cfg.systemd.services.ebay-server;
-      proxyUnit = cfg.systemd.services.tsnet-proxy-claw-ebay-simon.serviceConfig;
       containers = self.nixosConfigurations.yari.config.containers;
       simon = containers.claw-simon.config.services.openclaw-gateway.config;
       laure = containers.openclaw.config.services.openclaw-gateway.config;
@@ -98,8 +90,10 @@
     {
       checks.claw-ebay =
         assert inputs.ebay.rev == "aae1854bf09c1f2eee375287e29c1533f00aeb2c";
-        assert endpoint.tags == [ "tag:claw-tools" ];
-        assert endpoint.backend == "http://127.0.0.1:3191";
+        # Stage 5 retired the claw-ebay-simon node; flakey uses /mcp/ebay on ai.
+        assert !(cfg.mountainous.tailnetNames ? claw-ebay-simon);
+        assert !(cfg.systemd.services ? tsnet-proxy-claw-ebay-simon);
+        assert endpoint.mcpTools == (import ../lib/ai-mcp-rows.nix).ebay.tools;
         assert
           endpoint.mcpTools == [
             "ebay_search"
@@ -127,12 +121,6 @@
             "ui://ebay/offer.html"
             "ui://ebay/listing.html"
           ];
-        assert lib.hasInfix (
-          "-mcp-tools " + lib.concatStringsSep "," endpoint.mcpTools
-        ) proxyUnit.ExecStart;
-        assert lib.hasInfix (
-          "-mcp-resources " + lib.concatStringsSep "," endpoint.mcpResources
-        ) proxyUnit.ExecStart;
         assert unit.environment.PORT == "3191";
         assert unit.serviceConfig.DynamicUser && unit.serviceConfig.ProtectSystem == "strict";
         assert unit.serviceConfig.StateDirectory == "ebay";
@@ -145,9 +133,9 @@
             "ebay-refresh-token:${cfg.sops.secrets.ebay-refresh-token.path}"
           ];
         assert simon.mcp.servers.claw-ebay-simon.toolFilter.include == endpoint.mcpTools;
-        # Stage 5: /mcp/ebay on production ai, flakey only, same backend, tools and views.
+        # /mcp/ebay on production ai, flakey only.
         assert
-          builtins.removeAttrs cfg.mountainous.tailnetNames.ai.mcpRoutes.ebay [ "_module" ] == {
+          builtins.removeAttrs endpoint [ "_module" ] == {
             backend = "http://127.0.0.1:3191/mcp";
             callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
             mcpTools = endpoint.mcpTools;

@@ -17,29 +17,19 @@
             };
           };
         })
-        (builtins.listToAttrs (
-          map
-            (username: {
-              name = "claw-scryer-${username}";
-              value = {
-                description = "${username}'s Scryer MCP endpoint for OpenClaw";
-                backend = "https://scryer.hummingbird-lake.ts.net/graphql";
-                tags = [ "tag:claw-tools" ];
-                scryerUsername = username;
-                scryerPasswordFile = config.sops.secrets."scryer-password-${username}".path;
-              };
-            })
-            [
-              "simon"
-              "laure"
-            ]
-        ))
+        # Laure's own node stays. Simon's claw-scryer-simon node is retired.
+        {
+          claw-scryer-laure = {
+            description = "laure's Scryer MCP endpoint for OpenClaw";
+            backend = "https://scryer.hummingbird-lake.ts.net/graphql";
+            tags = [ "tag:claw-tools" ];
+            scryerUsername = "laure";
+            scryerPasswordFile = config.sops.secrets.scryer-password-laure.path;
+          };
+        }
       ];
-      # systemd copies the password at unit start: a new value restarts both.
-      sops.secrets.scryer-password-simon.restartUnits = [
-        "tsnet-proxy-claw-scryer-simon.service"
-        "tsnet-proxy-ai.service"
-      ];
+      # systemd copies the password at unit start: a new value restarts ai once.
+      sops.secrets.scryer-password-simon.restartUnits = [ "tsnet-proxy-ai.service" ];
       sops.secrets.scryer-password-laure.restartUnits = [ "tsnet-proxy-claw-scryer-laure.service" ];
     };
   perSystem =
@@ -51,6 +41,11 @@
     {
       checks.claw-scryer =
         assert !(cfg.mountainous.tailnetNames ? claw-scryer);
+        # Stage 5 retired claw-scryer-simon; Laure's claw-scryer-laure stays.
+        assert !(cfg.mountainous.tailnetNames ? claw-scryer-simon);
+        assert !(cfg.systemd.services ? tsnet-proxy-claw-scryer-simon);
+        assert
+          !(lib.elem "tsnet-proxy-claw-scryer-simon.service" cfg.sops.secrets.scryer-password-simon.restartUnits);
         # Stage 5: /mcp/scryer on production ai serves Simon's account natively,
         # flakey only, with the same GraphQL URL and password as claw-scryer-simon.
         assert
@@ -89,7 +84,6 @@
             && lib.hasInfix "-scryer-username ${lib.escapeShellArg username}" unit.ExecStart
           )
           [
-            "simon"
             "laure"
           ];
         pkgs.runCommand "claw-scryer-boundary" { nativeBuildInputs = [ pkgs.go ]; } ''

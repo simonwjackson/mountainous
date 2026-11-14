@@ -340,7 +340,8 @@ nix eval --raw .#nixosConfigurations.yari.config.system.build.toplevel.drvPath
 proves the production table exactly (row, ID, 23 tools, credential name),
 the unit difference above, a caller/tool edit is reload-only, and an empty
 caller list, a node name or a DNS name fails evaluation. The 16 other Rakku
-proxy units must still equal the stage-1 fixture.
+proxy units must still equal the stage-1 fixture (11 since stage 5: the five
+retired per-tool proxies must be absent).
 
 ### Prepared evidence (2026-11-14, base `e8bd3b4f`)
 

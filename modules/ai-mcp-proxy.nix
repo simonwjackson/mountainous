@@ -20,11 +20,22 @@
       extend = modules: (system.extendModules { inherit modules; }).config;
       before = builtins.fromJSON (builtins.readFile ../tests/ai-mcp-proxy-units-before.json);
       services = lib.filterAttrs (name: _: lib.hasPrefix "tsnet-proxy-" name) c.systemd.services;
+      # Stage 5 retired Simon's per-tool nodes: their rows are on production ai.
+      retired = [
+        "tsnet-proxy-claw-calendar"
+        "tsnet-proxy-claw-ebay-simon"
+        "tsnet-proxy-claw-family-calendar-simon"
+        "tsnet-proxy-claw-gmail"
+        "tsnet-proxy-claw-scryer-simon"
+      ];
       # Only the two routed front doors may differ from the before fixture.
-      unchanged = lib.subtractLists [
-        "tsnet-proxy-ai"
-        "tsnet-proxy-ai-staging"
-      ] (lib.attrNames before);
+      unchanged = lib.subtractLists (
+        [
+          "tsnet-proxy-ai"
+          "tsnet-proxy-ai-staging"
+        ]
+        ++ retired
+      ) (lib.attrNames before);
       unit = c.systemd.services.tsnet-proxy-ai-staging;
       table = c.environment.etc."tsnet-proxy-ai-staging-mcp.json".source;
       # A tools/callers-only edit must alter the reload trigger, not ExecStart,
@@ -162,7 +173,9 @@
       packages.ai-mcp-tsnet-proxy = package;
       checks.ai-mcp-proxy =
         assert rowsValid;
-        assert lib.attrNames services == lib.attrNames before;
+        assert lib.all (name: before ? ${name}) retired;
+        assert lib.attrNames services == lib.subtractLists retired (lib.attrNames before);
+        assert lib.length unchanged == 11;
         assert lib.all (
           name:
           c.systemd.units."${name}.service".text == before.${name}.text

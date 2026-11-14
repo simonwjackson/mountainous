@@ -69,7 +69,7 @@ row. The deployment record below describes stage 1 as it ran.
   Adding/rotating a systemd credential is **not** a table-only change: systemd
   loads credentials at service start, so this needs a separate reviewed staging
   restart. SIGHUP is asynchronous; inspect the reload log and test the row after reload.
-- The check freezes the other Rakku proxy units (16 since stage 2) to
+- The check freezes the other Rakku proxy units (16 since stage 2, 11 since stage 5 retired five) to
   the before-change evaluated fixture, including store paths. A later fleet
   package/input upgrade must deliberately retire or update this temporary guard.
   Do not regenerate the fixture just to make an unexpected production diff pass.
@@ -88,7 +88,7 @@ nix build --no-link -L .#checks.x86_64-linux.ai-mcp-proxy \
 `checks.ai-mcp-proxy` builds the actual staging proxy with its Go tests and
 `go vet ./...`, then exercises the real Python no-op backend over loopback HTTP.
 It checks callers and LoadCredential wiring on every configured
-row, freezes the other Rakku units (16 since stage 2), and compares changed-caller and empty-table
+row, freezes the other Rakku units (16 since stage 2, 11 since stage 5 retired five), and compares changed-caller and empty-table
 variants: only `X-Reload-Triggers` may change in their rendered units.
 
 For a local Go run against the same assembled source:
