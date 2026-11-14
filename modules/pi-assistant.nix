@@ -894,7 +894,7 @@ in
             lib.nameValuePair "pi-assistant-${name}" {
               enable = cfg.instances.enable;
               description = "Pi assistant: ${name}";
-              wantedBy = [ "multi-user.target" ];
+              wantedBy = lib.optional cfg.instances.enable "multi-user.target";
               wants = [
                 "network-online.target"
               ]
@@ -1087,7 +1087,7 @@ in
             assistant-tsgo = {
               enable = cfg.instances.enable;
               description = "Assistant tailnet node: https://${cfg.tailnetName}.${cfg.tailnet}";
-              wantedBy = [ "multi-user.target" ];
+              wantedBy = lib.optional cfg.instances.enable "multi-user.target";
               wants = [ "network-online.target" ];
               after = [
                 "network-online.target"

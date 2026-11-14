@@ -193,7 +193,7 @@
           # Retain configuration/state while its Pi RPC destination is paused.
           enable = instancesEnabled;
           description = "Triage notify alerts with ${cfg.person}'s assistant";
-          wantedBy = [ "multi-user.target" ];
+          wantedBy = lib.optional instancesEnabled "multi-user.target";
           wants = [ "network-online.target" ];
           after = [
             "network-online.target"

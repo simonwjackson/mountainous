@@ -23,11 +23,13 @@ let
 in
 assert !(cfg.instances.enable or true);
 assert lib.all (name: !(c.systemd.services.${name}.enable or true)) runtime;
+assert lib.all (name: c.systemd.services.${name}.wantedBy == [ ]) runtime;
 assert lib.all (name: !(c.systemd.units."${name}.service".enable or false)) runtime;
 assert lib.all (name: !(lib.elem "${name}.service" rotations)) runtime;
 assert lib.all (name: enabled.systemd.services.${name}.enable) runtime;
 assert lib.all (name: enabled.systemd.units."${name}.service".enable) runtime;
 assert !(c.systemd.services.signal-responder.enable or true);
+assert c.systemd.services.signal-responder.wantedBy == [ ];
 assert !(lib.elem "signal-responder.service" rotations);
 assert enabled.systemd.services.signal-responder.enable;
 assert lib.all
