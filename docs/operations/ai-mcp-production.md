@@ -14,15 +14,29 @@ SparkyFitness stays on Rakku; this is a new route, not a controlled move.
 | Row | `/mcp/sparkyfitness` → `http://127.0.0.1:3010/mcp` (`services.sparkyfitness.port`) |
 | Callers | flakey only: stable node ID `nbQJZMcewG11CNTRL` (`lib/tailnet-nodes.nix`, `claw-simon`) |
 | Tools | the 23 names in `lib/openclaw-sparkyfitness-tools.nix` |
-| Upstream credential | `LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key` |
+| Upstream credential | `LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key`, default `SetCredential=mcp-sparkyfitness:unavailable credential` |
 | Secret | sops `sparkyfitness-openclaw-api-key` in `secrets/hosts/rakku.yaml`, root `0400`, `restartUnits = [ "tsnet-proxy-ai.service" ]` |
-| OpenClaw | flakey only: server `sparkyfitness`, `https://ai.hummingbird-lake.ts.net/mcp/sparkyfitness`, `streamable-http`, `toolFilter.include` = the same 23; tool permissions `sparkyfitness__<tool>`; skill `nutrition-fitness` |
+| OpenClaw | flakey only: server `sparkyfitness`, `https://ai.hummingbird-lake.ts.net/mcp/sparkyfitness`, `streamable-http`, `toolFilter.include` = the same 23; tool permissions `sparkyfitness__<tool>`; skill `nutrition-fitness`; the wind-down skill and the morning brief read food, training, sleep and body data from it, read-only |
 
 - `/v1` and every path outside `/mcp/` go to the same `proxyHandler` as
   before, unwrapped and unchanged. `checks.ai-mcp-proxy` compares the
   production unit with the stage-1 fixture: only the binary path, the
-  `-mcp-table` argument, `ExecReload`, `X-Reload-Triggers` and the one
-  `LoadCredential` line may differ. Every other flag stays.
+  `-mcp-table` argument, `ExecReload`, `X-Reload-Triggers`, the one
+  `LoadCredential` line and its `SetCredential` default may differ. Every
+  other flag stays.
+- Nothing MCP-related can stop the front door. A missing, malformed or
+  stage-1 table, or a missing, empty or invalid key, makes the proxy log
+  `initial MCP table rejected; serving no MCP rows until a valid reload` and
+  start with no rows (`/mcp/sparkyfitness` 404); `/v1` serves as usual. A
+  good start logs `MCP table loaded`. A missing sops file would normally stop
+  the unit (`LoadCredential` exit 243). systemd.exec: with a `SetCredential`
+  default for the same ID, a missing source "is not considered fatal". The
+  default holds a space, so the router refuses it as a Bearer. An empty
+  default does not work: a unit file with `ID:` is "Invalid syntax" and still
+  fails. After fixing the table, `systemctl reload` publishes it; after
+  fixing the key, restart the unit (credentials load at start).
+- SIGHUP is caught from the start of `main`, before the tailnet start (up
+  to 90 s). A reload during startup waits and applies once the table loads.
 - Caller identity is the stable node ID from tsnet WhoIs. Node names, Host,
   forwarded headers and user profiles never grant access. Laure's `claw`
   (`nkT3Yhzyy121CNTRL`), Zao and every other node get HTTP 403.
@@ -50,7 +64,9 @@ SparkyFitness stays on Rakku; this is a new route, not a controlled move.
 - Upstream calls time out after 60 s and bodies are capped at 4 MiB (the
   shared MCP filter). Model streams on `/v1` keep their old timeouts.
 - `tsnet-proxy-ai` restarts once at deployment. Expect `/v1` to be unavailable
-  for about 20 s (stage 1 measured 22 s for staging), for every agent.
+  for about 20 s (stage 1 measured 22 s for staging), for every agent. The
+  idle gate covers only the two OpenClaw gateways, not Pi agents, assistant,
+  Storia, Korri or voice.
 
 ### Node rename (next stage)
 
@@ -100,6 +116,7 @@ nix build --no-link .#checks.x86_64-linux.openclaw .#checks.x86_64-linux.claw-to
 nix eval --raw .#nixosConfigurations.rakku.config.system.build.toplevel.drvPath
 nix eval --raw .#nixosConfigurations.yari.config.system.build.toplevel.drvPath
 /tmp/claw/ai-mcp-go-check.sh "$PWD"   # gofmt, go test, go vet, race
+/tmp/claw/sparky-setcredential-unitfile-check.sh   # the credential fallback, real unit file (Zao user manager)
 /tmp/claw/sparky-prod-identity.sh "$PWD" after   # unit and Laure identities
 /tmp/claw/sparky-prod-negative.py "$PWD"         # guards fail on wrong configs
 /tmp/claw/sparky-key-leak-check.sh "$PWD" origin/cairn   # no plaintext key anywhere
@@ -115,8 +132,8 @@ proxy units must still equal the stage-1 fixture.
 
 | Item | Before (`e8bd3b4f`) | After (this branch) |
 | --- | --- | --- |
-| Rakku toplevel drv | `skf9ya1x0gsdc20nxadjyhcxpm6byn96` | `y1mxbf140wsklsk76af3lcb6xkhb3hjl` |
-| Yari toplevel drv | `9v26wzdb25ras84nwplk122w2sfkz7jb` | `0k1prdz4q2k57xpdmgm47ra9ckycqcqs` |
+| Rakku toplevel drv | `skf9ya1x0gsdc20nxadjyhcxpm6byn96` | `mgqr767f0x4jd7wivch1j6m3wm3hdnb6` |
+| Yari toplevel drv | `9v26wzdb25ras84nwplk122w2sfkz7jb` | `gl111w2j1xq3hw1h5hcawl9hm0g9g98y` |
 | Rakku units that differ (of 181) | | `tsnet-proxy-ai`, `tsnet-proxy-ai-staging` |
 | Yari host units that differ (of 107) | | `container@claw-simon` |
 | Laure container toplevel drv | `2af2h9vgb1yid13d27f1wy24sg32ar94` | same |
@@ -130,12 +147,23 @@ proxy units must still equal the stage-1 fixture.
 - Checks passed: `ai-mcp-proxy`, `tailnet-names`, `ai-gateway-staging`,
   `ai-gateway`, `openclaw`, `claw-tools`, `openclaw-people`. Each commit of
   the branch also evaluates on its own.
-- Go: 40 top-level tests (two new: ID matching and the WhoIs mapping), `go vet`,
-  gofmt, all tests with `-race`, and the route tests 100 times with `-race`.
-  Mutations that match names or ID prefixes fail the new tests.
-- Eight wrong configurations fail evaluation: Zao on the production row, no
+- Go: 42 top-level tests (four new: ID matching, the WhoIs mapping, six bad
+  starts that keep the front door, a SIGHUP during startup), `go vet`, gofmt,
+  all tests with `-race`, and the route tests 100 times with `-race`.
+  Mutations fail the new tests: matching names or ID prefixes, a `log.Fatal`
+  on a bad table, no early `signal.Notify`.
+- Ten wrong configurations fail evaluation: Zao on the production row, no
   callers, `claw-simon`, `zao`, `flakey`, a 24th tool, a changed `/v1` tag,
+  a credential row without its `SetCredential` default, an empty default,
   and production without the table.
+- systemd fallback: real unit files (Zao, systemd 259) and systemd-run
+  (Rakku, systemd 261). Missing source plus the default: the unit starts
+  and gets the default. Missing source, no default: exit 243. Empty default:
+  "Invalid syntax", exit 243. Present source: the file wins.
+- Dry runs that change nothing: the Rakku preflight under systemd-run (the
+  exit code reaches the caller); `rehearse-gate` (2.4 s from `ready` to `go`,
+  both gateways idle); Yari `check` and `check-rollback` under systemd-run;
+  the OpenClaw CLI probe against `claw-maps` and `claw-scryer-simon`.
 - Key: initialize with the stored key returns `sparkyfitness-mcp-server`
   1.12.1; upstream lists 56 tools and all 23 allowlisted ones exist. The
   plaintext key is in no tracked file, branch diff or `/tmp/claw` file.
@@ -145,30 +173,57 @@ proxy units must still equal the stage-1 fixture.
 
 ## Deploy
 
-Approval first. Pin the approved full commit; the scripts refuse another HEAD
-or a dirty tree. Rakku first, then Yari. On Zao, from the checkout:
+Approval first. Pin the approved full commit. `sparky-prod-build.sh` and the
+forward and acceptance steps of `sparky-prod-deploy.sh` refuse another HEAD,
+a dirty tree, or a recorded build from another commit. The rollback steps do
+not check the checkout: they need only the recorded system paths, so a moved
+checkout cannot block them. Rakku first, then Yari. On Zao, from the checkout:
 
 ```sh
 EXPECTED_SOURCE_SHA=<approved-full-commit-sha>
-test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
-# Records both running systems for rollback. Rakku: evaluate here, build on
+# Records both running systems and the commit. Rakku: evaluate here, build on
 # Unzen, copy Unzen -> Rakku through Zao with --no-check-sigs. Yari: build
-# natively, remote builders off, only while both gateways are idle.
+# natively, remote builders off, only while both gateways are idle (Unzen
+# has no aarch64 emulation).
 /tmp/claw/sparky-prod-build.sh "$PWD" "$EXPECTED_SOURCE_SHA"
-# Preflight: the built unit files differ from the live ones in exactly
-# tsnet-proxy-ai and tsnet-proxy-ai-staging; keyed /v1/models baseline.
-# Then wait until Laure's and flakey's gateways have no unfinished run, and
-# switch at once. Production ai restarts once. ai-gateway, SparkyFitness,
-# Home Assistant and Z-Wave must keep their identities, keyed /v1/models must
-# match the baseline, else the script switches back at once.
-/tmp/claw/sparky-prod-deploy.sh "$PWD" rakku
-/tmp/claw/sparky-prod-deploy.sh "$PWD" accept-rakku
-# Refuses unless Laure's unit, container conf, container system and live
-# config are byte-identical in the candidate; checks Laure's sessions,
-# devices, cron jobs and gateway InvocationID before and after; flakey restarts.
-/tmp/claw/sparky-prod-deploy.sh "$PWD" yari
-/tmp/claw/sparky-prod-deploy.sh "$PWD" accept-yari
+# Optional rehearsal of the Rakku idle gate and ready/go handshake; changes nothing.
+/tmp/claw/sparky-prod-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" rehearse-gate
+/tmp/claw/sparky-prod-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" rakku
+/tmp/claw/sparky-prod-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" accept-rakku
+/tmp/claw/sparky-prod-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" check-yari
+/tmp/claw/sparky-prod-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" yari
+/tmp/claw/sparky-prod-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" accept-yari
+/tmp/claw/sparky-prod-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" check-rollback-yari
 ```
+
+- **Every switch and rollback runs on its host under `systemd-run --wait
+  --collect`** (`sparky-prod-launch.sh`), with output in the journal. A
+  dropped SSH session cannot stop a switch or its automatic rollback; read
+  `journalctl -u sparky-prod-<step>-<time> -o cat` afterwards.
+- **Rakku** (`rakku`): preflight (the built unit files differ from the live
+  ones in exactly `tsnet-proxy-ai` and `tsnet-proxy-ai-staging`; a keyed
+  `/v1/models` baseline). Then it waits until Laure's and flakey's gateways
+  have no unfinished run. The switch starts under systemd-run, takes every
+  service's identity, writes `ready` and waits for `go`. Zao checks idle
+  again and only then writes `go`; activation follows within a second (the
+  rehearsal measured 2.4 s from `ready` to `go`, the idle check included). A
+  busy gateway writes `abort`; no `go` in 120 s also changes nothing.
+  Production ai restarts once. If `ai-gateway`, SparkyFitness, Home
+  Assistant or Z-Wave changes identity or fails, a protected unit is not
+  active, or `/v1` stops matching the baseline, the same unit switches back
+  at once. If only the MCP row fails (`/v1` healthy), it exits 5 without a
+  rollback: fix forward with one restart instead of two outages.
+- **Yari** (`yari`): refuses unless Laure's unit, container conf, container
+  system and live config are byte-identical in the candidate, both gateways
+  are healthy, and neither has an unfinished run, checked again immediately
+  before activation. It rolls back to the previous system at once, in the
+  same unit, if the switch exits other than 0 or 4, health does not return in
+  180 s, Laure's gateway or container restarted, or her config changed. Her
+  session, device and job inventory are reported, not rollback causes. If
+  flakey did not restart onto the new config, it exits 3 and names the one
+  command that restarts only flakey.
+- Every script exits, never waits, when another `switch-to-configuration`
+  runs, so an idle check is never consumed by a wait. Rerun the whole step.
 
 Before this branch, Rakku ran generation 157
 (`hj78p74d5jgjxb9ica4bwimw9g1x2k11`) and Yari ran
@@ -204,19 +259,36 @@ diary. Do not create synthetic entries.
 ## Rollback
 
 Yari first, then Rakku. Both refuse when a later deployment replaced the
-deployed system (use a forward revert then).
+deployed system (use a forward revert then). Both keep Laure's guards
+(byte-identity, health, no unfinished run) and drop every flakey
+precondition: a broken, crash-looping or stuck flakey cannot block them.
 
 ```sh
-# Guarded like the deploy: Laure must stay byte-identical; flakey restarts.
-/tmp/claw/sparky-prod-deploy.sh "$PWD" rollback-yari
-# Waits until both gateways are idle; production ai and ai-staging restart
-# once on the stage-1 binary and table; the row disappears.
-/tmp/claw/sparky-prod-deploy.sh "$PWD" rollback-rakku
+# Under systemd-run on Yari. Laure must stay byte-identical; never flips back.
+/tmp/claw/sparky-prod-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" rollback-yari
+# Waits until Laure's gateway is idle, then the same ready/idle/go gate. Under
+# systemd-run on Rakku: production ai and ai-staging restart once on the
+# stage-1 binary and table; the row disappears. Polls /v1 for up to 120 s.
+/tmp/claw/sparky-prod-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" rollback-rakku
 ```
 
-If `/tmp/claw` is gone, `nixos-rebuild switch --rollback` on each host selects
-the previous generation (Rakku 157). Rolling back keeps all tsnet and gateway
-state, the sops value and the SparkyFitness key. To close the route at once
+If `/tmp/claw` is gone, set the pinned previous system. Do not use
+`nixos-rebuild switch --rollback`: a rollback or a failed attempt adds a
+generation, so "previous" can be the wrong one. Run these on the host as
+root, one command at a time, while Laure's gateway is idle:
+
+```sh
+# Rakku: generation 157, the system before stage 2.
+nix-env -p /nix/var/nix/profiles/system --set /nix/store/hj78p74d5jgjxb9ica4bwimw9g1x2k11-nixos-system-rakku-26.11.20260923.4975466
+systemd-run --wait --collect --unit sparky-manual-rollback /nix/store/hj78p74d5jgjxb9ica4bwimw9g1x2k11-nixos-system-rakku-26.11.20260923.4975466/bin/switch-to-configuration switch
+# Yari: the system before stage 2.
+nix-env -p /nix/var/nix/profiles/system --set /nix/store/l5ijg6gxxxwm55c9qasq8vyavr0gcq7w-nixos-system-yari-26.11.20260923.4975466
+systemd-run --wait --collect --unit sparky-manual-rollback /nix/store/l5ijg6gxxxwm55c9qasq8vyavr0gcq7w-nixos-system-yari-26.11.20260923.4975466/bin/switch-to-configuration switch
+```
+
+If either host or `cairn` moves before the deployment, `sparky-prod-build.sh`
+records the new previous systems; use those paths instead. Rolling back keeps
+all tsnet and gateway state, the sops value and the SparkyFitness key. To close the route at once
 without a deployment, delete `openclaw-flakey` in SparkyFitness: upstream
 then refuses the key and the proxy answers `-32603`. Removing the row in Nix
 also removes its credential, so that restarts production `ai` once.

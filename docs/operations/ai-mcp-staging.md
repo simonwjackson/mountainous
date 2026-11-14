@@ -45,10 +45,14 @@ row. The deployment record below describes stage 1 as it ran.
   a store path or literal token. The module adds `LoadCredential=mcp-<row>:<source>`.
   JSON contains only `bearerCredential: "mcp-<row>"`. The router reads this basename
   from systemd's `CREDENTIALS_DIRECTORY`; it cannot take a path from callers.
+  Since stage 2 the module also adds `SetCredential=mcp-<row>:unavailable credential`,
+  so a missing source no longer stops the unit; the router refuses that value.
 - `/etc/tsnet-proxy-ai-staging-mcp.json` is the stable table path. NixOS updates
   its link, then `reloadTriggers` causes `ExecReload=kill -HUP $MAINPID`. Reload
   validates the entire table and publishes an atomic snapshot. Invalid reloads
-  retain the previous table and log a value-free error. In-flight requests retain
+  retain the previous table and log a value-free error. Since stage 2 an invalid
+  initial table no longer stops the proxy: it starts with no rows and logs it,
+  and SIGHUP is caught before the tailnet start. In-flight requests retain
   their old handler. Changes to callers, backends or tools do not change
   `ExecStart`, `LoadCredential` or `restartTriggers`. Removing the last row also
   reloads: the explicit `mcpRouting.enable` remains true with an empty table.
