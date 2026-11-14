@@ -3272,3 +3272,72 @@ Share source) or `2ee6e6c1…` (the local CLI).
 | Laure's OpenClaw app, if used | the app's saved gateway | re-pair (above) |
 | The production `/mcp` rows | caller locks by node ID | none |
 | Pi assistants, Forgerie, Home Assistant | Rakku, Unzen, Zao configuration | none found (`claw.hummingbird` appears only in this flake's docs and checks) |
+
+
+### Family calendar consent and first real write — 2026-11-14
+
+Simon completed fresh Google consent. The scope-only keyring check on Rakku
+passed `--require-write`: openid, email, userinfo.email, calendar.readonly,
+calendar.events.owned and existing gmail.modify. No further wizard was started.
+
+**Current route supersedes the original per-tool endpoint above:** stage 5/7
+retired the old tailnet nodes. The serving MCP server keeps the name
+`claw-family-calendar-simon`, but its deployed URL is now
+`https://ai.hummingbird-lake.ts.net/mcp/family-calendar` (`lib/ai-mcp-rows.nix`,
+caller only flakey). See `ai-mcp-production.md`. The first pre-write read against
+the retired DNS name failed; no write was attempted there. No endpoint was
+restored, no system deployed and no service restarted by this completion step.
+The subsequent calls used the URL read from Simon's actual deployed config,
+as Unix user openclaw **inside claw-simon**, hence the admitted stable tailnet
+node identity. Zao itself was not admitted or used as the MCP caller.
+
+The complete Family read for 2026-11-14 found no existing Lego event. The new
+add then succeeded with durable key `simon-family-lego-20261114-venue-v1`:
+
+- **Event ID: `1hkcf3hcugfn9lq8rvilj61mvo`**
+- Title: **Lego Robotics event**
+- Start/end: **2026-11-14 13:00–14:00 America/Denver**, `-07:00`
+- Location: **Poudre High School, 201 S Impala Drive, Fort Collins, CO 80521**
+- Submitted description: **FIRST LEGO League Challenge Poudre Qualifier (tournament runs 8:00–17:00).**
+
+`family_calendar_events {day:"2026-11-14"}` read it back exactly once with the
+correct title, location and instants. Google rendered start/end as 14:00–15:00
+`-06:00`; these equal 13:00–14:00 `-07:00` in Denver. The description was supplied
+to the successful add; the read tool intentionally omits descriptions.
+
+Undo was exercised only on a separate **TEST – delete me** event. A successful
+read first confirmed **2026-11-21** had no Family events. The 12:00–12:15 Denver
+test add returned ID **`tru9pqc6rpo7flppp3uep2vbps`**, and read-back found exactly
+that one event. Restricted remove returned `{eventId,removed:true}`. The next
+Family read returned **zero events** for 2026-11-21. A final 2026-11-14 Family
+read confirmed the Lego event still present and unchanged. The real event
+was never deleted or changed during Undo testing.
+
+These were direct endpoint calls in Flakey's serving Unix/tailnet identity,
+not model conversations. **No test conversation or memory entry was created**,
+so there was no conversation to delete or memory-forget cleanup to run.
+Actual model selection, card rendering and Undo-button click remain untested;
+the tool contract and real add/read/remove path are verified.
+
+Evidence/helper: `/tmp/claw/family-first-write.py` on Zao/Yari,
+`family-lego-created.json`, `family-lego-readback.json`,
+`family-undo-test-created.json`, `family-undo-test-result.json` on Yari;
+`family-lego-result.log` and `family-undo-result.log` on Zao. Keys/results must
+be kept with the app's durable write ledger; do not repeat with fresh keys.
+
+Observed after the writes: **Rakku generation 164**, system
+`/nix/store/zy7x2f3kq24fy7b29fd7d4712fm9dplb-nixos-system-rakku-26.11.20260923.4975466`;
+**Yari generation 56**, system
+`/nix/store/v3xwp1w0sgjp0548ll9bmazz865pjb84-nixos-system-yari-26.11.20260923.4975466`.
+Those are other sessions' deployments, not a deployment made by this step.
+
+**Rollback caution:** do not run the historical generation-155/51 rollback
+commands to remove this feature now: later migrations depend on the current
+front door and node names. Those old guarded helpers should refuse the later
+systems. Prefer a forward Nix change that removes only Simon's Family server,
+permissions/skill and `/mcp/family-calendar` row, preserving Laure and all other
+rows. Keep OAuth/keyring data, the Google durable write ledger and identities.
+System rollback does not remove the live Lego event. If Simon explicitly asks
+to undo it, call the current row's `family_calendar_remove` with eventId
+`1hkcf3hcugfn9lq8rvilj61mvo` and stable key
+`family-undo:1hkcf3hcugfn9lq8rvilj61mvo`; do not delete it as a deployment test.
