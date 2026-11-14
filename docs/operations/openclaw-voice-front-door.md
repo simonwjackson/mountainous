@@ -1,122 +1,87 @@
-# Flakey voice through the front door — prepared 2026-11-14 UTC
+# Flakey voice through the front door — 2026-11-14
 
-**PREPARE ONLY. Nothing in this change authorizes a deployment.** Simon approves
-**every** `ai` deployment himself. Ship with the front-door MCP redesign's step 2,
-not as a separate restart. Do not deploy Rakku, `ai-staging`, production `ai`, or
-Yari during preparation. Do not register a tailnet node. The superseded node
-implementation is local-only `claw-voice-node-wip` commit `cd097324`; never push,
-merge or deploy it.
+Simon approved this deployment on 2026-11-14, “as soon as possible”. Voice is
+an independent deployment. The `/mcp` redesign has shipped; do not redeploy or
+roll back its historical stages to add voice.
 
-## Source and boundary
+## Source, names and boundaries
 
-- ai-gateway branch `claw-voice-front-door`, pinned commit
-  `f2d754ea588f72d768a27d8bc3fedc0367e011ef` (implementation `49d0275`,
-  proxy-aware proof harness `f2d754e`). It adds the `transcription` dialect
-  and credential-free `openai_audio` backends. No realtime route is added.
-- Mountainous branch `claw-voice-front-door`, based on `cairn` `53d583e3`.
-  Rebase it onto the MCP redesign before landing. Prepared step 1 `b0e62483`
-  (`work/ai-mcp-proxy`, `docs/operations/ai-mcp-staging.md`) overlays
-  `routing.patch` and touches `lib/ai-gateway-instance.nix`. Keep both changes.
-- No changes to `packages/media-tsnet-proxy`, `modules/tailnet-names.nix`,
-  Zao's services, the `unified` branch, Tailscale ACLs or tags.
-- Simon and Laure currently share the `openclaw@yari` gateway grant. This change
-  extends that existing key, not any other client's key. Only Simon's generated
-  OpenClaw config enables speech; Laure's gateway config, container closure,
-  unit and container-config paths must remain identical before a Yari switch.
+- ai-gateway implementation `49d0275`, proof harness `f2d754e`, landed on main:
+  **`f2d754ea588f72d768a27d8bc3fedc0367e011ef`**. Mountainous pins `ref=main`
+  at that exact SHA, not a feature branch. The previous pin was `761f9de`.
+- Voice is rebased onto cairn **`e673d8219060322b26d2e0d740f09fdfbe4ed374`**.
+- Simon: **https://flakey.hummingbird-lake.ts.net**, container `claw-simon`,
+  stable node ID **`nbQJZMcewG11CNTRL`**. Laure: **https://snowy.hummingbird-lake.ts.net**,
+  container `openclaw`. Container names have not changed.
+- Tools remain `https://ai.hummingbird-lake.ts.net/mcp/<row>`. The complete
+  current rows and caller locks come from `lib/ai-mcp-rows.nix`. Voice changes
+  no row, proxy flag, credential, tag, ACL or tailnet identity. The rendered
+  `tsnet-proxy-ai` and staging proxy units and their store paths are identical
+  to cairn. Do not restart either proxy.
+- The existing `openclaw@yari` front-door key is shared by both gateways.
+  Only Simon's OpenClaw config enables voice. Snowy's generated config,
+  gateway unit, container unit/config and closure remain identical to cairn.
+- The local-only superseded node branch `claw-voice-node-wip` (`cd097324`) is
+  reference material, never pushed or deployed. No `claw-voice` node exists.
 
-The front door exposes only POST `/v1/audio/transcriptions` and
-`/v1/audio/speech` for these models. The caller cannot choose a backend URL.
-Transcription is inspected before dispatch, including duplicate model/file
-rejection and a 32 MiB encoded/decoded cap. It sends a canonical multipart form
-with `whisper-1` to the voice gateway, which converts browser audio with ffmpeg.
-Speech maps `kokoro` to `tts-1` and allows only `af_heart` / `af_bella` and WAV /
-PCM. Response bytes stream unchanged with backpressure, including `0xffffffff`
-RIFF sizes. Local audio has no paid reservation or charge; rate limits remain.
+**Critical:** Zao `/v1/realtime` drives Simon's private Pi brain. The front door
+must never route a caller there. Audio requests cannot select a URL. No new
+WebSocket/realtime route is added. OpenClaw must still fail to reach `voice`
+and `dictate` directly. The two fixed local operations use `voice`, never
+`dictate`; caller keys/cookies do not cross that second hop.
 
-**Critical risk:** Zao's `/v1/realtime` invokes Simon's private Pi brain. It is
-not an OpenClaw voice backend. Do not expose it through an HTTP passthrough,
-request-supplied URL, model alias, MCP route or WebSocket upgrade. OpenClaw must
-still be unable to reach `voice` or `dictate` directly. The front door uses
-`voice`, never `dictate`. Caller keys/cookies are not copied to either local
-backend request. The trusted front door can reach the voice hostname, but the
-untrusted caller can reach only its two fixed audio operations.
+## Configuration
 
-## Exact authored configuration
+Production declares a credential-free `local_backends.zao` of kind
+`openai_audio`, base URL `https://voice.hummingbird-lake.ts.net/v1`, and:
 
-Production front door adds:
+| Public model | Dialect | Upstream model | Allowed voices/formats |
+| --- | --- | --- | --- |
+| `whisper-1` | `transcription` | `whisper-1` | Multipart file; `language=en` |
+| `kokoro` | `speech` | `tts-1` | `af_heart`, `af_bella`; WAV or PCM |
 
-```toml
-[local_backends.zao]
-kind = "openai_audio"
-base_url = "https://voice.hummingbird-lake.ts.net/v1"
+Only `openclaw@yari` adds `transcription`, `speech`, `whisper-1` and `kokoro`
+to its existing exact grant. Other grants, caps and rates are unchanged.
+Transcription is inspected before forwarding, with a 32 MiB encoded/decoded
+body cap, unique model/file fields, canonical multipart and 120-second timeout.
+Zao converts browser audio with ffmpeg. Speech streams unchanged with
+backpressure, including unknown-length RIFF sizes (`0xffffffff`). No local
+request reserves paid spend; usage records contain metadata, not audio/text.
+Staging gets the new binary but no local model/grant/egress changes.
 
-[[local_models]]
-id = "whisper-1"
-backend = "zao"
-dialect = "transcription"
-upstream_model = "whisper-1"
-
-[[local_models]]
-id = "kokoro"
-backend = "zao"
-dialect = "speech"
-upstream_model = "tts-1"
-voices = ["af_heart", "af_bella"]
-```
-
-Only `openclaw@yari` adds dialects `transcription`, `speech` and models
-`whisper-1`, `kokoro` to its exact existing lists. Its cap and rate remain
-unchanged. All other grants, including `voice@zao`'s ElevenLabs-only grant,
-remain unchanged. Staging receives neither local catalog entries nor an egress
-exception. Its binary pin changes with the shared input, but it is not deployed
-by this preparation.
-
-Only claw-simon adds these fields (environment substitution is the existing
-credential mechanism, not a new secret):
+Simon-only additions, merged with the existing config:
 
 ```json
 {
-  "models": {"providers":{"openai":{"request":{"allowPrivateNetwork":true}}}},
-  "tools": {"media": {
-    "audio": {"enabled": true},
-    "models": [{"provider":"openai","model":"whisper-1","language":"en","capabilities":["audio"]}]
+  "models":{"providers":{"openai":{"request":{"allowPrivateNetwork":true}}}},
+  "tools":{"media":{
+    "audio":{"enabled":true},
+    "models":[{"provider":"openai","model":"whisper-1","language":"en","capabilities":["audio"]}]
   }},
-  "tts": {
-    "provider":"openai",
-    "providers":{"openai":{
-      "baseUrl":"https://ai.hummingbird-lake.ts.net/v1",
-      "apiKey":"${FRONT_DOOR_API_KEY}",
-      "model":"kokoro","speakerVoice":"af_heart","responseFormat":"wav"
-    }}
-  },
-  "talk": {"realtime":{"mode":"stt-tts"}}
+  "tts":{"provider":"openai","providers":{"openai":{
+    "baseUrl":"https://ai.hummingbird-lake.ts.net/v1",
+    "apiKey":"${FRONT_DOOR_API_KEY}","model":"kokoro",
+    "speakerVoice":"af_heart","responseFormat":"wav"
+  }}},
+  "talk":{"realtime":{"mode":"stt-tts"}}
 }
 ```
 
-`talk.agentId` stays `main`; `talk.provider` stays unset, so Talk uses `tts`.
-The media entry inherits the existing OpenAI provider's front-door base URL and
-key. No base-URL/header override can redirect that key to Zao. The only private
-opt-in added is `models.providers.openai.request.allowPrivateNetwork`, documented
-in OpenClaw 2026.11.3 `web/webchat.md` Speech. The existing Images-only browser
-SSRF setting is not changed. Source inspection of the integrity-verified pinned
-2026.11.3 npm package found that `openaiTTS` (`tts-CgW9EDQv.mjs:95`) already sets
-an exact-host policy from its configured base URL. Its SSRF helper
-(`ssrf-K50Tjeok.mjs:68-70,105-106`) lets that exact hostname use private addresses.
-TTS therefore needs no broader private-network setting. This is source evidence,
-not a deployed request: verify both routes after approval. Do not widen other
-provider or browser policy to bypass an error.
+`talk.provider` remains unset, so Talk uses `tts`. Media inherits OpenAI's
+existing front-door base URL/key. The only private-network opt-in added is the
+documented provider-scoped request setting. Integrity-verified pinned OpenClaw
+2026.11.3 source shows TTS already gives its configured exact hostname a
+private-network exception (`openaiTTS`, `tts-CgW9EDQv.mjs:95`;
+`ssrf-K50Tjeok.mjs:68-70,105-106`). No broader browser/SSRF setting changes.
+The existing TTS helper reads a bounded binary response (default 16 MiB) before
+returning. First audible output can therefore wait for a whole chunk, even
+though the front door never buffers speech.
 
-## Outbound restriction finding
+## Egress and exact restart set
 
-`lib/ai-gateway-instance.nix` restricts the front-door unit itself to loopback
-with systemd `IPAddressDeny=any`, `IPAddressAllow=127.0.0.1/32,::1/128`.
-Reqwest sends external requests through the configured loopback Squid CONNECT
-proxy. Squid previously accepted only six exact public provider names on 443
-and then denied private/reserved destinations, including `100.64.0.0/10`.
-Adding `voice` to the provider list alone would still fail private-address denial.
-
-Production adds this exception **after** the loopback/CONNECT/443 checks and
-**before** the provider/private-address denials:
+The Rust unit stays loopback-only under systemd `IPAddressDeny=any`. It uses
+its existing loopback Squid CONNECT proxy. Production adds this exception after
+the loopback/CONNECT/443 gates, before provider/private-address denials:
 
 ```squid
 acl local_audio dstdomain -n voice.hummingbird-lake.ts.net
@@ -124,203 +89,155 @@ acl local_audio_tailnet dst 100.64.0.0/10
 http_access allow loopback_client connect_method tls_port local_audio local_audio_tailnet
 ```
 
-Both conditions must hold. An IP literal, `dictate`, another tailnet host,
-subdomain/suffix trick, wrong port or a voice name resolving to loopback is still
-denied. The front door's IP sandbox stays loopback-only. TLS still verifies the
-voice hostname. No global CGNAT/private-address allowance is added. The allowed
-backend must continue resolving within CGNAT; IPv6-only tailnet resolution would
-need a separately reviewed exact destination rule, not a broad private exception.
+A hostname-only addition would still hit CGNAT denial. Both exact hostname and
+CGNAT resolution are required. IP literals, other tailnet names, subdomains,
+suffix tricks, wrong ports and a voice name resolving to loopback remain denied.
+No broad private/CGNAT exception exists. TLS verifies the voice hostname.
 
-## Preparation evidence
+The source unit comparison against cairn found:
 
-The retained local proof harness is ai-gateway
-`scripts/prove-local-audio.py`. It starts only a throwaway loopback front door
-on Zao with dummy keys and private state, calls only voice HTTP audio routes,
-and terminates its child afterward. It never calls the realtime brain or an
-OpenClaw conversation. Evidence: `/tmp/claw/voice-front-door/` on Zao.
+| Host | Changed unit | Activation expected |
+| --- | --- | --- |
+| Rakku | `ai-gateway.service` | Restart: binary and config |
+| Rakku | `ai-gateway-egress.service` | Restart: exact voice allowance |
+| Rakku | `ai-gateway-staging.service` | Restart: shared package pin; Simon accepted this restart |
+| Yari | `container@claw-simon.service` | **Reload**, applying changed units inside the running container |
 
-The phrase was made with Kokoro, then ffmpeg converted it to a normal mono
-16 kHz PCM WAV: `test-dictation.wav`. Whisper returned
-**`Test dictation, check 123.`** for the spoken phrase
-“TEST dictation check one two three”. The harness accepts digit rendering;
-its first run failed only because it expected spelled-out numbers.
+Neither `tsnet-proxy-ai` nor `tsnet-proxy-ai-staging` changes. No `/mcp` outage
+or tsnet enrollment/certificate delay is expected. Estimate `/v1` interruption
+at **1–5 seconds if idle**; this is an estimate, not the old 23-second proxy
+restart measurement. Other clients' active streams can delay Rust shutdown up
+to its systemd stop timeout. Sample the real HTTPS `/v1/models` status throughout
+activation and report the bounded measured outage instead of the estimate.
 
-Three alternating direct/front-door samples, using the running Zao voice
-service, initially measured:
+### Prove Yari's apply before activation
 
-| Measurement, median | Direct voice HTTPS | Loopback front door → voice HTTPS |
-| --- | ---: | ---: |
-| Speech first PCM sample | 274.6 ms | 277.2 ms |
-| Completed transcription | 226.3 ms | 217.6 ms |
+`reloadContainerInPlace=true` for both people feeds `reloadIfChanged` in
+`modules/openclaw.nix`. The rendered unit must have `X-ReloadIfChanged=true` and
+an `ExecReload` that runs the target container's `switch-to-configuration test`
+inside the existing container. Inspect `X-RestartIfChanged`, `X-ReloadIfChanged`,
+restart/reload trigger bytes/store paths and that script. A changed restart
+trigger does not mean a full container restart when reload-on-change applies.
+Run the candidate's **dry-activate** on Yari and require a container **reload**,
+not stop/start/restart. Also compare inner container units: only the gateway
+and its existing gateway-coupled reconciliation oneshots may be reapplied;
+`claw-tailnet` must remain identical. Refuse a full container restart.
 
-These are local Zao measurements, **not** production `ai` or Yari latency. First
-PCM is not first audible word. They do not include microphone capture, browser
-playback or Flakey's model response. Differences this small include sampling
-noise. Wrong transcription model returned **403**, missing key **401**, and the
-unchanged second client **403**. WAV was returned through the front door; browser
-playback is not yet proven.
+Afterward require unchanged flakey container and `claw-tailnet` InvocationIDs,
+unchanged snowy gateway/container start times and InvocationIDs, flakey's exact
+stable node ID, and a successful `/mcp` tools/list from flakey. This avoids the
+first-join race described in `openclaw-yari.md`: a new node ID would fail every
+caller lock. Never force a new login or register another node to repair it.
 
-A second Zao-only proof used the **Nix-built binary** and the actual generated
-production Squid ACL on a throwaway loopback port. TLS CONNECT to voice succeeded;
-CONNECT to dictate returned 403. It repeated all HTTP/audio/auth proofs. Three
-alternating samples had medians **430.8 ms direct / 364.4 ms through front door
-and Squid** for first PCM, and **291.7 / 263.8 ms** for transcription. Warm-up,
-queue/network variation and three samples do not support a speedup claim.
-Evidence: `/tmp/claw/voice-front-door-squid/`, including `access.log` and
-`audio/results.json`. Both throwaway processes were stopped afterward.
+## Deployment order and guard
 
-Checks: all **74 Rust tests** passed (13 front-door unit, 53 existing integration,
-7 local-audio integration, 1 speech unit); Cargo clippy with `-D warnings` and
-format checks passed. Production/staging gateway focused checks, x86 OpenClaw
-check and Rakku/Yari toplevel evaluations passed. ARM `openclaw-config` built
-natively on Yari **build-only**, with test credentials/private temporary state,
-no live endpoint probes, activation or service changes; output
-`/nix/store/c5ia1i8cfwh620h6rghmw8d2mj99pcz0-openclaw-config`. Its existing sandbox
-log-path warnings do not affect successful config validation. The local
-`voice-laure-unchanged.py` comparison found Laure's container derivation,
-unit/config store paths and full gateway JSON identical to `cairn` `53d583e3`;
-evidence `/tmp/claw/voice-laure-unchanged.json`. No generation changed. The final pin `f2d754e` also passed its Nix package build (which runs the test
-suite). Its binary is
-`/nix/store/1kbahj8ymj5x9sch41hh39fmzb1lzjdw-ai-gateway-front-door-0.1.0/bin/ai-gateway-front-door`.
-The final source-pinned Squid proof repeated all successes, with three-sample
-medians **390.3 / 411.7 ms** direct / front-door-plus-Squid for first PCM and
-**297.4 / 268.0 ms** for transcription. Evidence is
-`/tmp/claw/voice-front-door-final/`, including `tested-source.json`, `access.log`,
-normal WAV fixture and `audio/results.json`. No runtime processes remain from
-these probes. Nix formatting, Ruff and whitespace checks passed; Statix diagnostics
-on the seven touched Nix files match `53d583e3` (no new warnings). Final focused
-production/staging gateway and OpenClaw checks passed again after the pin update.
-Final toplevel evaluations were Rakku
-`/nix/store/06fn1bjqsi5k8x3fr03savmx2mq4f86y-nixos-system-rakku-26.11.20260923.4975466.drv`
-and Yari
-`/nix/store/1870f9y18gfk3by9q7y8g7mk018f7a8y-nixos-system-yari-26.11.20260923.4975466.drv`.
-The ARM config derivation remained the already-built
-`/nix/store/a6fcvial6kri2afw5i5avb8az4i2nbmz-openclaw-config.drv`.
+Operational helpers/evidence are under `/tmp/claw/voice-v2/` on Zao and copied
+to `/tmp/claw/` on the target. All helpers use Nix shebangs. Build only from a
+clean checkout whose full SHA equals the recorded approved source SHA.
 
-## Approved deployment order — not executed
+1. Land ai-gateway on main, pin that exact commit with `ref=main`, rerun focused
+   checks, then rebase and fast-forward Mountainous onto cairn. Never run an
+   aggregate flake check. Record full SHAs, derivations and running parents.
+2. Build Rakku on **Unzen**, relay Unzen → Zao → Rakku with `--no-check-sigs`.
+   Rakku never builds and must not reboot. Build Yari and ARM config validation
+   natively on Yari, remote builders disabled.
+3. Rakku preflight requires exactly the three unit differences above, unchanged
+   MCP table and proxy units, a keyed model baseline, healthy HA/Z-Wave.
+   Reuse the redesign's ready/go handshake (`ai-mcp-production.md`): the
+   systemd-run switch unit snapshots identities, writes a fresh random nonce
+   to `ready`, and waits at most 120 seconds. Zao checks **both** gateways idle
+   again, then writes the same nonce to `go`. Busy, timeout or stale go means
+   no activation. Recheck parent output and competing switches immediately
+   before activation. Gate only covers OpenClaw, not other front-door clients.
+4. Switch under durable `systemd-run --wait --collect`; sample `/v1`. Only the
+   three expected running services may restart. Require proxy identities
+   unchanged, model baseline unchanged for existing clients, MCP caller locks,
+   **Home Assistant HTTP 200 on 127.0.0.1:8123**, and the Z-Wave JS version
+   handshake. On failure run **`nixos-rebuild switch --rollback`** on Rakku and
+   verify the recorded previous system/health. Do not continue to Yari.
+5. From `claw-simon` as user `openclaw`, use its own front-door key without
+   printing it: POST the test WAV with `whisper-1` and require text; POST
+   `kokoro`/`af_heart`/WAV and require audio. Require direct voice and dictate
+   to time out. Check a real `/mcp` tools/list and refuse `/v1/realtime`.
+6. Before Yari, prove the in-place apply above, then inspect chat-activity
+   **metadata** for the last ten minutes. Wait if Simon is active. Check both
+   gateways audit-idle immediately before switching. Apply only the flakey
+   gateway config in place; snowy must not restart. Require the same tailnet
+   ID and tools/list afterward. `talk.catalog` must show transcription ready
+   and speech configured; follow with browser proof, not catalog-only claims.
 
-1. Rebase the Mountainous branch onto the redesign's landed step 1/step 2 work.
-   Preserve the WhoIs caller-locked MCP routing. Review the ai-gateway pin and
-   both exact audio model grants. Rerun focused `ai-gateway`,
-   `ai-gateway-staging`, `openclaw` and native ARM `openclaw-config`; evaluate
-   Rakku and Yari toplevels. Never run an aggregate flake check.
-2. Record the current Rakku and Yari generation symlinks and full
-   `/run/current-system` store paths in root-only rollback files immediately
-   before activation. Pin those paths against garbage collection. Record
-   `container@openclaw` and Laure's `openclaw-gateway` start times and InvocationIDs.
-   Compare Laure's candidate unit bytes/store path, container-config bytes/store
-   path, closure and gateway JSON with the running configuration. Refuse a change.
-3. **Obtain Simon's explicit approval for this production `ai` deployment.**
-   Build Rakku on Unzen; never build or reboot Rakku. Deploy the pin, catalog,
-   grants and Squid exception with redesign step 2. Share its production `ai`
-   restart, rather than adding a second interruption. Restart the egress proxy
-   with its changed config too. Do not separately deploy `ai-staging` unless
-   Simon explicitly approves that deployment as well. Verify Home Assistant,
-   Z-Wave, existing front-door dialects and MCP routes after the switch.
-4. From inside claw-simon **as user `openclaw`**, use its existing front-door key
-   without printing it. POST the normal test WAV to `/v1/audio/transcriptions`
-   with `model=whisper-1` and require text. POST speech with `model=kokoro`,
-   `voice=af_heart`, `response_format=wav` and require audio. Test missing key,
-   forbidden model, and refused `/v1/realtime`, including Upgrade headers.
-   Confirm direct `voice` and `dictate` still time out. Do not add Claw access.
-5. Build the new Yari system natively on Yari. Switch only **before 02:30Z or
-   after 04:45Z**. Preserve the 21:00 Denver / 04:00Z wind-down and all existing
-   jobs. Immediately before activation, check Simon's chat-activity metadata in
-   the last ten minutes without opening message text. If active, wait. Run
-   `openclaw-wait-idle --check openclaw claw-simon`; absent/unreadable audit
-   receipts are not proof of idle. Use the continuity guard described in
-   `openclaw-yari.md` and the wind-down deployment helpers. Stop if `cairn`, the
-   running parent or Laure's candidate closure changed. Only claw-simon may
-   restart. Compare Laure's recorded unit start times and InvocationIDs afterward.
-6. Require `talk.catalog` transcription ready and speech configured. Retain
-   actual request/error evidence if the private-network guard blocks either
-   route. Do not claim ready based on config or catalog alone.
+Both restarts must finish before **02:30Z**. If not ready by **02:15Z**, stop
+before restarting and resume after **04:45Z**. Preserve the 04:00Z / 21:00 Denver
+wind-down, its job, morning brief, memory and other existing jobs.
 
-## Browser acceptance after deployment
+## Browser proof and TEST cleanup
 
-Read the agent-browser skill. Use a **NEW TEST conversation**, never the main
-chat. Reuse the normal WAV from the local harness. Launch Chromium with:
+Read the agent-browser skill. Use a NEW TEST conversation on
+**https://flakey.hummingbird-lake.ts.net**, never the main conversation. Kokoro
+made “TEST dictation check one two three”; ffmpeg converted it to a normal WAV.
+Launch Chromium with `--use-fake-ui-for-media-stream`,
+`--use-fake-device-for-media-stream` and
+`--use-file-for-fake-audio-capture=<normal-wav>`.
 
-```text
---use-fake-ui-for-media-stream
---use-fake-device-for-media-stream
---use-file-for-fake-audio-capture=/tmp/claw/voice-front-door/test-dictation.wav
-```
+Prove: hold/release microphone writes the words in the actual composer; a Talk
+tap transcribes, answers in that chat, succeeds in TTS and plays/queues audio;
+Read aloud plays and Stop reading cancels. Stop Talk before the repeating
+fixture starts another turn. Save screenshots under `/tmp/claw/voice-v1/`.
+Measure end of input speech → first played/queued audio, separating this from
+local server first-PCM and Flakey's model response time. Retain errors if WAV
+playback or the private-network guard fails; do not claim browser success from
+HTTP audio or silently change formats.
 
-- Hold the composer microphone, then release. Require the actual composer to
-  contain the phrase (digits are acceptable). Measure capture-end → text.
-- Clear the draft, then tap Talk. Require the transcript and Flakey's answer in
-  that same new chat. Require a successful Talk TTS request **and** audio played
-  or queued. Record agent-response latency separately from speech-first-byte
-  and actual playback/queue timing. The pinned `openaiTTS` helper reads a bounded
-  binary response before returning (default 16 MiB), even though this front door
-  never buffers speech. Its first audible word can therefore wait for a whole
-  synthesized chunk. Stop before the repeating fixture sends
-  another turn.
-- Click **Read aloud** on the reply. Require successful TTS and playback/queue;
-  test Stop reading. Check the unknown-length streaming WAV in Chromium, not
-  only ffmpeg or the HTTP status. If playback fails, retain console/network
-  evidence and report it; do not silently change formats or claim success.
-- Screenshots and bounded network/timing evidence go into
-  `/tmp/claw/voice-v1/`. No browser proof was run during preparation.
+Record all TEST session keys. With only flakey idle/stopped for offline memory
+work, run supported `memory forget --agent main --session KEY --dry-run --json`,
+verify only TEST lineage, then run it without dry-run. Repeat preview and require
+no tracked entries or refusals. Delete TEST conversations through the Gateway
+API after Forget. Remove only TEST additions in Markdown memory; preserve real
+content. Remove the temporary browser pairing. No SQLite writes or state-file
+deletions. Do not touch snowy. Apply the same restart timing window to cleanup.
 
-### TEST cleanup
+## Verification and rollback
 
-Record every TEST session key. Wait for Simon to be idle and stop **only** his
-Gateway before offline memory work, as the wind-down v1 runbook did. Use supported
-`openclaw memory forget --agent main --session KEY --dry-run --json`; verify it
-resolves only the TEST lineage, then run it without `--dry-run`. Repeat preview
-and require no tracked entries, mixed lineage or refusals. Restore/remove only
-TEST additions to Flakey's Markdown memory, retaining any real content. Delete
-the TEST conversations through the Gateway API after Forget; remove only the
-temporary browser pairing. Verify no TEST phrase remains in memory files. Do not
-write SQLite or delete gateway state files. Do not touch Laure's state or jobs.
-This preparation made no OpenClaw conversation, so it requires no memory cleanup.
+Rebase checks: focused `ai-gateway`, `ai-gateway-staging`, `ai-mcp-proxy`,
+`openclaw`, `tailnet-names`; native ARM `openclaw-config`; Rakku/Yari toplevels.
+Source comparison proves snowy config/closure/units, every MCP row and both
+proxy units identical to cairn. Earlier Rust implementation passed **74 tests**,
+clippy `-D warnings`, formatting and Nix build. Local Zao proof through the real
+generated Squid ACL returned “Test dictation, check 123.” and audio; wrong model
+403, missing key 401, unchanged client 403. Final prepared-pin median (3 samples)
+was first PCM **390.3 ms direct / 411.7 ms through front door + Squid**, completed
+STT **297.4 / 268.0 ms**. Noise/order do not support a speedup claim. These are not
+browser or production latency. Evidence: `/tmp/claw/voice-front-door-final/`.
 
-## Rollback after an approved deployment
+Live parents read on 2026-11-14 23:05Z (supersede historical 163/56):
 
-No host generation changed during preparation. Do not invent generation numbers.
-Before deployment, record full previous paths in `/var/tmp/voice-before-ai-system`
-on Rakku and `/var/tmp/voice-before-yari-system` on Yari and pin them. After
-checking there was no intervening deployment, the exact activation operations
-for each recorded path are:
+| Host | Previous generation | Exact system |
+| --- | --- | --- |
+| Rakku | **167** | `/nix/store/qvj5n49az1dq7cjnac9j61fni4sxmdih-nixos-system-rakku-26.11.20260923.4975466` |
+| Yari | **64** | `/nix/store/0vycq2lfzfvp9z99hkh2z8xf2qvrg2ns-nixos-system-yari-26.11.20260923.4975466` |
 
-```sh
-# Rakku, only after Simon approves this ai rollback/restart:
-nix-env --profile /nix/var/nix/profiles/system --set "$(cat /var/tmp/voice-before-ai-system)"
-"$(cat /var/tmp/voice-before-ai-system)/bin/switch-to-configuration" switch
-# Yari, after timing/idle checks and the same Laure continuity guard:
-nix-env --profile /nix/var/nix/profiles/system --set "$(cat /var/tmp/voice-before-yari-system)"
-"$(cat /var/tmp/voice-before-yari-system)/bin/switch-to-configuration" switch
-```
+Pin these parents against GC and check no intervening deployment before every
+switch. Rakku automatic failure rollback is `nixos-rebuild switch --rollback`
+while this deployment is still the latest generation; verify it returns 167.
+For later/manual rollback, use the exact recorded system rather than guessing
+“previous”. Yari rollback runs the same snowy/in-place/timing/idle guard with
+source/target reversed, restoring **generation-64 content** without restoring
+memory or databases. Roll back Yari voice config before removing front-door
+audio routes. No new persistent jobs or tailnet nodes need removal.
 
-Put these operations into local Nix-shebang helpers, scp them, then run them;
-never embed multi-step SSH commands. Roll back Yari's voice configuration before
-removing front-door audio grants/routes. A whole Rakku rollback also rolls back
-redesign step 2, so coordinate it with that runbook. For voice-only recovery,
-revert this pin/config/grant/egress change on a reviewed branch and obtain
-Simon's approval for the `ai` restart. Keep unrelated MCP redesign changes.
-No memory/database restore and no wind-down job change is needed. Retain
-private state and tsnet identities; this feature creates no new identity.
+### Output-only ElevenLabs fallback
 
-## Zero-code output fallback: ElevenLabs
+Existing `speech` and `eleven_flash_v2_5` need only grant/config changes, no Rust
+code or new secret, and a valid ElevenLabs voice ID plus MP3. This does not solve
+STT and sends reply text outside the tailnet. Reviewed tariff: $0.04/1,000
+characters (recheck current pricing). At 10 min/day × 30 days × 900 chars/min,
+**$10.80/month**; 30 min/day costs **$32.40/month**. These are assumptions, not
+measured usage. No new fixed subscription is required by the existing account;
+its shared prepaid balance is spent. The prepaid exemption bypasses gateway
+caps, so the nominal $5 cap is not a hard speech spend limit.
 
-Existing production already has `eleven_flash_v2_5`, the `speech` dialect,
-provider credential and Squid allowance. Grant that exact model plus `speech`
-to `openclaw@yari`, then configure Simon's OpenClaw TTS with the existing
-front-door key, `model=eleven_flash_v2_5`, a valid ElevenLabs voice ID (not
-`af_heart`) and `responseFormat=mp3`. No Rust change, Kokoro backend or new secret
-is needed. It still needs an approved `ai` config restart and Simon-only Yari
-switch/browser proof. It does **not** solve dictation/STT, and reply text leaves
-the tailnet for ElevenLabs.
+## Execution record
 
-The repository's reviewed production tariff is **$40 / million characters**
-(**$0.04 / 1,000**, checked 2026-10-27; recheck before adopting it). That adds
-no new fixed monthly subscription to the already configured account, but
-consumes its shared prepaid balance. Example: 10 spoken minutes/day × 30 days ×
-900 characters/minute = 270,000 characters, **$10.80/month**. At the same assumed
-rate, 30 minutes/day costs **$32.40/month**. Actual usage, voice/model and current
-provider pricing determine the invoice; these are assumptions, not measured
-Flakey usage. The existing prepaid exemption bypasses gateway dollar caps, so
-the nominal `monthly_cap_usd` does not enforce a $5 speech limit. A provider
-balance/credit limit is needed if a hard spend ceiling is required.
+Pending the approved deployment. Record the landed Mountainous SHA, built
+outputs, dry-activate evidence, actual unit changes, measured outage, HA/Z-Wave,
+node ID, catalog and browser/cleanup evidence here after each completed step.

@@ -9,14 +9,14 @@
       "locked": {
         "lastModified": 1794618091,
         "narHash": "sha256-xbucTv/J9Xj8NP7mwMtm0KxEJIjuNKMiz3p/3QA4Caw=",
-        "ref": "claw-voice-front-door",
+        "ref": "main",
         "rev": "f2d754ea588f72d768a27d8bc3fedc0367e011ef",
         "revCount": 26,
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       },
       "original": {
-        "ref": "claw-voice-front-door",
+        "ref": "main",
         "rev": "f2d754ea588f72d768a27d8bc3fedc0367e011ef",
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
