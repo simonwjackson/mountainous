@@ -548,10 +548,17 @@
             );
           assert !gateway.config.tools.codeMode.enabled && gateway.config.tools.fs.workspaceOnly;
           assert host.systemd.services."container@claw-simon".serviceConfig.MemoryMax == "8G";
-          # A changed Laure container switches in place; flakey's still restarts.
-          assert host.systemd.services."container@openclaw".reloadIfChanged;
-          assert lib.hasInfix "X-ReloadIfChanged=true" host.systemd.units."container@openclaw.service".text;
-          assert !host.systemd.services."container@claw-simon".reloadIfChanged;
+          # A changed container switches in place, Laure's and flakey's alike.
+          assert lib.all
+            (
+              name:
+              host.systemd.services."container@${name}".reloadIfChanged
+              && lib.hasInfix "X-ReloadIfChanged=true" host.systemd.units."container@${name}.service".text
+            )
+            [
+              "openclaw"
+              "claw-simon"
+            ];
           # Stop limits. The gateway's limit funds one full ordinary stop. The
           # host's limit outlasts it plus one more guest unit at systemd's 90 s.
           assert unit.KillMode == "mixed" && unit.TimeoutStopSec == 35;
