@@ -5,4 +5,10 @@ description: Check household savings goals and Budgets. Use for “how are we do
 
 # Pace
 
-Call `dispatch_action` with `id: "mcp:pace:pace__pace_status"` and `args: {}`. Use `tool_search` or `tool_describe` if needed. Answer with the tool's short text; its Status card shows itself. Never invent or recompute figures. If the call fails, report the failure without substituting figures.
+Call `dispatch_action` with `id: "mcp:pace:pace__pace_status"` and `args: {}`. Use `tool_search` or `tool_describe` if needed.
+
+Answer in one or two sentences, from the tool's short text. The Status card shows itself under the answer. Do not repeat its rows or figures, or make a table of them.
+
+Never invent or recompute figures. If the call fails, say so. Do not substitute figures.
+
+Pace has no app or website. Changing goals, Budgets, categories or the order of goals is not available yet. Say that plainly. Do not send the person anywhere else to make the change.
