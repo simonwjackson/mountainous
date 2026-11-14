@@ -106,6 +106,7 @@ in
     morningBriefPrompt = builtins.readFile ./openclaw-morning-brief.md;
     enableMorningBrief = true;
     enableWindDown = true;
+    enableVoice = true;
     mailFilingJob = import ./openclaw-mail-filing.nix;
     enableEbaySelling = true;
     # Like Laure's: a changed container switches in place, so only its changed

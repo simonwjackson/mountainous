@@ -336,7 +336,22 @@ in
           }
           // (person.extraAgents or { });
         };
-        talk.agentId = person.agentId;
+        talk = {
+          inherit (person) agentId;
+        }
+        // lib.optionalAttrs (person.enableVoice or false) {
+          realtime.mode = "stt-tts";
+        };
+        ${if person.enableVoice or false then "tts" else null} = {
+          provider = "openai";
+          providers.openai = {
+            baseUrl = "https://ai.hummingbird-lake.ts.net/v1";
+            apiKey = "\${FRONT_DOOR_API_KEY}";
+            model = "kokoro";
+            speakerVoice = "af_heart";
+            responseFormat = "wav";
+          };
+        };
         models = {
           mode = "replace";
           providers.front-door = {
@@ -372,6 +387,10 @@ in
           timeoutSeconds = 600;
           apiKey = "\${FRONT_DOOR_API_KEY}";
           api = "openai-completions";
+          # File transcription honors this provider-scoped private-network opt-in.
+          ${if person.enableVoice or false then "request" else null} = {
+            allowPrivateNetwork = true;
+          };
           models =
             map
               (id: {
@@ -470,6 +489,17 @@ in
           ssrfPolicy.dangerouslyAllowPrivateNetwork = true;
         };
         tools = {
+          ${if person.enableVoice or false then "media" else null} = {
+            audio.enabled = true;
+            models = [
+              {
+                provider = "openai";
+                model = "whisper-1";
+                language = "en";
+                capabilities = [ "audio" ];
+              }
+            ];
+          };
           profile = "full";
           allow = [
             "ask_user"
