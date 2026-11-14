@@ -163,3 +163,93 @@ systemd-run on each. Removing the Pace credentials restarts production ai again.
 It retains Pace's data and encrypted secrets. If `/tmp` is gone, copy the tracked
 `pace2-*` deployment scripts to the hosts and use these exact pinned store paths,
 never an ambiguous `nixos-rebuild switch --rollback`.
+
+## Skill and Goal order follow-ups — 2026-11-14 UTC
+
+Simon approved these as **two separate deploys**, Yari first and Rakku second.
+For these follow-ups only, a real acceptance failure rolls back **only the
+host just deployed**. A checker defect stops the procedure for classification;
+it is not a reason to roll back either host. The earlier two-host rollback
+instructions above belong to the initial credential/row rollout, not this update.
+
+| Change | Landed source | Host | Generations |
+| --- | --- | --- | --- |
+| Short Pace replies, no repeated card, explicit read-only limits | mountainous `e673d821` | Yari | 63 → 64 |
+| Stable due-month Goal order for Goal cash and Recent pace | pace-service `535a46537c2af4dd448627091c2841ef0d23df7f`, mountainous input `211bcea5` | Rakku | 167 → 168 |
+
+Yari's running generation 63 equalled the parent commit's evaluated output.
+The source diff was only `lib/openclaw-skills/shared/pace/SKILL.md`. The built
+comparison allowed only the two host container units and their system paths,
+only each guest's gateway unit, and only the shared Pace skill in the configs'
+skill directories. The Pace server contracts, personal skills and every other
+shared skill were byte-identical. Both gateways stayed idle for at least 90 s;
+the guards checked metadata again immediately before activation. No conversation
+content was read, and no Laure conversation was started.
+
+Yari built natively, including both aarch64 config checks. Both containers kept
+their identities; each gateway restarted once with NRestarts=0. Exact deployed
+skill hashes and both health endpoints passed. Laure retained 9 sessions,
+4 paired devices and 2 jobs. Activation returned 4 on a container reload, as in
+the initial rollout; final health, target systems and failed-unit checks passed.
+No manual restart or rollback was needed.
+
+Rakku's baseline equalled the evaluated pre-bump source. Unzen built the new
+system; Zao relayed it with `--no-check-sigs`. The input bump did not change
+Yari's output. The strict preflight compared every unit file and the complete
+system closures: only Pace's package, `pace2.service`, its wants link and the
+necessarily derived system-units/etc/toplevel paths changed. The normalized
+Pace unit differed only in its ExecStart package path. Production ai's unit
+and credentials did not change. No build ran on Rakku.
+
+The first preflight stopped before activation because a copied health helper
+lacked execute permission. The supervisor approved fixing its mode and restarting
+the complete preflight. The complete preflight and a fresh 90-second idle gate
+then passed. Rakku's activation returned 0; 65 other running services kept their
+InvocationIDs, including `tsnet-proxy-ai`, Home Assistant and Z-Wave. All secret
+contents matched their before hashes. Activation also started four previously
+non-running, already-declared assistant services; none of their units changed.
+Home Assistant returned HTTP 200 on :8123; Z-Wave's WebSocket version handshake
+passed (driver 15.15.0, server 3.4.0). No failed host units remained.
+
+From flakey's real `/mcp/pace` row, `pace_status` and `resources/read` succeeded
+with `ui://pace/status` and `text/html;profile=mcp-app`. Only verdicts and counts
+were printed:
+
+| Goal order | Verdict | Goals late | Budgets over |
+| --- | --- | ---: | ---: |
+| Before | Two savings goals are running late, and six budgets are heading over. | 2 | 6 |
+| After | Savings goals are on track, but six budgets are heading over. | 0 | 6 |
+
+Checks: 53 Rust tests (including the real-data golden references), 10 SDK
+checks, 5 view tests, clippy with warnings denied and rustfmt passed. The new
+invented-goal test failed under file order and passed with stable due-month
+sorting. The partial-sync test still failed when its cutoff filter was removed;
+the filter was restored before the final full suite. The worked fixture
+calculation is in pace-service `crates/pace/tests/reference/README.md`.
+All 30 reference-host renders passed overflow/tap-target/error audits; 18 PNGs
+changed. Focused mountainous checks passed: pace2, ai-mcp-proxy, openclaw,
+openclaw-people, openclaw-in-place, and both native aarch64 config checks.
+
+### Follow-up rollback (host only)
+
+| Host | Pinned previous system |
+| --- | --- |
+| Yari, generation 63 | `/nix/store/y5w03g979kb0xdc30p226c681z7lbhlh-nixos-system-yari-26.11.20260923.4975466` |
+| Rakku, generation 167 | `/nix/store/qvj5n49az1dq7cjnac9j61fni4sxmdih-nixos-system-rakku-26.11.20260923.4975466` |
+
+On Zao, the host-only helper waits for 90 s of metadata-proven idle on both
+gateways, then invokes the strict reverse guard and a pinned switch under
+systemd-run. Both reverse preflights passed; neither rollback was executed.
+It refuses if another deploy changed the running source system. Keep all state
+and secrets. Do not use a relative `nixos-rebuild --rollback`.
+
+```sh
+/tmp/pace-followup/rollback.sh yari
+/tmp/pace-followup/rollback.sh rakku
+```
+
+Evidence and local Nix-shebang automation: `/tmp/pace-followup/` on Zao;
+remote copies: `/tmp/pace-followup/` on Yari and Rakku. Final systems are Yari
+`/nix/store/0vycq2lfzfvp9z99hkh2z8xf2qvrg2ns-nixos-system-yari-26.11.20260923.4975466`
+and Rakku
+`/nix/store/9709w007kxf4hixyhbhhl70rfv2cyxa6-nixos-system-rakku-26.11.20260923.4975466`.
