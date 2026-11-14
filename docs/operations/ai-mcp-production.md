@@ -1,6 +1,7 @@
 # Path-prefixed MCP on the production AI front door
 
-Stage 2 of the MCP rollout. Prepared, **not deployed**. Stage 1 put the router
+Stage 2 of the MCP rollout. **Deployed 2026-11-14 UTC** from cairn `f67a0cf7`:
+Rakku generation 158, Yari generation 52 (see the deployment record). Stage 1 put the router
 on `ai-staging` only (see `ai-mcp-staging.md`). This stage moves production
 `ai` onto the same router with one row, `/mcp/sparkyfitness`, for flakey only.
 SparkyFitness stays on Rakku; this is a new route, not a controlled move.
@@ -266,6 +267,47 @@ goes into Simon's diary.
 
 Then ask Simon to log one real meal through flakey and check it once in the
 diary. Do not create synthetic entries.
+
+## Deployment record — 2026-11-14 UTC
+
+Simon approved. Landed on cairn as `dfd9fe32`..`f67a0cf7` (fast-forward from
+`e8bd3b4f`). Rakku: evaluated on Zao, built on Unzen, copied Unzen → Rakku
+through Zao with `--no-check-sigs`. Yari: built natively.
+
+| Host | Before | After |
+| --- | --- | --- |
+| Rakku | 157 `/nix/store/hj78p74d5jgjxb9ica4bwimw9g1x2k11-nixos-system-rakku-26.11.20260923.4975466` | 158 `/nix/store/11a2g7zh8zmb286903b35js57znqrmi2-nixos-system-rakku-26.11.20260923.4975466` |
+| Yari | 51 `/nix/store/l5ijg6gxxxwm55c9qasq8vyavr0gcq7w-nixos-system-yari-26.11.20260923.4975466` | 52 `/nix/store/hxkrg1n16j4zds2py72j6w5nx09pw7cw-nixos-system-yari-26.11.20260923.4975466` |
+
+- Rakku: preflight OK (exactly the two proxy units differ). Both gateways
+  idle; the idle check ran again before `go`. Switch rc 0 in 24.9 s.
+  `tsnet-proxy-ai` stopped at 06:06:12.04 and logged `MCP table loaded` and
+  `proxy ready` at 06:06:34.59: **`/v1` was down 22.5 s**, started once
+  (NRestarts 0). `tsnet-proxy-ai-staging` restarted once. `ai-gateway`,
+  `ai-gateway-staging`, SparkyFitness, Home Assistant and Z-Wave kept their
+  identities. Only activation oneshots (hjem, linger, tailscale-join and
+  similar, inactive before and after) got new invocations. Keyed `/v1/models`
+  matched the baseline. Home Assistant HTTP 200; Z-Wave server handshake
+  (driver 15.15.0, server 3.4.0); no failed units.
+- `accept-rakku` 13/13: initialize (`sparkyfitness-mcp-server` 1.12.1);
+  `tools/list` exactly the 23; `sparky_get_food_diary` for 2026-11-13 read
+  (842 characters, not shown); an unlisted tool `-32601`; a forged
+  `Authorization` changes nothing; Laure's container 403; from Zao 403 (also
+  forged), `/mcp/missing` 404, `/mcp` 404, `/v1/models` 401; keyed
+  `/v1/models` 200 with five models from both containers.
+- Yari: Laure byte-identical, both gateways healthy and idle. Switch rc 0.
+  Laure unhealthy 0 s; flakey unhealthy about 20 s while it restarted onto
+  the new config. Laure's gateway InvocationID `5dbd700d…` and container
+  InvocationID `16c35f6d…` unchanged (active since 2026-11-12 04:38:53 UTC).
+  The brief and wind-down reconcilers failed once while the gateway started
+  and succeeded on their automatic retry. The morning-brief job now holds
+  the new text. No failed units on Yari or in either container.
+- `accept-yari` 16/16: the above, plus `openclaw-admin mcp list` lists
+  `sparkyfitness`, the OpenClaw CLI probe of the deployed config finds
+  exactly 23 `sparkyfitness__` tools with no diagnostics, and the live config
+  entry has no credential. `check-rollback-yari` passes after the deploy.
+- No data was written to SparkyFitness. Scripts and logs: `/tmp/claw/sparky-prod-*`
+  on Zao; copies in `/tmp/claw` on Rakku and Yari.
 
 ## Rollback
 
