@@ -38,7 +38,12 @@ in
             tailnetMCPRouting = true;
             tailnetMCPRoutes.echo = {
               backend = "http://127.0.0.1:8422/mcp";
-              callers = [ "claw-simon" ];
+              # zao proves the allowed-caller path: the tag:claw policy reaches
+              # only the production ai front door, not ai-staging.
+              callers = [
+                "claw-simon"
+                "zao"
+              ];
               mcpTools = [ "echo" ];
             };
             gatewayKeys = geminiImageModels: [

@@ -17,10 +17,13 @@ Production `ai`, its backend, client keys and other proxy units are out of scope
   front-door authorization, headers, streaming and server timeouts stay intact.
   `/mcp` itself is outside `/mcp/` and still goes to the front door.
 - The one row is `/mcp/echo`, backend `http://127.0.0.1:8422/mcp`, tool `echo`,
-  allowed caller `claw-simon`. The backend always returns `ok`; it does not echo
+  allowed callers `claw-simon` and `zao`. The backend always returns `ok`; it does not echo
   input, read files or call services. No credential is needed for this row.
+  `zao` stays on this harmless staging row permanently. The Tailscale policy
+  lets `tag:claw` reach only the production `ai` front door, so `claw-simon`
+  cannot reach `ai-staging`; Zao proves the allowed-caller path instead.
 - Caller lists are plain `mountainous.tailnetNames.ai-staging.mcpRoutes.echo.callers`
-  options. After the real node rename, change `[ "claw-simon" ]` to `[ "flakey" ]`
+  options. After the real node rename, change `"claw-simon"` to `"flakey"`
   in `modules/ai-gateway-staging.nix`. WhoIs's node DNS name is the source
   of identity. Caller headers cannot grant access. Empty callers fail evaluation.
 - MCP requests use the existing stateless `mcpTools` filter, with separate
@@ -155,7 +158,8 @@ diff. Inspect those live unit differences separately before this switch.
 
 ## Post-deploy acceptance
 
-1. From **Zao** (not an allowed caller):
+1. From a node that is not an allowed caller (Rakku or Unzen; Zao before it
+   joined the row):
 
    ```sh
    base=https://ai-staging.hummingbird-lake.ts.net
@@ -170,8 +174,10 @@ diff. Inspect those live unit differences separately before this switch.
    # {"error":{"code":"unauthorized","message":"valid gateway key required"}}
    ```
 
-2. From the **claw-simon container**, not Rakku's host identity, use its existing
-   curl: `ssh -F /dev/null simonwjackson@rakku 'sudo nixos-container run claw-simon -- curl ...'`.
+2. From the **claw-simon container** on Yari, not a host identity, use its existing
+   curl: `ssh -F /dev/null root@yari 'nixos-container run claw-simon -- runuser -u openclaw -- curl ...'`.
+   This needs a tailnet policy grant from `tag:claw` to `ai-staging:443`, which
+   does not exist (see the deployment record below). From Zao, an allowed caller,
    POST the same `tools/list` request to `/mcp/echo`: exactly one `echo` tool.
    POST `tools/call` with `params: {"name":"echo"}`: text `ok`.
    Call an unlisted tool: JSON-RPC `-32601`, no backend call. No key is needed.
