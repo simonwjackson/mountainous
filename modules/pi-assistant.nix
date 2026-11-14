@@ -55,7 +55,15 @@ in
                 service = unit name;
                 dir = persisted.${stateOf name} or null;
               in
-              want (service.serviceConfig.User == "pi-${name}") "pi-assistant-${name} does not run as pi-${name}"
+              want (
+                service.enable == cfg.instances.enable
+              ) "pi-assistant-${name} runtime does not follow instances.enable"
+              ++ want (
+                (c.systemd.units."pi-assistant-${name}.service".enable or false) == cfg.instances.enable
+              ) "pi-assistant-${name} rendered unit does not follow instances.enable"
+              ++ want (
+                service.serviceConfig.User == "pi-${name}"
+              ) "pi-assistant-${name} does not run as pi-${name}"
               ++ want (
                 dir != null && dir.user == "pi-${name}" && dir.mode == "0700"
               ) "${stateOf name} is not persisted 0700 for pi-${name}"
@@ -72,7 +80,8 @@ in
                 let
                   appUnit = c.systemd.services."assistant-app-${name}-${app}";
                 in
-                want (
+                want appUnit.enable "assistant-app-${name}-${app} is disabled with its runtime"
+                ++ want (
                   appUnit.serviceConfig.User == "pi-${name}"
                 ) "assistant-app-${name}-${app} does not run as pi-${name}"
                 ++ want (
@@ -101,6 +110,20 @@ in
               lib.length (lib.unique (map (name: (unit name).serviceConfig.User) names)) == lib.length names
             ) "two instances share a user"
             ++ want (persisted ? ${tsgoState}) "the tailnet node's identity is not persisted"
+            ++ want (
+              c.systemd.services.assistant-tsgo.enable == cfg.instances.enable
+            ) "assistant-tsgo does not follow instances.enable"
+            ++ lib.optionals (!cfg.instances.enable) (
+              want (lib.all
+                (
+                  secret:
+                  !(lib.any (unit: lib.elem unit (secret.restartUnits or [ ])) (
+                    map (name: "pi-assistant-${name}.service") names ++ [ "assistant-tsgo.service" ]
+                  ))
+                )
+                (lib.attrValues c.sops.secrets ++ lib.attrValues c.sops.templates)
+              ) "secret rotation names a paused Pi runtime"
+            )
             ++ lib.optionals gateway (
               want (cfg.cliproxyapiPort == 8430) "assistant port does not point at the production front door"
               ++ want (
@@ -129,10 +152,11 @@ in
               ++ want (
                 lib.all (
                   name:
-                  lib.elem "pi-assistant-${name}.service" c.sops.secrets.ai-gateway-key-assistant-rakku.restartUnits
+                  (lib.elem "pi-assistant-${name}.service" c.sops.secrets.ai-gateway-key-assistant-rakku.restartUnits)
+                  == cfg.instances.enable
                 ) names
                 && lib.elem "ai-gateway.service" c.sops.secrets.ai-gateway-key-assistant-rakku.restartUnits
-              ) "assistant key rotation must restart the gateway and its clients"
+              ) "assistant key rotation must restart the gateway and only enabled clients"
             )
           )
         ) self.nixosConfigurations
@@ -201,12 +225,22 @@ in
         flake = self;
         inherit pkgs;
       };
+      checks.pi-assistant-deploy =
+        pkgs.runCommand "pi-assistant-deploy-paused" { nativeBuildInputs = [ pkgs.python3 ]; }
+          ''
+            python3 ${../tests/pi-assistant-deploy.py} ${../scripts/pi-assistant-deploy}
+            touch $out
+          '';
       checks.pi-assistant-resources =
         if import ../tests/pi-assistant-resources.nix { flake = self; } then
           pkgs.runCommand "pi-assistant-resources" { } "touch $out"
         else
           throw "pi-assistant: instance resource contract failed";
       checks.pi-assistant =
+        assert import ../tests/pi-assistant-runtime.nix {
+          flake = self;
+          inherit lib;
+        };
         if problems == [ ] then
           pkgs.runCommand "pi-assistant" { } "touch $out"
         else
@@ -527,6 +561,11 @@ in
     in
     {
       options.mountainous.features.pi-assistant = {
+        instances.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Run the personal/Household Pi instances and assistant-tsgo. Disabling pauses only these runtimes and their dependent alert responder; apps, users, credentials, persistent state and application profiles stay available.";
+        };
         sharedPackages = lib.mkOption {
           type = lib.types.listOf lib.types.package;
           default = [ ];
@@ -853,6 +892,7 @@ in
           lib.mapAttrs' (
             name: instance:
             lib.nameValuePair "pi-assistant-${name}" {
+              enable = cfg.instances.enable;
               description = "Pi assistant: ${name}";
               wantedBy = [ "multi-user.target" ];
               wants = [
@@ -1045,6 +1085,7 @@ in
           }
           // {
             assistant-tsgo = {
+              enable = cfg.instances.enable;
               description = "Assistant tailnet node: https://${cfg.tailnetName}.${cfg.tailnet}";
               wantedBy = [ "multi-user.target" ];
               wants = [ "network-online.target" ];

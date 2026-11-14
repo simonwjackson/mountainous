@@ -44,6 +44,8 @@ in
         ...
       }:
       let
+        piRestartUnits =
+          units: lib.optionals config.mountainous.features.pi-assistant.instances.enable units;
         # The eBay seller tools and their runtime dependencies, locked in
         # modules/pi-ebay-seller (runtime only: the upstream lock has entries
         # without integrity). Pi supplies the pi-* and typebox peers.
@@ -232,28 +234,30 @@ in
           lib.mkIf config.mountainous.features.ai-gateway.enable
             {
               restartUnits = [
+                "assistant-app-simon-google.service"
+              ]
+              ++ piRestartUnits [
                 "pi-assistant-simon.service"
                 "pi-assistant-laure.service"
                 "pi-assistant-household.service"
-                "assistant-app-simon-google.service"
               ];
             };
         # eBay seller credentials, from the old agenix ebay-api-env and
         # ebay-refresh-token. Root reads the env file for the simon unit.
         sops.secrets.ebay-api-env = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
-          restartUnits = [ "pi-assistant-simon.service" ];
+          restartUnits = piRestartUnits [ "pi-assistant-simon.service" ];
         };
         sops.secrets.ebay-refresh-token = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
-          restartUnits = [ "pi-assistant-simon.service" ];
+          restartUnits = piRestartUnits [ "pi-assistant-simon.service" ];
         };
         sops.templates."pi-assistant-simon-ebay.env" = {
           content = ''
             ${config.sops.placeholder.ebay-api-env}
             ${config.sops.placeholder.ebay-refresh-token}
           '';
-          restartUnits = [ "pi-assistant-simon.service" ];
+          restartUnits = piRestartUnits [ "pi-assistant-simon.service" ];
         };
         # Nano Banana (Gemini image) key, served through CLIProxyAPI.
         sops.secrets.cliproxyapi-gemini-api-key = {
@@ -330,6 +334,8 @@ in
         # Simon's and Laure's assistants, and their shared one, behind
         # https://assistant.hummingbird-lake.ts.net.
         mountainous.features.pi-assistant = {
+          # Paused, not removed: Flakey/snowy still use the independent apps.
+          instances.enable = false;
           # Simon's ~/.agents/skills, as a snapshot in the shared skills
           # profile, for every assistant: Simon's, Laure's, and the Household's.
           sharedSkills.agents = "/nix/var/nix/profiles/per-user/pi-assistant/skills/agents";
@@ -488,22 +494,22 @@ in
         sops.secrets.scryer-password-simon = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
-          restartUnits = [ "pi-assistant-simon.service" ];
+          restartUnits = piRestartUnits [ "pi-assistant-simon.service" ];
         };
         sops.secrets.scryer-password-laure = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
-          restartUnits = [ "pi-assistant-laure.service" ];
+          restartUnits = piRestartUnits [ "pi-assistant-laure.service" ];
         };
         sops.secrets.scryer-password-family = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
-          restartUnits = [ "pi-assistant-household.service" ];
+          restartUnits = piRestartUnits [ "pi-assistant-household.service" ];
         };
         sops.secrets.pi-assistant-cliproxyapi-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
-          restartUnits = [
+          restartUnits = piRestartUnits [
             "pi-assistant-simon.service"
             "pi-assistant-laure.service"
             "pi-assistant-household.service"
@@ -555,7 +561,7 @@ in
         sops.secrets.pi-assistant-brave-api-key = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
-          restartUnits = [
+          restartUnits = piRestartUnits [
             "pi-assistant-simon.service"
             "pi-assistant-laure.service"
             "pi-assistant-household.service"
@@ -564,7 +570,7 @@ in
         sops.secrets.pi-assistant-groceries-token = {
           sopsFile = ../../secrets/hosts/rakku.yaml;
           mode = "0400";
-          restartUnits = [
+          restartUnits = piRestartUnits [
             "pi-assistant-simon.service"
             "pi-assistant-laure.service"
             "pi-assistant-household.service"

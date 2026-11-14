@@ -15,6 +15,8 @@ is one closure under /nix/var/nix/profiles/per-user/pi-assistant/application:
   scripts/pi-assistant-deploy install    build, copy to Rakku, set the profile
   scripts/pi-assistant-deploy install --restart   ...and restart the units
 
+With instances.enable=false, --restart restarts apps/Atlas only, not Pi or tsgo.
+
 Each source is the committed tip of a branch (default main), never a dirty
 tree. The web app builds against the core of the same run.
 """
@@ -31,14 +33,26 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSISTANT = Path.home() / "code/sandbox/assistant"
 ATLAS = Path.home() / "code/sandbox/atlas"
 PROFILE = "/nix/var/nix/profiles/per-user/pi-assistant/application"
-UNITS = [
-    "assistant-app-*",  # a glob for systemctl; rakku-transport quotes it for the remote shell
-    "pi-assistant-simon",
-    "pi-assistant-laure",
-    "pi-assistant-household",
-    "assistant-tsgo",
-    "atlas",
-]
+
+
+def restart_units(instances_enabled):
+    """A profile update must never revive declaratively paused Pi runtimes."""
+    if not isinstance(instances_enabled, bool):
+        raise ValueError("instances.enable must be a boolean")
+    return (
+        ["assistant-app-*"]
+        + (
+            [
+                "pi-assistant-simon",
+                "pi-assistant-laure",
+                "pi-assistant-household",
+                "assistant-tsgo",
+            ]
+            if instances_enabled
+            else []
+        )
+        + ["atlas"]
+    )
 
 
 def run(args, **kwargs):
@@ -127,7 +141,27 @@ def main():
     run([str(transport), "push-system", application])
     run([str(transport), "ssh", "sudo", "-n", "nix-env", "--profile", PROFILE, "--set", application])
     if args.restart:
-        run([str(transport), "ssh", "sudo", "-n", "systemctl", "restart", *UNITS])
+        enabled = json.loads(
+            output(
+                [
+                    "nix",
+                    "eval",
+                    "--json",
+                    f"{ROOT}#nixosConfigurations.rakku.config.mountainous.features.pi-assistant.instances.enable",
+                ]
+            )
+        )
+        run(
+            [
+                str(transport),
+                "ssh",
+                "sudo",
+                "-n",
+                "systemctl",
+                "restart",
+                *restart_units(enabled),
+            ]
+        )
 
 
 if __name__ == "__main__":

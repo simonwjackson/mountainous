@@ -12,6 +12,7 @@ let
       modules = [
         {
           mountainous.features.pi-assistant = {
+            instances.enable = lib.mkForce true;
             atlas = lib.mkForce null;
             groceries = lib.mkForce null;
             sharedSkills = lib.mkForce { };

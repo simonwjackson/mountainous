@@ -47,6 +47,7 @@
       notify = self.packages.${system}.notify-sync;
       assistant = config.mountainous.features.pi-assistant.people.${cfg.person};
       stateDir = "/var/lib/signal-responder";
+      instancesEnabled = config.mountainous.features.pi-assistant.instances.enable or true;
       playbook = name: builtins.readFile (./signal-playbooks + "/${name}.md");
 
       rule = lib.types.submodule {
@@ -176,7 +177,7 @@
         sops.secrets.signal-responder-token = {
           sopsFile = ../secrets/notify/server.yaml;
           mode = "0400";
-          restartUnits = [ "signal-responder.service" ];
+          restartUnits = lib.optional instancesEnabled "signal-responder.service";
         };
 
         # The playbooks read Beszel through the assistant's own credential.
@@ -189,6 +190,8 @@
           group = "signal-responder";
         };
         systemd.services.signal-responder = {
+          # Retain configuration/state while its Pi RPC destination is paused.
+          enable = instancesEnabled;
           description = "Triage notify alerts with ${cfg.person}'s assistant";
           wantedBy = [ "multi-user.target" ];
           wants = [ "network-online.target" ];
