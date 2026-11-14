@@ -2689,8 +2689,10 @@ The shared proxy binary restarted all 17 existing Rakku proxies; the new one
 is active. SparkyFitness/Logbook application services were not changed.
 All three Pi assistants, tsgo, Atlas, Home Assistant, Z-Wave and ai-gateway kept
 their invocation/start identities. HA HTTP 200 and Z-Wave handshake/version passed.
-Google's private write store was backed up to root-only
-`/var/backups/family-calendar-20261113/google-before.json` and retained in place.
+Google's private `google.json` write store was absent before deployment (no
+existing write ledger to back up). The switch prepared a root-only backup
+directory but made no store file. The first real write creates the ledger;
+retain that new ledger in place across upgrades and rollback.
 
 Only claw-simon restarted on Yari; measured interruption **60.5 s**. Laure had
 **0 s** interruption and unchanged container/gateway invocation IDs, byte-identical
