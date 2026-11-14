@@ -35,6 +35,11 @@ in
               backend = "http://127.0.0.1:${port app}/mcp";
               callerNodeIds = map (node: nodes.${node}) rows.${row}.callers;
               mcpTools = rows.${row}.tools;
+              mcpResources = lib.optionals (row == "gmail") [
+                "ui://gmail/queue.html"
+                "ui://gmail/send.html"
+                "ui://gmail/triage.html"
+              ];
             })
           ) appRows
         );
@@ -71,6 +76,15 @@ in
             "mail_archive"
             "mail_draft"
             "mail_discard_draft"
+            "mail_queue"
+            "mail_send_card"
+            "mail_card_items"
+            "mail_card_archive"
+            "mail_card_undo"
+            "mail_answer_owner"
+            "mail_draft_get"
+            "mail_send_draft"
+            "mail_discard_card"
           ];
         # Stage 5 retired Simon's per-tool Google nodes, stage 7 Laure's and
         # the shared one: no app node remains.
@@ -99,7 +113,12 @@ in
           && route.callerNodeIds == [ "nbQJZMcewG11CNTRL" ]
           && route.mcpTools == rows.${row}.tools
           && route.bearerCredentialFile == null
-          && route.mcpResources == [ ]
+          &&
+            route.mcpResources == lib.optionals (row == "gmail") [
+              "ui://gmail/queue.html"
+              "ui://gmail/send.html"
+              "ui://gmail/triage.html"
+            ]
           && server.url == "https://ai.hummingbird-lake.ts.net/mcp/${row}"
           && server.toolFilter.include == rows.${row}.tools
           && !(laureServers ? ${rows.${row}.server})

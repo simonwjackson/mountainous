@@ -37,8 +37,8 @@
       "calendar_remove"
     ];
   };
-  # Used by the Simon-only "mail" agent; flakey's main agent denies claw-gmail__*.
-  # No mail_send: the row cannot send.
+  # Reader tools plus Gmail cards for Simon only. Send is app-only in the
+  # connector; mail_send is never forwarded or registered.
   gmail = {
     callers = [ "flakey" ];
     server = "claw-gmail";
@@ -50,6 +50,15 @@
       "mail_archive"
       "mail_draft"
       "mail_discard_draft"
+      "mail_queue"
+      "mail_send_card"
+      "mail_card_items"
+      "mail_card_archive"
+      "mail_card_undo"
+      "mail_answer_owner"
+      "mail_draft_get"
+      "mail_send_draft"
+      "mail_discard_card"
     ];
   };
   ebay = {

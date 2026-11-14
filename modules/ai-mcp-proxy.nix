@@ -240,6 +240,11 @@
               backend = "http://127.0.0.1:${googlePort}/mcp";
               callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
               mcpTools = rows.gmail.tools;
+              mcpResources = [
+                "ui://gmail/queue.html"
+                "ui://gmail/send.html"
+                "ui://gmail/triage.html"
+              ];
             };
             ebay = {
               backend = "http://127.0.0.1:3191/mcp";

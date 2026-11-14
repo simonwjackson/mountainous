@@ -191,13 +191,41 @@ assert (import ../lib/openclaw-people.nix).simon.nodeName == "flakey";
 assert (import ../lib/openclaw-people.nix).simon.containerName == "claw-simon";
 assert (import ../lib/openclaw-people.nix).laure.roleName == "laure";
 assert !(import ../lib/openclaw-people.nix).laure.enableMorningBrief;
-# Step 2: mail is confined to Simon's restricted reader, never his main agent.
+# Raw mail stays confined to the reader; main can show cards and authorize app tools.
 assert
   lib.attrNames configs.simon.agents.entries == [
     "mail"
     "main"
   ];
-assert configs.simon.agents.entries.main.tools.deny == [ "claw-gmail__*" ];
+assert
+  configs.simon.agents.entries.main.tools.deny == (map (t: "claw-gmail__${t}") [
+    "mail_list"
+    "mail_read"
+    "mail_not_mine"
+    "mail_label"
+    "mail_archive"
+    "mail_draft"
+    "mail_discard_draft"
+    "mail_send"
+  ]);
+# The effective main Gmail surface is exactly the two model and seven app tools.
+assert
+  lib.filter (
+    t: lib.hasPrefix "claw-gmail__" t && !(lib.elem t configs.simon.agents.entries.main.tools.deny)
+  ) configs.simon.tools.allow == (map (t: "claw-gmail__${t}") [
+    "mail_queue"
+    "mail_send_card"
+    "mail_card_items"
+    "mail_card_archive"
+    "mail_card_undo"
+    "mail_answer_owner"
+    "mail_draft_get"
+    "mail_send_draft"
+    "mail_discard_card"
+  ]);
+# Urgent phone notification cannot run under this policy: no nodes tool/group.
+assert !(lib.elem "nodes" configs.simon.tools.allow);
+assert !(lib.elem "group:nodes" configs.simon.tools.allow);
 assert configs.simon.agents.entries.main.tools.agentToAgent.send == [ "mail" ];
 assert
   configs.simon.agents.entries.mail.tools.allow == (map (t: "claw-gmail__${t}") [
