@@ -125,8 +125,10 @@ project. The 15-minute Gmail poll is off (`GOOGLE_POLL_DISABLED = "1"` in
 ADR 0021); `mail_list` and `mail_read` still work.
 
 The launcher restarts only `assistant-app-simon-google`, waits for its listener,
-and compares real busy blocks for today (America/Denver) from the loopback
-Google app and `https://claw-calendar.hummingbird-lake.ts.net/mcp`. It then asks
+and reads real busy blocks for today (America/Denver) from the loopback Google
+app. (Until stage 5 it also compared `https://claw-calendar.hummingbird-lake.ts.net/mcp`;
+that node is retired, and flakey's `/mcp/calendar` row admits only flakey, so
+the stage-5 acceptance checks that path instead.) It then asks
 Simon's normal assistant to call `mcp_google_calendar_busy`, checks its new
 successful **tool result in the transcript**, and compares that result too.
 A model answer alone does not count as verification. Output contains only busy

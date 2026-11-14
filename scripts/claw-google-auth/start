@@ -246,12 +246,11 @@ def main():
             time.sleep(0.5)
     day = datetime.datetime.now(ZoneInfo("America/Denver")).date().isoformat()
     direct = rpc("http://127.0.0.1:3171/mcp", day)
-    remote = rpc("https://claw-calendar.hummingbird-lake.ts.net/mcp", day)
-    assert direct == remote, (
-        "Direct and restricted endpoints returned different busy blocks; re-read if a calendar changed during the check."
-    )
+    # flakey reaches this tool through /mcp/calendar on the production front
+    # door, which admits only flakey's node ID; this host cannot call it. The
+    # stage-5 acceptance checks that path (docs/operations/ai-mcp-production.md).
     print(
-        "Verified: Google service and claw-calendar return the same real blocks for",
+        "Verified: the Google service returns real blocks for",
         day,
         "America/Denver:",
     )
