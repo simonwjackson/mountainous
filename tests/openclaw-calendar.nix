@@ -30,6 +30,8 @@ assert lib.all (text: lib.hasInfix text skill) [
   "aria-pressed"
   "local JavaScript state"
   "at most one short line"
+  "Choose above."
+  "prose becomes stale"
   "outcome_unknown"
 ];
 assert lib.all (text: lib.hasInfix text windDown) [
