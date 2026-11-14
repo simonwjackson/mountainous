@@ -561,6 +561,84 @@ else stops the run before that device.
   `systemd-run --wait --collect --unit laure-tools-manual-rollback <system>/bin/switch-to-configuration switch`,
   while Laure's gateway is idle. Do not use `nixos-rebuild switch --rollback`.
 
+### Stage 7 deployment record — 2026-11-14 UTC
+
+Simon approved the stage. Landed on cairn by fast-forward: `ed245f12`
+(rows), `9da3d232` (gateway URLs), `f89930bd` (runbook) from `cfb5bd31`; then
+`fd513eca` (retire). Rakku: evaluated on Zao, built on Unzen, copied through
+Zao with `--no-check-sigs`. Yari: built natively, with the aarch64
+`openclaw-config` and `openclaw-in-place-config` checks.
+
+| Host | Step | Generation and system |
+| --- | --- | --- |
+| Rakku | before | 161 `/nix/store/jpv87gsdpii270c23xxh4cwyfqcca464-nixos-system-rakku-26.11.20260923.4975466` |
+| Rakku | rows (`f89930bd`) | 162 `/nix/store/p8wfzq83rlq7npmfhn7pq93agwyfvpp0-nixos-system-rakku-26.11.20260923.4975466` |
+| Rakku | retire (`fd513eca`) | 163 `/nix/store/kisiwq6lw147f80kl7bb5k88j5bq4zn9-nixos-system-rakku-26.11.20260923.4975466` |
+| Yari | before | 54 `/nix/store/vpq1hk8ffc2bxdkwjadxn01w3hd6n8q4-nixos-system-yari-26.11.20260923.4975466` |
+| Yari | gateway URLs (`f89930bd`) | 55 `/nix/store/1qj23dd6k82kp8q9r6fwnbxaygkyrk8z-nixos-system-yari-26.11.20260923.4975466` (unchanged by retire) |
+
+- Before deploying: both running systems equalled the evaluation of
+  `cfb5bd31`. Identity comparison: rows changed on Rakku exactly
+  `tsnet-proxy-ai` and `tsnet-proxy-ai-staging`; the gateway commit changed
+  on Yari exactly `container@openclaw` and `container@claw-simon`, in each
+  container only `openclaw-gateway.service`, in Laure's config only her four
+  server URLs; retire changed on Rakku exactly the four old proxies. Checks:
+  `ai-mcp-proxy`, `tailnet-names`, `ai-gateway`, `ai-gateway-staging`,
+  `claw-tools`, `claw-scryer`, `claw-websearch`, `claw-ebay`, `openclaw`,
+  `openclaw-people`, `openclaw-in-place`, and on Yari the two aarch64 checks.
+  Negative cases 17/17. Go: 49 tests, vet, race. The real router with the
+  real table and credentials on Rakku (systemd-run, user `tsnet-proxy`, never
+  on the tailnet): all ten rows exactly their tools for their callers, every
+  non-caller 403, Scryer signed in as `simon` and as `laure`. Baseline: Laure's
+  four servers on the old nodes 12/12 with one read each and a clean CLI probe.
+- Rakku rows: rehearsal 1.8 s from ready to go, both gateways idle. The first
+  preflight stopped before any change: the stage-5 drop-in comparison also
+  compared `multi-user.target.wants/` links, which resolve to the changed
+  unit files. The script now compares contents only in `*.d/` directories.
+  Switch rc 0 in 23.1 s. `tsnet-proxy-ai` stopped at 16:51:49.026 and logged
+  `MCP table loaded` and `proxy ready` at 16:52:11.358: **`/v1` was down
+  22.3 s**, started once (NRestarts 0). Only the two proxies restarted; the
+  four old proxies, `ai-gateway`, SparkyFitness, `ebay-server`, the Google
+  and Maps apps and Laure's Pi assistant kept their identities. Home Assistant
+  HTTP 200; Z-Wave handshake (driver 15.15.0, server 3.4.0); no failed units;
+  all ten rows 403 to the Rakku host.
+- `accept-rakku` 61/61 from the containers and 23/23 from Zao: Laure's rows
+  answer her and 403 to flakey, the shared rows answer both, Simon's rows 403
+  to her; keyed `/v1/models` 200 with five models from both containers.
+- Yari: both gateways idle and healthy; Laure's container reloaded in place
+  (`container@openclaw` InvocationID `16c35f6d…` kept). **Her gateway
+  restarted once**: stopped 16:54:00.146, started 16:54:01.418, healthy again
+  after 12.7 s; InvocationID `5dbd700ddc1f4214b772e5a0522652ff` →
+  `5487dfcd79464e2cbb182e4db83a4abe`, NRestarts 0. Her 8 sessions, 4 paired
+  devices and 2 jobs are unchanged; her Session Share source kept its process.
+  flakey's container restarted (unhealthy 61.4 s), as in stage 5.
+- `accept-yari` 84/84 and 23/23 from Zao: both live configs hold only row
+  URLs and no credential; one read on every server (flakey 30/30, sparkyfitness
+  included; Laure 12/12: `family_calendar_events`, `travel_time`,
+  `scryer_search`, one `web_search`), nothing written; OpenClaw's CLI probe on
+  both gateways lists every server with its filter's tool count and no
+  diagnostics; Session Share both ways (each side's source connected, one
+  `sessions.list` each); no failed units on Yari or in either container.
+  `check-rollback-yari` passes after the deploy.
+- Retire: only the four old proxies stopped (and their bind mounts);
+  `tsnet-proxy-ai` was not restarted. `accept-retire` 84/84 and 23/23.
+- Deleted from the tailnet (fleet OAuth client, scope `devices:core
+  auth_keys`), each checked first: exact name, recorded ID, only
+  `tag:claw-tools`, not connected, named by neither gateway's live config.
+  Each DELETE returned HTTP 200; 86 devices became 82. `tailscale status` on
+  Zao now shows `ai`, `ai-staging`, `flakey` and `claw` and no `claw-*` tool
+  node. No node changed its tags.
+
+  | Node | Node ID | Last seen |
+  | --- | --- | --- |
+  | `claw-family-calendar` | `nw4DmtiXHN11CNTRL` | 2026-11-14 16:59:45 UTC |
+  | `claw-maps` | `naQB5pjsTM11CNTRL` | 2026-11-14 16:59:45 UTC |
+  | `claw-scryer-laure` | `nn4JrFbREK11CNTRL` | 2026-11-14 16:59:45 UTC |
+  | `claw-websearch` | `nut8ipE3di11CNTRL` | 2026-11-14 16:59:45 UTC |
+
+- Scripts and logs: `/tmp/claw/laure-tools-*` on Zao; copies in `/tmp/claw`
+  on Rakku and Yari.
+
 ## The key
 
 Created 2026-11-14 04:13:35 UTC: SparkyFitness owner `simon.jackson@gmail.com`,
@@ -612,8 +690,8 @@ nix eval --raw .#nixosConfigurations.yari.config.system.build.toplevel.drvPath
 proves the production table exactly (row, ID, 23 tools, credential name),
 the unit difference above, a caller/tool edit is reload-only, and an empty
 caller list, a node name or a DNS name fails evaluation. The 16 other Rakku
-proxy units must still equal the stage-1 fixture (11 since stage 5: the five
-retired per-tool proxies must be absent).
+proxy units must still equal the stage-1 fixture (11 since stage 5, 7 since
+stage 7: the nine retired per-tool proxies must be absent).
 
 ### Prepared evidence (2026-11-14, base `e8bd3b4f`)
 
