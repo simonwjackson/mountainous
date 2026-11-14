@@ -76,7 +76,6 @@ in
                   "models"
                   "quota"
                 ];
-                monthly_cap_usd = 2.0;
                 requests_per_minute = 10;
               }
               {
@@ -85,7 +84,6 @@ in
                 credential = "test-b";
                 models = [ "jev" ];
                 dialects = [ "systemone" ];
-                monthly_cap_usd = 0.01;
                 requests_per_minute = 10;
               }
             ];

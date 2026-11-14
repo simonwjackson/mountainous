@@ -47,7 +47,7 @@
     # Private source: use SSH, not the token-based GitHub flake fetcher.
     # Only enabled gateway instances on Rakku force this input.
     ai-gateway = {
-      url = "git+ssh://git@github.com/simonwjackson/ai-gateway?ref=main&rev=f2d754ea588f72d768a27d8bc3fedc0367e011ef";
+      url = "git+ssh://git@github.com/simonwjackson/ai-gateway?ref=agent/mnb-caps&rev=7838174f75ebdb40eeb7ad1f88139d5dc026b596";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

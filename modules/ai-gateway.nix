@@ -61,9 +61,8 @@ in
               bearerCredentialFile = config.sops.secrets.sparkyfitness-openclaw-api-key.path;
             };
             # Every paid account is prepaid with auto-recharge off (Simon,
-            # 2026-10-28), so its balance is the limit and the key caps below
-            # do not apply to them. A provider added later stays capped until
-            # it is listed here.
+            # 2026-10-28), so its balance is the external limit. These flags
+            # record the account type; no provider has per-key spend limits.
             prepaidProviders = [
               "elevenlabs"
               "gemini"
@@ -138,11 +137,9 @@ in
                     "gemini-3.8-flash-high"
                     "gpt-5.6-luna"
                     "jev"
+                    "fast"
+                    "solar"
                   ];
-                  # This required gateway field guards future non-prepaid routes.
-                  # It does NOT cap Jev: typesafe is prepaid above. Jev's free
-                  # $5/month and top-ups are its only limit (assistant ADR 0010).
-                  monthly_cap_usd = 5;
                   requests_per_minute = 600;
                 }
                 {
@@ -166,8 +163,6 @@ in
                     "whisper-1"
                     "kokoro"
                   ];
-                  # The remote account owns the spend cap; do not cap OpenClaw here.
-                  monthly_cap_usd = 1000000000;
                   requests_per_minute = 300;
                 }
                 {
@@ -176,7 +171,6 @@ in
                   credential = "voice-zao";
                   dialects = [ "speech" ];
                   models = [ "eleven_flash_v2_5" ];
-                  monthly_cap_usd = 5;
                   requests_per_minute = 120;
                 }
                 {
@@ -191,7 +185,6 @@ in
                     "claude-opus-5-5"
                     "jev"
                   ];
-                  monthly_cap_usd = 1;
                   requests_per_minute = 120;
                 }
                 {
@@ -204,7 +197,6 @@ in
                     "gemini-3-pro-image"
                     "gpt-image-2"
                   ];
-                  monthly_cap_usd = 5;
                   requests_per_minute = 30;
                 }
               ]
@@ -220,7 +212,6 @@ in
                 ]
                 ++ lib.optional (host == "zao") "images";
                 models = [ "*" ];
-                monthly_cap_usd = 1;
                 requests_per_minute = if host == "zao" then 1200 else 600;
               }) ([ "zao" ] ++ piHosts);
           }

@@ -18,8 +18,8 @@
   modelPrices ? { },
   # Production-only local STT/TTS; staging grants and egress remain unchanged.
   localAudio ? false,
-  # Provider accounts that cannot bill past a prepaid balance. Their calls skip
-  # every key's monthly cap; the balance is the limit. Staging keeps its caps.
+  # Recording-only provider account metadata. Provider balances are external
+  # limits; the front door does not enforce per-key spending limits.
   prepaidProviders ? [ ],
   elevenlabsSpeech ? {
     model = {

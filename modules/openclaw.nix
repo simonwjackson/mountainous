@@ -691,7 +691,7 @@
               "transcription"
               "speech"
             ];
-          assert key.monthly_cap_usd == 1000000000 && key.requests_per_minute == 300;
+          assert key.requests_per_minute == 300;
           pkgs.runCommand "openclaw-isolation" {
             # Builds the identity proxy for this system and runs its tests.
             proxy = import ../lib/claw-identity-proxy.nix { inherit pkgs; };
