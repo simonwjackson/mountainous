@@ -39,6 +39,8 @@ assert lib.all (text: lib.hasInfix text windDown) [
   "confirm card"
   "Never save calendar drafts"
 ];
+assert !(lib.hasInfix "family-event mentions" windDown);
+assert !(lib.hasInfix "mentions a family event" windDown);
 assert lib.elem "show_widget" simon.tools.allow;
 assert
   simon.mcp.servers.claw-calendar.toolFilter.include == (import ../lib/ai-mcp-rows.nix)
