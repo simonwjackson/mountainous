@@ -254,6 +254,7 @@
               else
                 proxy;
             table = routeTable name cfg;
+            credentialRows = lib.filterAttrs (_: row: row.bearerCredentialFile != null) cfg.mcpRoutes;
           in
           lib.nameValuePair "tsnet-proxy-${name}" {
             inherit (cfg) description;
@@ -274,9 +275,7 @@
               ]
               ++ lib.optional (cfg.scryerPasswordFile != null) "scryer-password:${cfg.scryerPasswordFile}"
               ++ lib.optional (cfg.webSearchKeyFile != null) "websearch-key:${cfg.webSearchKeyFile}"
-              ++ lib.mapAttrsToList (tool: row: "mcp-${tool}:${row.bearerCredentialFile}") (
-                lib.filterAttrs (_: row: row.bearerCredentialFile != null) cfg.mcpRoutes
-              );
+              ++ lib.mapAttrsToList (tool: row: "mcp-${tool}:${row.bearerCredentialFile}") credentialRows;
               ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p ${state name}";
               ExecStart =
                 "${package}/bin/tsnet-proxy -hostname ${name} -state ${state name}"
@@ -327,6 +326,14 @@
             }
             // lib.optionalAttrs routed {
               ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
+            }
+            // lib.optionalAttrs (credentialRows != { }) {
+              # A missing source must not stop the front door. With a default,
+              # systemd starts the unit anyway (systemd.exec: not fatal). This
+              # non-secret text holds a space, so the router refuses it as a
+              # Bearer, rejects the table and serves no MCP rows. An empty value
+              # does not work: a unit file with "ID:" still fails with 243.
+              SetCredential = lib.mapAttrsToList (tool: _: "mcp-${tool}:unavailable credential") credentialRows;
             };
             # The table is deliberately absent from ExecStart and restartTriggers.
             # NixOS switches /etc first, then reloads this unit on table changes.

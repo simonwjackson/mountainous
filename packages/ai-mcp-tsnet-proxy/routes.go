@@ -10,10 +10,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync/atomic"
+	"syscall"
 
 	"tailscale.com/client/tailscale/apitype"
 )
@@ -118,6 +120,27 @@ func (router *mcpRouter) reload(path, credentialsDirectory string) error {
 	// Invalid reloads never partially publish. In-flight requests own old handlers.
 	router.routes.Store(routes)
 	return nil
+}
+
+// Call before the slow tailnet start (up to 90 s). SIGHUP's default action
+// kills the process, so a reload during startup must already be caught; it
+// waits in the channel until watch runs.
+func notifyReloads() chan os.Signal {
+	reloads := make(chan os.Signal, 1)
+	signal.Notify(reloads, syscall.SIGHUP)
+	return reloads
+}
+
+// A bad table, or a missing, empty or invalid credential (systemd's
+// SetCredential default "unavailable credential") must not stop the front
+// door: log it, serve no MCP rows, and let a later valid reload publish the
+// table. Every other path keeps working.
+func (router *mcpRouter) loadInitial(path, credentialsDirectory string) {
+	if router.reload(path, credentialsDirectory) != nil {
+		log.Print("initial MCP table rejected; serving no MCP rows until a valid reload")
+	} else {
+		log.Print("MCP table loaded")
+	}
 }
 
 func (router *mcpRouter) watch(ctx context.Context, reloads <-chan os.Signal, path, credentialsDirectory string) {

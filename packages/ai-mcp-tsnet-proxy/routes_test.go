@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -424,5 +425,105 @@ func TestWhoIsStableNodeIDUsesOnlyTheStableID(t *testing.T) {
 		if id, err := whoIsStableNodeID(c.peer, c.err); err == nil || id != "" {
 			t.Errorf("%s: got %q %v, want an error", name, id, err)
 		}
+	}
+}
+
+func TestMCPRoutesBadInitialTableKeepsFrontDoor(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer server-secret" {
+			t.Error("wrong upstream credential")
+		}
+		io.WriteString(w, `{"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"sparky_get_food_diary"}]}}`)
+	}))
+	defer backend.Close()
+	row := mcpRoute{Backend: backend.URL + "/mcp", CallerNodeIDs: []string{simonNode}, Tools: []string{"sparky_get_food_diary"}, BearerCredential: "mcp-sparkyfitness"}
+	for name, c := range map[string]struct {
+		table      string // empty: no table file
+		credential *string
+	}{
+		"missing-table":      {"", nil},
+		"malformed-table":    {`{"sparkyfitness":`, nil},
+		"stage-one-table":    {`{"sparkyfitness":{"backend":"http://127.0.0.1:3010/mcp","callers":["claw-simon"],"mcpTools":["x"]}}`, nil},
+		"missing-credential": {"row", nil},
+		"empty-credential":   {"row", new(string)},
+		// systemd's SetCredential default (modules/tailnet-names.nix) when the sops file is absent.
+		"systemd-default-credential": {"row", func() *string { v := "unavailable credential"; return &v }()},
+		"whitespace-credential":      {"row", func() *string { v := "server secret\n"; return &v }()},
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir, credentials := t.TempDir(), t.TempDir()
+			path := filepath.Join(dir, "table.json")
+			switch c.table {
+			case "":
+			case "row":
+				writeTable(t, path, map[string]mcpRoute{"sparkyfitness": row})
+			default:
+				if err := os.WriteFile(path, []byte(c.table), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if c.credential != nil {
+				if err := os.WriteFile(filepath.Join(credentials, "mcp-sparkyfitness"), []byte(*c.credential), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			frontDoor := 0
+			router := newMCPRouter(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				frontDoor++
+				w.WriteHeader(201)
+			}), func(*http.Request) (string, error) { return simonNode, nil })
+			router.loadInitial(path, credentials) // must not exit or panic
+			for _, p := range []string{"/v1/models", "/v1/responses", "/mcp"} {
+				if w := routeRequest(router, p, "{}"); w.Code != 201 {
+					t.Fatalf("front door %s got %d", p, w.Code)
+				}
+			}
+			if frontDoor != 3 {
+				t.Fatalf("front door served %d of 3", frontDoor)
+			}
+			if w := routeRequest(router, "/mcp/sparkyfitness", listRequest); w.Code != 404 {
+				t.Fatalf("rejected row is served: %d", w.Code)
+			}
+			// Fixing the table and credential, then a reload, publishes the row.
+			writeTable(t, path, map[string]mcpRoute{"sparkyfitness": row})
+			if err := os.WriteFile(filepath.Join(credentials, "mcp-sparkyfitness"), []byte("server-secret\n"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := router.reload(path, credentials); err != nil {
+				t.Fatal(err)
+			}
+			if w := routeRequest(router, "/mcp/sparkyfitness", listRequest); w.Code != 200 || !strings.Contains(w.Body.String(), "sparky_get_food_diary") {
+				t.Fatalf("fixed row not served: %d %s", w.Code, w.Body)
+			}
+		})
+	}
+}
+
+func TestMCPRoutesReloadSignalDuringStartupIsKept(t *testing.T) {
+	reloads := notifyReloads()
+	defer signal.Stop(reloads)
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"echo"}]}}`)
+	}))
+	defer backend.Close()
+	path := tableFile(t, map[string]mcpRoute{})
+	router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return simonNode, nil })
+	router.loadInitial(path, "")
+	writeTable(t, path, map[string]mcpRoute{"echo": {Backend: backend.URL, CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}}})
+	// SIGHUP before the watcher runs, as during the tailnet start. Without
+	// notifyReloads its default action would kill this test process.
+	if err := syscall.Kill(syscall.Getpid(), syscall.SIGHUP); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(50 * time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go router.watch(ctx, reloads, path, "")
+	deadline := time.Now().Add(3 * time.Second)
+	for routeRequest(router, "/mcp/echo", listRequest).Code != 200 {
+		if time.Now().After(deadline) {
+			t.Fatal("startup SIGHUP was not applied after watch started")
+		}
+		time.Sleep(time.Millisecond)
 	}
 }

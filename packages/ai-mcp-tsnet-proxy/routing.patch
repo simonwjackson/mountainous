@@ -8,34 +8,38 @@
  	mcpTools := flag.String("mcp-tools", "", "Enable restricted stateless MCP endpoint with these comma-separated tool names")
  	mcpAllowedNodeIDs := flag.String("mcp-allowed-node-ids", "", "Restrict filtered MCP to these stable Tailscale node IDs")
  	mcpResources := flag.String("mcp-resources", "", "Exact comma-separated resource URIs for a filtered MCP endpoint")
-@@ -206,6 +207,9 @@
+@@ -206,6 +207,15 @@
  	webSearchKey := flag.String("websearch-key-file", "", "Serve model-native web search MCP using this gateway credential and the backend Responses URL")
  	webSearchModel := flag.String("websearch-model", "gpt-6.1-sol", "Fixed model for native web search")
  	flag.Parse()
 +	if *mcpTable != "" && (*mcpTools != "" || *mcpAllowedNodeIDs != "" || *mcpResources != "" || *scryerPassword != "" || *webSearchKey != "") {
 +		log.Fatal("MCP table cannot be combined with endpoint modes")
 +	}
++	var reloads chan os.Signal
++	if *mcpTable != "" {
++		// Before the slow tailnet start: a reload then must not kill the proxy.
++		reloads = notifyReloads()
++		defer signal.Stop(reloads)
++	}
  	if (*mcpResources != "" || *mcpAllowedNodeIDs != "") && *mcpTools == "" {
  		log.Fatal("MCP resources require filtered tools")
  	}
-@@ -298,6 +302,23 @@
+@@ -298,6 +308,21 @@
  			handler = mcpResourceHandler(backendURL, strings.Split(*mcpTools, ","), strings.FieldsFunc(*mcpResources, func(r rune) bool { return r == ',' }), verifyPeer)
  		}
  	}
 +	if *mcpTable != "" {
-+		local, err := srv.LocalClient()
-+		if err != nil {
-+			log.Fatal("tailnet identity client unavailable")
++		// Nothing MCP-related may stop the front door: /v1 serves every agent.
++		stableNodeID := func(*http.Request) (string, error) { return "", errors.New("tailnet identity unavailable") }
++		if local, err := srv.LocalClient(); err != nil {
++			log.Print("tailnet identity client unavailable; MCP rows deny every caller")
++		} else {
++			stableNodeID = func(r *http.Request) (string, error) {
++				return whoIsStableNodeID(local.WhoIs(r.Context(), r.RemoteAddr))
++			}
 +		}
-+		router := newMCPRouter(handler, func(r *http.Request) (string, error) {
-+			return whoIsStableNodeID(local.WhoIs(r.Context(), r.RemoteAddr))
-+		})
-+		if err := router.reload(*mcpTable, os.Getenv("CREDENTIALS_DIRECTORY")); err != nil {
-+			log.Fatal("invalid initial MCP route table")
-+		}
-+		reloads := make(chan os.Signal, 1)
-+		signal.Notify(reloads, syscall.SIGHUP)
-+		defer signal.Stop(reloads)
++		router := newMCPRouter(handler, stableNodeID)
++		router.loadInitial(*mcpTable, os.Getenv("CREDENTIALS_DIRECTORY"))
 +		go router.watch(ctx, reloads, *mcpTable, os.Getenv("CREDENTIALS_DIRECTORY"))
 +		handler = router
 +	}

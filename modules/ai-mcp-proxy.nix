@@ -117,7 +117,8 @@
           name:
           let
             rows = system.config.mountainous.tailnetNames.${name}.mcpRoutes;
-            credentials = system.config.systemd.services."tsnet-proxy-${name}".serviceConfig.LoadCredential;
+            serviceConfig = system.config.systemd.services."tsnet-proxy-${name}".serviceConfig;
+            credentials = serviceConfig.LoadCredential;
           in
           lib.all (
             tool:
@@ -131,6 +132,8 @@
               || (
                 lib.hasPrefix "/run/" row.bearerCredentialFile
                 && lib.elem "mcp-${tool}:${row.bearerCredentialFile}" credentials
+                # A missing source falls back to a refused default, not a dead unit.
+                && lib.elem "mcp-${tool}:unavailable credential" (serviceConfig.SetCredential or [ ])
               )
             )
           ) (lib.attrNames rows)
@@ -176,6 +179,8 @@
           lib.sort builtins.lessThan prodAdded == [
             "ExecStart=${prodExecStart}"
             "LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key"
+            # The empty default keeps the unit starting if the sops file is absent.
+            "SetCredential=mcp-sparkyfitness:unavailable credential"
           ];
         assert prodUnit.serviceConfig.ExecReload == unit.serviceConfig.ExecReload;
         assert prodUnit.restartTriggers == prodBefore.restartTriggers;
@@ -219,6 +224,11 @@
           .echo.bearerCredential == "mcp-echo";
         assert lib.elem "mcp-echo:/run/secrets/ai-staging-echo-test"
           credentialConfig.systemd.services.tsnet-proxy-ai-staging.serviceConfig.LoadCredential;
+        assert
+          credentialConfig.systemd.services.tsnet-proxy-ai-staging.serviceConfig.SetCredential == [
+            "mcp-echo:unavailable credential"
+          ];
+        assert !(unit.serviceConfig ? SetCredential);
         pkgs.runCommand "ai-mcp-proxy-boundary" { nativeBuildInputs = [ pkgs.python3 ]; } ''
           test -x ${package}/bin/tsnet-proxy
           python3 ${../tests/ai-mcp-echo.py} ${../packages/ai-mcp-echo.py}
