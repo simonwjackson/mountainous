@@ -66,16 +66,15 @@ below. xAI and OpenRouter stay off.
 | Production gateway key | Grant |
 | --- | --- |
 | name | assistant@rakku |
-| dialects | codex, models, responses, systemone |
-| models | claude-opus-5-5, gpt-6.1-sol, gemini-3.8-flash-high, gpt-5.6-luna, jev |
-| paid cap | USD 5/month |
+| dialects | codex, chat_completions, models, responses, systemone |
+| models | claude-opus-5-5, gpt-6.1-sol, gemini-3.8-flash-high, gpt-5.6-luna, jev, fast, solar |
 | rate limit | 600 requests/minute |
 
-The assistant key can use one paid model: Jev, through System One. The
-assistants ask Jev for reflexes, thread choice and recall (assistant ADR 0001),
-at the fixed $0.0001 charge per call. Past the cap the front door returns 402,
-and core falls back to its rules. Subscription requests do not charge the paid
-cap. The usage key only reads the usage endpoint. The separate voice
+The assistant key can use Jev, Solar and the `fast` Jev-to-Solar fallback through
+System One. The assistants ask Jev for reflexes, thread choice and recall
+(assistant ADR 0001). The Google service classifies mail through `fast`.
+The fixed $0.0001 Jev charge per call is for accounting only. Paid spend does not
+block a request. The usage key only reads the usage endpoint. The separate voice
 key below can use only ElevenLabs Flash v2.5. Other configured prices remain
 staging **ceilings, not tariffs**; the Flash v2.5 price is a verified tariff.
 
@@ -177,7 +176,6 @@ existing `xai-api-key` remains unused. Staging configuration is unchanged.
 | encrypted source | secrets/hosts/rakku.yaml, ai-gateway-key-voice-zao |
 | dialects | speech only |
 | models | eleven_flash_v2_5 (ElevenLabs Flash v2.5) only |
-| paid cap | USD 5/month |
 | rate limit | 120 requests/minute |
 
 The new key is an independent random 32-byte value, hex encoded and encrypted
@@ -213,11 +211,11 @@ paid synthesis and Rakku activation remain deployment-time checks.
 
 The `pi@zao` grant includes `images` for `/v1/images/generations` and
 `/v1/images/edits`. Its existing `models = [ "*" ]` already allows `gpt-image-2`.
-The USD 1/month paid cap, 1200 requests/minute limit, credential and other
-permissions stay unchanged. Other Pi hosts do not receive the image dialect.
+The 1200 requests/minute limit, credential and other permissions stay unchanged.
+Other Pi hosts do not receive the image dialect.
 GPT image calls use the login keeper first. Exhausted subscription headroom can
-use the existing paid Gemini fallback. Since 2026-10-28 Gemini is prepaid, so
-the cap no longer limits these calls (see "Prepaid provider accounts").
+use the existing paid Gemini fallback. Provider balances remain external limits
+(see "Prepaid provider accounts").
 
 The production check compares every client grant, including the Zao-only image
 permission. Run the focused production and staging checks and Rakku evaluation
@@ -238,17 +236,31 @@ The gateway returns to denying image calls for `pi@zao`; its key does not rotate
 Every paid provider account (Gemini, OpenRouter, xAI, ElevenLabs, Typesafe and
 Upstage) is prepaid with auto-recharge off. Its balance is the real limit, and
 Simon refills it by hand. Production therefore marks each of them
-`prepaid = true` (`prepaidProviders` in `modules/ai-gateway.nix`). A paid call
-to a prepaid provider skips the key's `monthly_cap_usd`, and its spend does not
-count toward that cap. Rate limits stay. `/usage` still records every call;
-`monthly_capped_spend_usd` shows only the spend that counts toward the cap.
+`prepaid = true` (`prepaidProviders` in `modules/ai-gateway.nix`). This is
+recording-only metadata. Rate limits stay. `/usage` records every paid call,
+including prepaid calls and in-flight cost estimates. New providers have the
+same accounting-only behavior. Staging keeps its account metadata and rate
+limits, with no per-key spending limit.
 
-The key caps in this file stay in the config. They now apply only to a provider
-that is not listed as prepaid, so a provider added later is capped until it is
-listed. Staging lists no prepaid provider, so its cap checks still run.
+Cost: one looping client can spend a whole balance. Every other key that uses
+that provider (korri, voice, the assistant) then fails until the refill. Before
+you list a new provider as prepaid, confirm that its account cannot bill a card
+after use or top itself up.
 
-Cost: no key has a dollar limit at a prepaid provider. One looping client can
-spend a whole balance, and every other key that uses that provider (korri,
-voice, the assistant) then fails until the refill. Before you list a new
-provider as prepaid, confirm that its account cannot bill a card after use or
-top itself up.
+## Monthly cap removal rollout
+
+The front door no longer limits a key's monthly paid spend. Production and
+staging omit the retired field. Prices, fixed System One charges, usage records,
+rate limits, allowlists and `fast` fallback remain.
+
+This branch pins the tested front door on `agent/mnb-caps`. Deploy that binary
+before removing the old field from config, or switch the binary and config
+together with this fleet revision. The new binary accepts old config and logs a
+warning per key; an old binary cannot start with this new config. Keep the old
+binary and config together for rollback. No usage database reset is needed.
+Usage consumers must no longer require the removed cap or capped-spend fields;
+monthly paid spend and outstanding accounting estimates remain.
+
+No deployment was performed for this change. Build and review the Rakku system
+before the normal deployment. Provider-side balances and rate limits, not
+per-key dollar limits, protect against spend.

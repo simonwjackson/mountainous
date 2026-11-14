@@ -71,15 +71,18 @@ let
         "::1/128"
       ]
     ) "front door allows non-loopback IPs"
-    ++ want (lib.all (
-      model:
-      lib.elem model.provider [
-        "gemini"
-        "elevenlabs"
-      ]
-      || model.id == "grok-tts"
-      || (model.context_window or 0) > 0
-    ) optionalModels) "paid chat models require a positive context_window for cap reservations"
+    ++ want (lib.all
+      (
+        model:
+        lib.elem model.provider [
+          "gemini"
+          "elevenlabs"
+        ]
+        || model.id == "grok-tts"
+        || (model.context_window or 0) > 0
+      )
+      optionalModels
+    ) "paid chat models require a positive context_window for conservative usage estimates"
     ++ want (
       !unit.DynamicUser
       && unit.RemoveIPC

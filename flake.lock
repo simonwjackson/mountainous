@@ -7,17 +7,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1794618091,
-        "narHash": "sha256-xbucTv/J9Xj8NP7mwMtm0KxEJIjuNKMiz3p/3QA4Caw=",
-        "ref": "main",
-        "rev": "f2d754ea588f72d768a27d8bc3fedc0367e011ef",
-        "revCount": 26,
+        "lastModified": 1794706781,
+        "narHash": "sha256-jAs5b/Qh0pjtlgP4sUWmW2ztDVsdMA7mQD/aB0koysE=",
+        "ref": "agent/mnb-caps",
+        "rev": "7838174f75ebdb40eeb7ad1f88139d5dc026b596",
+        "revCount": 28,
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       },
       "original": {
-        "ref": "main",
-        "rev": "f2d754ea588f72d768a27d8bc3fedc0367e011ef",
+        "ref": "agent/mnb-caps",
+        "rev": "7838174f75ebdb40eeb7ad1f88139d5dc026b596",
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       }

@@ -29,6 +29,11 @@ assert all(
     key["key_file"].startswith(credential_dir + "/") for key in settings["gateway_keys"]
 )
 assert "cors" not in json.dumps(settings).lower()
+# Only these fields are allowed; paid-spend limits are no longer emitted.
+assert all(
+    set(key) == {"name", "key_file", "models", "dialects", "requests_per_minute"}
+    for key in settings["gateway_keys"]
+)
 a = settings["gateway_keys"][0]
 if production:
     pi_hosts = json.loads(sys.argv[4])
@@ -40,6 +45,8 @@ if production:
         "gemini-3.8-flash-high",
         "gpt-5.6-luna",
         "jev",
+        "fast",
+        "solar",
     ]
     assert a["dialects"] == [
         "codex",
@@ -48,14 +55,13 @@ if production:
         "responses",
         "systemone",
     ]
-    assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (5, 600)
+    assert a["requests_per_minute"] == 600
     voice = next(k for k in settings["gateway_keys"] if k["name"] == "voice@zao")
     assert voice == {
         "name": "voice@zao",
         "key_file": f"{credential_dir}/voice-zao",
         "models": ["eleven_flash_v2_5"],
         "dialects": ["speech"],
-        "monthly_cap_usd": 5,
         "requests_per_minute": 120,
     }
     keys = {key["name"]: key for key in settings["gateway_keys"]}
@@ -80,7 +86,6 @@ if production:
             "whisper-1",
             "kokoro",
         ],
-        "monthly_cap_usd": 1000000000,
         "requests_per_minute": 300,
     }
     for host in ["zao", *pi_hosts]:
@@ -90,7 +95,6 @@ if production:
             "dialects": ["codex", "models", "responses", "systemone"]
             + (["images"] if host == "zao" else []),
             "models": ["*"],
-            "monthly_cap_usd": 1,
             "requests_per_minute": 1200 if host == "zao" else 600,
         }
     assert keys["storia@zao"] == {
@@ -98,7 +102,6 @@ if production:
         "key_file": f"{credential_dir}/storia-zao",
         "dialects": ["messages", "systemone"],
         "models": ["claude-opus-5-5", "jev"],
-        "monthly_cap_usd": 1,
         "requests_per_minute": 120,
     }
     assert keys["korri@zao"] == {
@@ -106,7 +109,6 @@ if production:
         "key_file": f"{credential_dir}/korri-zao",
         "dialects": ["images"],
         "models": ["gemini-3.1-flash-image", "gemini-3-pro-image", "gpt-image-2"],
-        "monthly_cap_usd": 5,
         "requests_per_minute": 30,
     }
     assert settings["prices"]["gemini-3.1-flash-image"] == {
@@ -160,7 +162,7 @@ if production:
         "key_file": f"{credential_dir}/elevenlabs",
         "prepaid": True,
     }
-    # Every production provider account is prepaid, so no key cap limits it.
+    # Prepaid flags record the provider account type only.
     assert all(p.get("prepaid") is True for p in settings["providers"].values())
     assert settings["prices"]["eleven_flash_v2_5"] == {
         "audio_per_million_characters": 40.0,
@@ -169,7 +171,7 @@ else:
     assert "local_backends" not in settings and "local_models" not in settings
     assert len(settings["gateway_keys"]) == 2
     b = settings["gateway_keys"][1]
-    assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (2, 10)
+    assert a["requests_per_minute"] == 10
     assert set(a["dialects"]) == {
         "codex",
         "responses",
@@ -183,10 +185,9 @@ else:
     }
     assert "gpt-image-2" in a["models"]
     assert b["models"] == ["jev"] and b["dialects"] == ["systemone"]
-    assert b["monthly_cap_usd"] == 0.01
-    charge = settings["systemone_charges"]["jev"]
-    assert 2 * charge <= b["monthly_cap_usd"] < 3 * charge
-    # Staging proves the caps, so no staging provider skips them.
+    assert settings["systemone_charges"]["jev"] > 0
+    assert b["requests_per_minute"] == 10
+    # Staging retains its provider account metadata.
     assert not any(p.get("prepaid") for p in settings["providers"].values())
 assert "gpt-image-2" not in settings["prices"]
 assert all(model["id"] != "gpt-image-2" for model in settings["paid_models"])
