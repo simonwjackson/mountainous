@@ -53,8 +53,23 @@
             )
           ]).environment.etc."tsnet-proxy-ai-staging-mcp.json".source.text
         ).success;
-      # Production ai: one row, flakey's stable node ID only, the shared allowlist.
+      # Production ai: every row admits flakey's stable node ID only, with the
+      # allowlist from lib/ai-mcp-rows.nix.
       sparkyTools = import ../lib/openclaw-sparkyfitness-tools.nix;
+      rows = import ../lib/ai-mcp-rows.nix;
+      flakey = (import ../lib/tailnet-nodes.nix).flakey;
+      googlePort = toString c.mountainous.features.pi-assistant.people.simon.apps.google.port;
+      scryerSecret = c.sops.secrets.scryer-password-simon;
+      # An unknown row or tool on production fails the system's assertions.
+      prodRejected =
+        module:
+        lib.any (a: !a.assertion && lib.hasInfix "lib/ai-mcp-rows.nix" a.message)
+          (extend [ module ]).assertions;
+      # A production row with no callers fails evaluation of the table itself.
+      prodTableRejected =
+        module:
+        !(builtins.tryEval (extend [ module ]).environment.etc."tsnet-proxy-ai-mcp.json".source.text)
+        .success;
       prodUnit = c.systemd.services.tsnet-proxy-ai;
       prodText = c.systemd.units."tsnet-proxy-ai.service".text;
       prodTable = c.environment.etc."tsnet-proxy-ai-mcp.json".source;
@@ -124,14 +139,17 @@
             tool:
             let
               row = rows.${tool};
+              # A Bearer key, or a native Scryer row's password.
+              file = if row.scryer != null then row.scryer.passwordFile else row.bearerCredentialFile;
             in
             row.callerNodeIds != [ ]
             && row.mcpTools != [ ]
+            && ((row.backend == null) != (row.scryer == null))
             && (
-              row.bearerCredentialFile == null
+              file == null
               || (
-                lib.hasPrefix "/run/" row.bearerCredentialFile
-                && lib.elem "mcp-${tool}:${row.bearerCredentialFile}" credentials
+                lib.hasPrefix "/run/" file
+                && lib.elem "mcp-${tool}:${file}" credentials
                 # A missing source falls back to a refused default, not a dead unit.
                 && lib.elem "mcp-${tool}:unavailable credential" (serviceConfig.SetCredential or [ ])
               )
@@ -152,6 +170,7 @@
           && services.${name}.restartTriggers == before.${name}.restartTriggers
           && services.${name}.reloadTriggers == before.${name}.reloadTriggers
         ) unchanged;
+        assert flakey == "nbQJZMcewG11CNTRL";
         assert
           builtins.fromJSON prodTable.text == {
             sparkyfitness = {
@@ -162,7 +181,55 @@
               mcpTools = sparkyTools;
               bearerCredential = "mcp-sparkyfitness";
             };
+            # Simon's own tools (stage 5). Same backend and server-side key as
+            # their old per-tool nodes: the Google app and ebay-server take no
+            # key on loopback; Scryer signs in with Simon's password.
+            calendar = {
+              backend = "http://127.0.0.1:${googlePort}/mcp";
+              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+              mcpTools = [ "calendar_busy" ];
+            };
+            gmail = {
+              backend = "http://127.0.0.1:${googlePort}/mcp";
+              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+              mcpTools = rows.gmail.tools;
+            };
+            family-calendar = {
+              backend = "http://127.0.0.1:${googlePort}/mcp";
+              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+              mcpTools = rows.family-calendar.tools;
+            };
+            ebay = {
+              backend = "http://127.0.0.1:3191/mcp";
+              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+              mcpTools = rows.ebay.tools;
+              mcpResources = [
+                "ui://ebay/search.html"
+                "ui://ebay/listings.html"
+                "ui://ebay/needs.html"
+                "ui://ebay/price.html"
+                "ui://ebay/reply.html"
+                "ui://ebay/offer.html"
+                "ui://ebay/listing.html"
+              ];
+            };
+            scryer = {
+              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+              mcpTools = import ../lib/openclaw-scryer-tools.nix;
+              scryer = {
+                url = "https://scryer.hummingbird-lake.ts.net/graphql";
+                username = "simon";
+                passwordCredential = "mcp-scryer";
+              };
+            };
           };
+        assert googlePort == "3171";
+        assert lib.attrNames rows == lib.attrNames (builtins.fromJSON prodTable.text);
+        assert lib.all (row: rows.${row}.tools == c.mountainous.tailnetNames.ai.mcpRoutes.${row}.mcpTools) (
+          lib.attrNames rows
+        );
+        assert !(lib.elem "mail_send" rows.gmail.tools);
+        assert lib.length rows.ebay.tools == 14 && lib.length rows.family-calendar.tools == 3;
         assert lib.length sparkyTools == 23 && lib.unique sparkyTools == sparkyTools;
         assert
           !(lib.any (tool: lib.elem tool sparkyTools) [
@@ -179,8 +246,10 @@
         assert
           lib.sort builtins.lessThan prodAdded == [
             "ExecStart=${prodExecStart}"
+            "LoadCredential=mcp-scryer:/run/secrets/scryer-password-simon"
             "LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key"
-            # The empty default keeps the unit starting if the sops file is absent.
+            # The defaults keep the unit starting if a sops file is absent.
+            "SetCredential=mcp-scryer:unavailable credential"
             "SetCredential=mcp-sparkyfitness:unavailable credential"
           ];
         assert prodUnit.serviceConfig.ExecReload == unit.serviceConfig.ExecReload;
@@ -190,6 +259,46 @@
         assert prodSecret.mode == "0400" && prodSecret.owner == null;
         assert prodSecret.restartUnits == [ "tsnet-proxy-ai.service" ];
         assert prodSecret.path == "/run/secrets/sparkyfitness-openclaw-api-key";
+        # A new Scryer password restarts production ai once (credentials load at start).
+        assert lib.elem "tsnet-proxy-ai.service" scryerSecret.restartUnits;
+        assert scryerSecret.path == "/run/secrets/scryer-password-simon" && scryerSecret.mode == "0400";
+        assert prodRejected (
+          { lib, ... }:
+          {
+            mountainous.tailnetNames.ai.mcpRoutes.gmail.mcpTools = lib.mkForce (
+              rows.gmail.tools ++ [ "mail_send" ]
+            );
+          }
+        );
+        assert prodRejected (
+          { lib, ... }:
+          {
+            mountainous.tailnetNames.ai.mcpRoutes.scryer.mcpTools = lib.mkForce [ "scryer_delete" ];
+          }
+        );
+        assert prodRejected {
+          mountainous.tailnetNames.ai.mcpRoutes.extra = {
+            backend = "http://127.0.0.1:3171/mcp";
+            callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+            mcpTools = [ "calendar_busy" ];
+          };
+        };
+        assert !(prodRejected { });
+        assert lib.all (
+          row:
+          prodTableRejected (
+            { lib, ... }:
+            {
+              mountainous.tailnetNames.ai.mcpRoutes.${row}.callerNodeIds = lib.mkForce [ ];
+            }
+          )
+        ) (lib.attrNames rows);
+        assert prodTableRejected (
+          { lib, ... }:
+          {
+            mountainous.tailnetNames.ai.mcpRoutes.calendar.callerNodeIds = lib.mkForce [ "flakey" ];
+          }
+        );
         assert prodUnit.serviceConfig == prodChangedUnit.serviceConfig;
         assert prodUnit.restartTriggers == prodChangedUnit.restartTriggers;
         assert prodUnit.reloadTriggers != prodChangedUnit.reloadTriggers;

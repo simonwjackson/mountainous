@@ -1,7 +1,7 @@
 { inputs, self, ... }:
 {
   nixos.modules.claw-ebay =
-    { config, ... }:
+    { config, lib, ... }:
     {
       systemd.services.ebay-server = {
         description = "eBay selling approval product service for Simon";
@@ -72,6 +72,16 @@
           "ui://ebay/listing.html"
         ];
       };
+      # flakey's eBay server, on the production front door. Same backend, tools
+      # and views as claw-ebay-simon; ebay-server takes no key on loopback.
+      mountainous.tailnetNames.ai = lib.mkIf config.mountainous.features.ai-gateway.enable {
+        mcpRoutes.ebay = {
+          backend = "http://127.0.0.1:3191/mcp";
+          callerNodeIds = [ (import ../lib/tailnet-nodes.nix).flakey ];
+          mcpTools = (import ../lib/ai-mcp-rows.nix).ebay.tools;
+          inherit (config.mountainous.tailnetNames.claw-ebay-simon) mcpResources;
+        };
+      };
     };
   perSystem =
     { pkgs, lib, ... }:
@@ -135,6 +145,16 @@
             "ebay-refresh-token:${cfg.sops.secrets.ebay-refresh-token.path}"
           ];
         assert simon.mcp.servers.claw-ebay-simon.toolFilter.include == endpoint.mcpTools;
+        # Stage 5: /mcp/ebay on production ai, flakey only, same backend, tools and views.
+        assert
+          builtins.removeAttrs cfg.mountainous.tailnetNames.ai.mcpRoutes.ebay [ "_module" ] == {
+            backend = "http://127.0.0.1:3191/mcp";
+            callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+            mcpTools = endpoint.mcpTools;
+            mcpResources = endpoint.mcpResources;
+            bearerCredentialFile = null;
+            scryer = null;
+          };
         assert simon.mcp.servers.claw-ebay-simon.codex.defaultToolsApprovalMode == "approve";
         assert import ../tests/openclaw-ebay-selling.nix {
           inherit lib;

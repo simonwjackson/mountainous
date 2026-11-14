@@ -84,3 +84,51 @@
  		upstream.Header.Set("Content-Type", "application/json")
  		upstream.Header.Set("Accept", "application/json, text/event-stream")
  		if version := r.Header.Get("MCP-Protocol-Version"); version != "" {
+--- a/scryer.go
++++ b/scryer.go
+@@ -135,7 +135,14 @@
+ }
+ 
+ func scryerHandler(s *scryerClient, tailnetClient func(*http.Request) bool) http.Handler {
++	return scryerToolsHandler(s, nil, tailnetClient)
++}
++
++// allowed nil serves every tool (the endpoint mode). A routed /mcp row passes
++// its allowlist: any other tool is neither listed nor callable.
++func scryerToolsHandler(s *scryerClient, allowed map[string]bool, tailnetClient func(*http.Request) bool) http.Handler {
+ 	app := &scryerApp{client: s, origin: originOf(s.url)}
++	permitted := func(name string) bool { return allowed == nil || allowed[name] }
+ 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ 		request, ok := readMCPRequest(w, r, tailnetClient)
+ 		if !ok {
+@@ -157,10 +164,17 @@
+ 			}
+ 			result = map[string]any{"protocolVersion": version, "serverInfo": map[string]string{"name": "claw-scryer", "version": "2"}, "capabilities": map[string]any{"tools": map[string]any{}, "resources": map[string]any{}}}
+ 		case "tools/list":
+-			result = map[string]any{"tools": append([]any{map[string]any{
++			tools := append([]any{map[string]any{
+ 				"name": "scryer_graphql", "description": "Account-scoped Scryer GraphQL. Read the live schema. Mutations are allowed; confirm destructive actions. No uploads or downloads. Do not retry mutations after timeouts.",
+ 				"inputSchema": json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","minLength":1},"variables":{"type":"object"}},"required":["query"],"additionalProperties":false}`),
+-			}}, scryerAppTools(app.libraryNote(r.Context()))...)}
++			}}, scryerAppTools(app.libraryNote(r.Context()))...)
++			listed := []any{}
++			for _, tool := range tools {
++				if permitted(tool.(map[string]any)["name"].(string)) {
++					listed = append(listed, tool)
++				}
++			}
++			result = map[string]any{"tools": listed}
+ 		case "resources/list":
+ 			result = map[string]any{"resources": []any{app.resource()}}
+ 		case "resources/read":
+@@ -182,6 +196,10 @@
+ 				rpcError(w, request.ID, -32602, "invalid tool parameters")
+ 				return
+ 			}
++			if !permitted(params.Name) {
++				rpcError(w, request.ID, -32601, "tool not allowed")
++				return
++			}
+ 			if params.Name != "scryer_graphql" {
+ 				ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+ 				defer cancel()

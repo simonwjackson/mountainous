@@ -527,3 +527,213 @@ func TestMCPRoutesReloadSignalDuringStartupIsKept(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 }
+
+// An eBay-like loopback row: tools and MCP App views each have an exact list.
+func TestMCPRoutesServeExactResources(t *testing.T) {
+	var methods []string
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request mcpRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Error(err)
+		}
+		methods = append(methods, request.Method+" "+string(request.Params))
+		switch request.Method {
+		case "resources/list":
+			io.WriteString(w, `{"jsonrpc":"2.0","id":1,"result":{"resources":[{"uri":"ui://ebay/search.html"},{"uri":"ui://ebay/admin.html"}]}}`)
+		case "resources/read":
+			io.WriteString(w, `{"jsonrpc":"2.0","id":1,"result":{"contents":[{"uri":"ui://ebay/search.html","text":"<!DOCTYPE html>"}]}}`)
+		default:
+			io.WriteString(w, `{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-03-26","serverInfo":{"name":"ebay"},"tools":[]}}`)
+		}
+	}))
+	defer backend.Close()
+	caller := simonNode
+	router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return caller, nil })
+	if err := router.reload(tableFile(t, map[string]mcpRoute{
+		"ebay":     {Backend: backend.URL + "/mcp", CallerNodeIDs: []string{simonNode}, Tools: []string{"ebay_listings"}, Resources: []string{"ui://ebay/search.html"}},
+		"calendar": {Backend: backend.URL + "/mcp", CallerNodeIDs: []string{simonNode}, Tools: []string{"calendar_busy"}},
+	}), ""); err != nil {
+		t.Fatal(err)
+	}
+	w := routeRequest(router, "/mcp/ebay", `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{}}}`)
+	if !strings.Contains(w.Body.String(), `"resources":{}`) {
+		t.Fatalf("a row with views must announce resources: %s", w.Body)
+	}
+	w = routeRequest(router, "/mcp/ebay", `{"jsonrpc":"2.0","id":1,"method":"resources/list"}`)
+	if !strings.Contains(w.Body.String(), "ui://ebay/search.html") || strings.Contains(w.Body.String(), "admin") {
+		t.Fatalf("resource list not filtered: %s", w.Body)
+	}
+	w = routeRequest(router, "/mcp/ebay", `{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"ui://ebay/search.html"}}`)
+	if !strings.Contains(w.Body.String(), "DOCTYPE") {
+		t.Fatalf("allowed view not read: %s", w.Body)
+	}
+	before := len(methods)
+	for path, body := range map[string]string{
+		"/mcp/ebay":     `{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"ui://ebay/admin.html"}}`,
+		"/mcp/calendar": `{"jsonrpc":"2.0","id":1,"method":"resources/list"}`,
+	} {
+		w := routeRequest(router, path, body)
+		if !strings.Contains(w.Body.String(), "-32601") {
+			t.Fatalf("%s: refused resource method answered: %s", path, w.Body)
+		}
+	}
+	caller = laureNode
+	if w := routeRequest(router, "/mcp/ebay", `{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"ui://ebay/search.html"}}`); w.Code != 403 {
+		t.Fatalf("another caller read a view: %d", w.Code)
+	}
+	if len(methods) != before {
+		t.Fatalf("refused resource traffic reached upstream: %v", methods[before:])
+	}
+}
+
+func scryerRouteFixture(t *testing.T, fixture *scryerFixture, row mcpRoute) (*mcpRouter, *string) {
+	t.Helper()
+	server := httptest.NewServer(fixture)
+	t.Cleanup(server.Close)
+	original := newScryerRouteClient
+	t.Cleanup(func() { newScryerRouteClient = original })
+	newScryerRouteClient = func(graphql, username, password string) *scryerClient {
+		if graphql != row.Scryer.URL {
+			t.Errorf("Scryer client for %q, want the row's URL", graphql)
+		}
+		return newScryerClient(server.URL, username, password)
+	}
+	credentials := t.TempDir()
+	if err := os.WriteFile(filepath.Join(credentials, "mcp-scryer"), []byte(fixture.password+"\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	caller := simonNode
+	router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return caller, nil })
+	if err := router.reload(tableFile(t, map[string]mcpRoute{"scryer": row}), credentials); err != nil {
+		t.Fatal(err)
+	}
+	return router, &caller
+}
+
+func scryerRow(tools ...string) mcpRoute {
+	return mcpRoute{CallerNodeIDs: []string{simonNode}, Tools: tools, Scryer: &scryerRoute{
+		URL: "https://scryer.hummingbird-lake.ts.net/graphql", Username: "simon", PasswordCredential: "mcp-scryer"}}
+}
+
+func TestMCPRoutesScryerRowServesOnlyItsTools(t *testing.T) {
+	fixture := &scryerFixture{password: "pass word", username: "simon", lifetime: time.Hour}
+	router, caller := scryerRouteFixture(t, fixture, scryerRow("scryer_graphql", "scryer_search"))
+	w := routeRequest(router, "/mcp/scryer", `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26"}}`)
+	if !strings.Contains(w.Body.String(), `"claw-scryer"`) {
+		t.Fatalf("initialize: %s", w.Body)
+	}
+	w = routeRequest(router, "/mcp/scryer", listRequest)
+	var listed struct {
+		Result struct{ Tools []struct{ Name string } }
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &listed); err != nil {
+		t.Fatal(err)
+	}
+	names := []string{}
+	for _, tool := range listed.Result.Tools {
+		names = append(names, tool.Name)
+	}
+	if strings.Join(names, ",") != "scryer_graphql,scryer_search" {
+		t.Fatalf("listed %v, want exactly the row's tools", names)
+	}
+	fixture.mu.Lock()
+	calls := fixture.calls
+	fixture.mu.Unlock()
+	for _, tool := range []string{"scryer_add", "scryer_monitor", "scryer_title", "scryer_delete"} {
+		w := routeRequest(router, "/mcp/scryer", `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"`+tool+`","arguments":{"titleId":"1"}}}`)
+		if !strings.Contains(w.Body.String(), "-32601") {
+			t.Fatalf("%s outside the row answered: %s", tool, w.Body)
+		}
+	}
+	fixture.mu.Lock()
+	if fixture.calls != calls {
+		t.Fatal("a refused tool reached Scryer")
+	}
+	fixture.mu.Unlock()
+	w = routeRequest(router, "/mcp/scryer", `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"scryer_graphql","arguments":{"query":"{echo}"}}}`)
+	if !strings.Contains(w.Body.String(), `\"echo\":1`) || strings.Contains(w.Body.String(), "pass word") {
+		t.Fatalf("allowed read failed or leaked: %s", w.Body)
+	}
+	w = routeRequest(router, "/mcp/scryer", `{"jsonrpc":"2.0","id":1,"method":"resources/read","params":{"uri":"ui://scryer/media.html"}}`)
+	if !strings.Contains(w.Body.String(), scryerViewMIME) {
+		t.Fatalf("view not served: %s", w.Body)
+	}
+	fixture.mu.Lock()
+	calls, logins := fixture.calls, fixture.logins
+	fixture.mu.Unlock()
+	for _, denied := range []string{laureNode, zaoNode, "", "claw-scryer-simon"} {
+		*caller = denied
+		if w := routeRequest(router, "/mcp/scryer", `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"scryer_graphql","arguments":{"query":"{echo}"}}}`); w.Code != 403 {
+			t.Fatalf("caller %q got %d", denied, w.Code)
+		}
+	}
+	fixture.mu.Lock()
+	defer fixture.mu.Unlock()
+	if fixture.calls != calls || fixture.logins != logins {
+		t.Fatal("a denied caller reached Scryer")
+	}
+}
+
+func TestMCPRoutesRejectInvalidScryerAndResourceRows(t *testing.T) {
+	scryer := func(edit func(*mcpRoute)) mcpRoute {
+		row := scryerRow("scryer_graphql")
+		row.Scryer = &scryerRoute{URL: row.Scryer.URL, Username: row.Scryer.Username, PasswordCredential: row.Scryer.PasswordCredential}
+		edit(&row)
+		return row
+	}
+	for name, c := range map[string]struct {
+		row      mcpRoute
+		password string
+	}{
+		"scryer-unknown-tool":       {scryer(func(r *mcpRoute) { r.Tools = []string{"scryer_graphql", "scryer_delete"} }), "secret"},
+		"scryer-with-backend":       {scryer(func(r *mcpRoute) { r.Backend = "http://127.0.0.1:8422" }), "secret"},
+		"scryer-with-bearer":        {scryer(func(r *mcpRoute) { r.BearerCredential = "mcp-scryer" }), "secret"},
+		"scryer-with-resources":     {scryer(func(r *mcpRoute) { r.Resources = []string{"ui://scryer/media.html"} }), "secret"},
+		"scryer-http":               {scryer(func(r *mcpRoute) { r.Scryer.URL = "http://scryer.hummingbird-lake.ts.net/graphql" }), "secret"},
+		"scryer-userinfo":           {scryer(func(r *mcpRoute) { r.Scryer.URL = "https://simon:x@scryer.hummingbird-lake.ts.net/graphql" }), "secret"},
+		"scryer-query":              {scryer(func(r *mcpRoute) { r.Scryer.URL = "https://scryer.hummingbird-lake.ts.net/graphql?x=1" }), "secret"},
+		"scryer-empty-query":        {scryer(func(r *mcpRoute) { r.Scryer.URL = "https://scryer.hummingbird-lake.ts.net/graphql?" }), "secret"},
+		"scryer-bad-username":       {scryer(func(r *mcpRoute) { r.Scryer.Username = "simon jackson" }), "secret"},
+		"scryer-credential-path":    {scryer(func(r *mcpRoute) { r.Scryer.PasswordCredential = "/run/secrets/x" }), "secret"},
+		"scryer-missing-credential": {scryer(func(r *mcpRoute) { r.Scryer.PasswordCredential = "missing" }), "secret"},
+		"scryer-empty-password":     {scryer(func(*mcpRoute) {}), ""},
+		"scryer-newline-password":   {scryer(func(*mcpRoute) {}), "\n"},
+		"scryer-two-lines":          {scryer(func(*mcpRoute) {}), "one\ntwo"},
+		// systemd's SetCredential default when the sops file is missing.
+		"scryer-systemd-default": {scryer(func(*mcpRoute) {}), "unavailable credential"},
+		"resource-http":          {mcpRoute{Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}, Resources: []string{"https://example.com/view"}}, "secret"},
+		"resource-empty-ui":      {mcpRoute{Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}, Resources: []string{"ui://"}}, "secret"},
+		"resource-joined":        {mcpRoute{Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}, Resources: []string{"ui://a.html,ui://b.html"}}, "secret"},
+		"no-backend":             {mcpRoute{CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}}, "secret"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			credentials := t.TempDir()
+			if err := os.WriteFile(filepath.Join(credentials, "mcp-scryer"), []byte(c.password), 0600); err != nil {
+				t.Fatal(err)
+			}
+			router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return simonNode, nil })
+			if router.reload(tableFile(t, map[string]mcpRoute{"echo": c.row}), credentials) == nil {
+				t.Fatal("invalid row accepted")
+			}
+		})
+	}
+}
+
+// One bad Scryer password must not stop the front door, as for a bad key.
+func TestMCPRoutesScryerSystemdDefaultKeepsFrontDoor(t *testing.T) {
+	dir, credentials := t.TempDir(), t.TempDir()
+	path := filepath.Join(dir, "table.json")
+	writeTable(t, path, map[string]mcpRoute{"scryer": scryerRow("scryer_graphql")})
+	if err := os.WriteFile(filepath.Join(credentials, "mcp-scryer"), []byte("unavailable credential"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	router := newMCPRouter(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(201) }),
+		func(*http.Request) (string, error) { return simonNode, nil })
+	router.loadInitial(path, credentials)
+	if w := routeRequest(router, "/v1/models", "{}"); w.Code != 201 {
+		t.Fatalf("front door got %d", w.Code)
+	}
+	if w := routeRequest(router, "/mcp/scryer", listRequest); w.Code != 404 {
+		t.Fatalf("row with the systemd default served: %d", w.Code)
+	}
+}

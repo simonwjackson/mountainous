@@ -76,14 +76,27 @@
             lib.mapAttrs (
               tool: row:
               {
-                inherit (row) backend callerNodeIds mcpTools;
+                inherit (row) callerNodeIds mcpTools;
               }
+              // lib.optionalAttrs (row.backend != null) { inherit (row) backend; }
+              // lib.optionalAttrs (row.mcpResources != [ ]) { inherit (row) mcpResources; }
               // lib.optionalAttrs (row.bearerCredentialFile != null) {
                 bearerCredential = "mcp-${tool}";
+              }
+              // lib.optionalAttrs (row.scryer != null) {
+                scryer = {
+                  inherit (row.scryer) url username;
+                  passwordCredential = "mcp-${tool}";
+                };
               }
             ) cfg.mcpRoutes
           )
         );
+      # The secret systemd copies for a row: its Bearer key or its Scryer password.
+      rowCredential =
+        row: if row.scryer != null then row.scryer.passwordFile else row.bearerCredentialFile;
+      # Scryer's own tools (packages/media-tsnet-proxy/scryer.go, scryer_app.go).
+      scryerTools = import ../lib/openclaw-scryer-tools.nix;
       directory = name: "/var/lib/tsnet-proxy-${name}";
       # A new subdirectory: the old, dead TS_AUTHKEY state stays beside it.
       state = name: "${directory name}/tailnet";
@@ -160,8 +173,33 @@
                   lib.types.submodule {
                     options = {
                       backend = lib.mkOption {
-                        type = lib.types.strMatching "http://127\\.0\\.0\\.1:[0-9]+(/[^?#]*)?";
-                        description = "Fixed loopback MCP URL. An empty path means /mcp.";
+                        type = lib.types.nullOr (lib.types.strMatching "http://127\\.0\\.0\\.1:[0-9]+(/[^?#]*)?");
+                        default = null;
+                        description = "Fixed loopback MCP URL. An empty path means /mcp. A row has a backend or scryer, never both.";
+                      };
+                      scryer = lib.mkOption {
+                        default = null;
+                        description = "Serve this Scryer account's MCP natively, as a claw-scryer-<user> endpoint does: no loopback backend, the password is the row's credential (mcp-<row>).";
+                        type = lib.types.nullOr (
+                          lib.types.submodule {
+                            options = {
+                              url = lib.mkOption {
+                                type = lib.types.strMatching "https://[a-zA-Z0-9.-]+/[^?#@]*";
+                                description = "Fixed HTTPS GraphQL URL.";
+                              };
+                              username = lib.mkOption { type = lib.types.strMatching "[a-zA-Z0-9_-]+"; };
+                              passwordFile = lib.mkOption {
+                                type = lib.types.strMatching "/run/[^:]+";
+                                description = "Runtime secret source, copied by systemd LoadCredential.";
+                              };
+                            };
+                          }
+                        );
+                      };
+                      mcpResources = lib.mkOption {
+                        type = lib.types.listOf (lib.types.strMatching "ui://[^,[:space:]]+");
+                        default = [ ];
+                        description = "Exact MCP App view URIs a loopback row may list and read. Empty refuses resource methods.";
                       };
                       callerNodeIds = lib.mkOption {
                         # Tailscale's stable IDs have this shape. A node name
@@ -220,6 +258,22 @@
             assertion = cfg.mcpRoutes == { } || cfg.mcpRouting.enable;
             message = "${name}: MCP rows require mcpRouting.enable.";
           }) names
+          ++ lib.concatLists (
+            lib.mapAttrsToList (
+              name: cfg:
+              lib.mapAttrsToList (tool: row: {
+                assertion =
+                  if row.scryer != null then
+                    row.backend == null
+                    && row.bearerCredentialFile == null
+                    && row.mcpResources == [ ]
+                    && lib.all (t: lib.elem t scryerTools) row.mcpTools
+                  else
+                    row.backend != null;
+                message = "${name}: /mcp/${tool} needs a loopback backend or a Scryer account, not both; a Scryer row has no key or resources and only Scryer's tools (lib/openclaw-scryer-tools.nix).";
+              }) cfg.mcpRoutes
+            ) names
+          )
           ++ lib.mapAttrsToList (name: cfg: {
             assertion =
               lib.length (
@@ -254,7 +308,7 @@
               else
                 proxy;
             table = routeTable name cfg;
-            credentialRows = lib.filterAttrs (_: row: row.bearerCredentialFile != null) cfg.mcpRoutes;
+            credentialRows = lib.filterAttrs (_: row: rowCredential row != null) cfg.mcpRoutes;
           in
           lib.nameValuePair "tsnet-proxy-${name}" {
             inherit (cfg) description;
@@ -275,7 +329,7 @@
               ]
               ++ lib.optional (cfg.scryerPasswordFile != null) "scryer-password:${cfg.scryerPasswordFile}"
               ++ lib.optional (cfg.webSearchKeyFile != null) "websearch-key:${cfg.webSearchKeyFile}"
-              ++ lib.mapAttrsToList (tool: row: "mcp-${tool}:${row.bearerCredentialFile}") credentialRows;
+              ++ lib.mapAttrsToList (tool: row: "mcp-${tool}:${rowCredential row}") credentialRows;
               ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p ${state name}";
               ExecStart =
                 "${package}/bin/tsnet-proxy -hostname ${name} -state ${state name}"

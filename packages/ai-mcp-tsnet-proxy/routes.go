@@ -22,12 +22,30 @@ import (
 
 // Credential names refer only to files in systemd's CREDENTIALS_DIRECTORY.
 // No caller input or secret values belong in this table.
+// A row has a loopback Backend or a native Scryer account, never both.
 type mcpRoute struct {
-	Backend          string   `json:"backend"`
+	Backend          string   `json:"backend,omitempty"`
 	CallerNodeIDs    []string `json:"callerNodeIds"`
 	Tools            []string `json:"mcpTools"`
+	Resources        []string `json:"mcpResources,omitempty"`
 	BearerCredential string   `json:"bearerCredential,omitempty"`
+	// The proxy serves this account's Scryer MCP itself (scryer.go), the same
+	// code a claw-scryer-<user> endpoint runs. No loopback MCP server exists.
+	Scryer *scryerRoute `json:"scryer,omitempty"`
 }
+
+type scryerRoute struct {
+	URL                string `json:"url"` // the fixed HTTPS GraphQL URL
+	Username           string `json:"username"`
+	PasswordCredential string `json:"passwordCredential"`
+}
+
+// systemd's SetCredential default (modules/tailnet-names.nix) when the sops
+// file is missing. It is never a key or a password.
+const unavailableCredential = "unavailable credential"
+
+// Tests replace this to reach a local fixture instead of the HTTPS URL.
+var newScryerRouteClient = newScryerClient
 
 type mcpRouter struct {
 	fallback http.Handler
@@ -82,11 +100,6 @@ func (router *mcpRouter) reload(path, credentialsDirectory string) error {
 		if !routeName.MatchString(name) || len(row.CallerNodeIDs) == 0 || len(row.Tools) == 0 {
 			return errors.New("MCP row requires a name, caller node IDs and tools")
 		}
-		backend, err := url.Parse(row.Backend)
-		// Step one keeps credentials and harmless test traffic on loopback.
-		if err != nil || backend.Scheme != "http" || backend.Hostname() != "127.0.0.1" || backend.User != nil || backend.RawQuery != "" || backend.Fragment != "" || backend.Opaque != "" {
-			return errors.New("MCP backend must be fixed IPv4 loopback HTTP")
-		}
 		callers := make(map[string]bool, len(row.CallerNodeIDs))
 		for _, id := range row.CallerNodeIDs {
 			if !stableNodeIDPattern.MatchString(id) {
@@ -99,27 +112,102 @@ func (router *mcpRouter) reload(path, credentialsDirectory string) error {
 				return errors.New("invalid MCP tool name")
 			}
 		}
-		var bearer string
-		if row.BearerCredential != "" {
-			if credentialsDirectory == "" || !routeName.MatchString(row.BearerCredential) {
-				return errors.New("MCP credential must name a LoadCredential file")
-			}
-			data, err := os.ReadFile(filepath.Join(credentialsDirectory, row.BearerCredential))
-			bearer = strings.TrimSpace(string(data))
-			if err != nil || bearer == "" || strings.ContainsAny(bearer, " \t\r\n") {
-				return errors.New("MCP credential unavailable or invalid")
-			}
-		}
-		routes["/mcp/"+name] = mcpAuthenticatedResourceHandler(backend, row.Tools, nil, bearer, func(r *http.Request) bool {
+		caller := func(r *http.Request) bool {
 			// WhoIs's stable node ID, not a node name, Host, forwarded headers
 			// or user profile, owns identity. Exact, case-sensitive match only.
 			id, err := router.stableNodeID(r)
 			return err == nil && id != "" && callers[id]
-		})
+		}
+		var handler http.Handler
+		var err error
+		if row.Scryer != nil {
+			handler, err = scryerRouteHandler(row, credentialsDirectory, caller)
+		} else {
+			handler, err = loopbackRouteHandler(row, credentialsDirectory, caller)
+		}
+		if err != nil {
+			return err
+		}
+		routes["/mcp/"+name] = handler
 	}
 	// Invalid reloads never partially publish. In-flight requests own old handlers.
 	router.routes.Store(routes)
 	return nil
+}
+
+// The filtered proxy to a loopback MCP server, with an optional server-held
+// Bearer key and an exact MCP App resource allowlist.
+func loopbackRouteHandler(row mcpRoute, credentialsDirectory string, caller func(*http.Request) bool) (http.Handler, error) {
+	backend, err := url.Parse(row.Backend)
+	// Credentials and harmless test traffic stay on loopback.
+	if err != nil || backend.Scheme != "http" || backend.Hostname() != "127.0.0.1" || backend.User != nil || backend.RawQuery != "" || backend.ForceQuery || backend.Fragment != "" || backend.Opaque != "" {
+		return nil, errors.New("MCP backend must be fixed IPv4 loopback HTTP")
+	}
+	for _, uri := range row.Resources {
+		// MCP App views only; never a file, HTTP or other resource.
+		if !strings.HasPrefix(uri, "ui://") || len(uri) == len("ui://") || strings.ContainsAny(uri, " \t\r\n,") {
+			return nil, errors.New("MCP resources must be exact ui:// URIs")
+		}
+	}
+	var bearer string
+	if row.BearerCredential != "" {
+		data, err := readRouteCredential(credentialsDirectory, row.BearerCredential)
+		bearer = strings.TrimSpace(data)
+		if err != nil || bearer == "" || strings.ContainsAny(bearer, " \t\r\n") {
+			return nil, errors.New("MCP credential unavailable or invalid")
+		}
+	}
+	return mcpAuthenticatedResourceHandler(backend, row.Tools, row.Resources, bearer, caller), nil
+}
+
+// Scryer's own tools: scryer_graphql and the MCP App tools (scryer_app.go).
+func scryerToolNames() map[string]bool {
+	names := map[string]bool{"scryer_graphql": true}
+	for _, tool := range scryerAppTools("") {
+		names[tool.(map[string]any)["name"].(string)] = true
+	}
+	return names
+}
+
+// The account-scoped Scryer MCP, as a claw-scryer-<user> endpoint serves it,
+// limited to the row's tools. The password is the server-held credential.
+func scryerRouteHandler(row mcpRoute, credentialsDirectory string, caller func(*http.Request) bool) (http.Handler, error) {
+	if row.Backend != "" || row.BearerCredential != "" || len(row.Resources) != 0 {
+		return nil, errors.New("a Scryer row has no backend, bearer key or resource list")
+	}
+	graphql, err := url.Parse(row.Scryer.URL)
+	if err != nil || graphql.Scheme != "https" || graphql.Host == "" || graphql.User != nil || graphql.RawQuery != "" || graphql.ForceQuery || graphql.Fragment != "" || graphql.Opaque != "" {
+		return nil, errors.New("Scryer requires a fixed HTTPS GraphQL URL")
+	}
+	if !routeName.MatchString(row.Scryer.Username) {
+		return nil, errors.New("invalid Scryer username")
+	}
+	native := scryerToolNames()
+	allowed := make(map[string]bool, len(row.Tools))
+	for _, tool := range row.Tools {
+		if !native[tool] {
+			return nil, errors.New("unknown Scryer tool")
+		}
+		allowed[tool] = true
+	}
+	data, err := readRouteCredential(credentialsDirectory, row.Scryer.PasswordCredential)
+	// The endpoint mode strips only the final newline; a password may hold spaces.
+	password := strings.TrimSuffix(data, "\n")
+	if err != nil || password == "" || password == unavailableCredential || strings.ContainsAny(password, "\r\n\x00") {
+		return nil, errors.New("Scryer credential unavailable or invalid")
+	}
+	return scryerToolsHandler(newScryerRouteClient(row.Scryer.URL, row.Scryer.Username, password), allowed, caller), nil
+}
+
+func readRouteCredential(credentialsDirectory, name string) (string, error) {
+	if credentialsDirectory == "" || !routeName.MatchString(name) {
+		return "", errors.New("MCP credential must name a LoadCredential file")
+	}
+	data, err := os.ReadFile(filepath.Join(credentialsDirectory, name))
+	if err != nil {
+		return "", errors.New("MCP credential unavailable")
+	}
+	return string(data), nil
 }
 
 // Call before the slow tailnet start (up to 90 s). SIGHUP's default action

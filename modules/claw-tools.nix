@@ -1,21 +1,41 @@
 { self, ... }:
 let
   endpoints = import ../lib/claw-tools.nix;
+  rows = import ../lib/ai-mcp-rows.nix;
+  # Simon's Google tools on the production front door, flakey only.
+  googleRows = [
+    "calendar"
+    "gmail"
+    "family-calendar"
+  ];
 in
 {
   nixos.modules.claw-tools =
     { config, lib, ... }:
+    let
+      port = app: toString config.mountainous.features.pi-assistant.people.simon.apps.${app}.port;
+    in
     {
-      mountainous.tailnetNames = lib.mapAttrs (_: endpoint: {
-        description = "Filtered OpenClaw ${endpoint.app} MCP endpoint";
-        backend = "http://127.0.0.1:${
-          toString config.mountainous.features.pi-assistant.people.simon.apps.${endpoint.app}.port
-        }";
-        after = [ "assistant-app-simon-${endpoint.app}.service" ];
-        tags = [ "tag:claw-tools" ];
-        mcpTools = endpoint.tools;
-        mcpAllowedNodeIds = endpoint.allowedNodeIds or [ ];
-      }) endpoints;
+      config = lib.mkMerge [
+        {
+          mountainous.tailnetNames = lib.mapAttrs (_: endpoint: {
+            description = "Filtered OpenClaw ${endpoint.app} MCP endpoint";
+            backend = "http://127.0.0.1:${port endpoint.app}";
+            after = [ "assistant-app-simon-${endpoint.app}.service" ];
+            tags = [ "tag:claw-tools" ];
+            mcpTools = endpoint.tools;
+            mcpAllowedNodeIds = endpoint.allowedNodeIds or [ ];
+          }) endpoints;
+        }
+        # No key: the Google app on loopback takes none, as before.
+        (lib.mkIf config.mountainous.features.ai-gateway.enable {
+          mountainous.tailnetNames.ai.mcpRoutes = lib.genAttrs googleRows (row: {
+            backend = "http://127.0.0.1:${port "google"}/mcp";
+            callerNodeIds = [ (import ../lib/tailnet-nodes.nix).flakey ];
+            mcpTools = rows.${row}.tools;
+          });
+        })
+      ];
     };
   perSystem =
     { pkgs, lib, ... }:
@@ -27,9 +47,8 @@ in
           "claw-laure"
         else
           "openclaw";
-      mcp =
-        containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers
-        // containers.${laureContainer}.config.services.openclaw-gateway.config.mcp.servers;
+      laureServers = containers.${laureContainer}.config.services.openclaw-gateway.config.mcp.servers;
+      mcp = containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers // laureServers;
     in
     {
       checks.claw-tools =
@@ -45,6 +64,25 @@ in
             "mail_discard_draft"
           ];
         assert !(lib.elem "mail_send" rakku.mountainous.tailnetNames.claw-gmail.mcpTools);
+        # Stage 5: the Google rows on production ai, flakey's stable ID only,
+        # the same Google app backend and tools as flakey's filter.
+        assert lib.all (
+          row:
+          let
+            route = rakku.mountainous.tailnetNames.ai.mcpRoutes.${row};
+            server =
+              containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers.${rows.${row}.server};
+          in
+          route.backend
+          == "http://127.0.0.1:${toString rakku.mountainous.features.pi-assistant.people.simon.apps.google.port}/mcp"
+          && route.callerNodeIds == [ "nbQJZMcewG11CNTRL" ]
+          && route.mcpTools == rows.${row}.tools
+          && route.bearerCredentialFile == null
+          && route.mcpResources == [ ]
+          && server.toolFilter.include == rows.${row}.tools
+          && !(laureServers ? ${rows.${row}.server})
+        ) googleRows;
+        assert !(lib.elem "mail_send" rakku.mountainous.tailnetNames.ai.mcpRoutes.gmail.mcpTools);
         assert
           containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers.claw-gmail.toolFilter.include
           == endpoints.claw-gmail.tools;

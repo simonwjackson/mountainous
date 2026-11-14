@@ -219,6 +219,19 @@ in
         ))
       ];
       config = lib.mkIf config.mountainous.features.ai-gateway.enable {
+        # Simon's own tools add their rows from their features (claw-tools,
+        # claw-ebay, claw-scryer). Every row, and every tool of a row, must be in
+        # lib/ai-mcp-rows.nix: an unknown row or tool fails evaluation here.
+        assertions = lib.mapAttrsToList (
+          row: route:
+          let
+            known = import ../lib/ai-mcp-rows.nix;
+          in
+          {
+            assertion = known ? ${row} && lib.all (tool: lib.elem tool known.${row}.tools) route.mcpTools;
+            message = "ai: /mcp/${row}, or one of its tools, is not in lib/ai-mcp-rows.nix.";
+          }
+        ) config.mountainous.tailnetNames.ai.mcpRoutes;
         mountainous.features.ai-gateway.providers.elevenlabs = {
           enable = true;
           secret = "elevenlabs-api-key";

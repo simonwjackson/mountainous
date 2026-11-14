@@ -1,35 +1,28 @@
 # One tool policy shared by the enforcing endpoints and OpenClaw's own filter.
+let
+  rows = import ./ai-mcp-rows.nix;
+in
 {
+  # Retiring: flakey now uses /mcp/calendar on ai (lib/ai-mcp-rows.nix).
   claw-calendar = {
     app = "google";
-    tools = [ "calendar_busy" ];
+    inherit (rows.calendar) tools;
   };
-  # Prepared on Rakku only. No gateway receives mail tools in this step.
+  # Retiring: flakey now uses /mcp/gmail on ai.
   claw-gmail = {
     app = "google";
-    tools = [
-      "mail_list"
-      "mail_read"
-      "mail_not_mine"
-      "mail_label"
-      "mail_archive"
-      "mail_draft"
-      "mail_discard_draft"
-    ];
+    inherit (rows.gmail) tools;
   };
   # Reads only the Family calendar; the app fixes the calendar ID, not the caller.
   claw-family-calendar = {
     app = "google";
     tools = [ "family_calendar_events" ];
   };
+  # Retiring: flakey now uses /mcp/family-calendar on ai.
   # Stable tailnet node ID, not a caller-controlled HTTP header or shared tag.
   claw-family-calendar-simon = {
     app = "google";
-    tools = [
-      "family_calendar_events"
-      "family_calendar_add"
-      "family_calendar_remove"
-    ];
+    inherit (rows.family-calendar) tools;
     allowedNodeIds = [ (import ./tailnet-nodes.nix).flakey ];
   };
   claw-maps = {
