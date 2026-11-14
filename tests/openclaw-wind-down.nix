@@ -36,6 +36,10 @@ assert lib.hasInfix "Until Stop's write and read-back succeed" skill;
 assert lib.hasInfix "Always include lookBack when charge is 4 or 5" skill;
 assert lib.hasInfix "short mode: Rate, Capture, Stop" skill;
 assert lib.hasInfix "at most 3 must-dos" skill;
+# SparkyFitness is the read-only source for food, training, sleep and body data.
+assert lib.hasInfix "come only from `sparkyfitness`" skill;
+assert lib.hasInfix "read-only, so\nnever log, change or delete" skill;
+assert !(lib.hasInfix "Body data, food, training" skill);
 assert lib.elem "show_widget" config.tools.allow;
 assert !lib.elem "show_widget" other.tools.allow;
 assert lib.pathExists "${builtins.elemAt config.skills.load.extraDirs 1}/wind-down/SKILL.md";

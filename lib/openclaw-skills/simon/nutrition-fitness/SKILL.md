@@ -38,3 +38,5 @@ For "how am I doing", brief or wind-down context, call
 not remembered totals. Never claim a failed write succeeded. If a write times
 out, check the diary/recent entries before retrying so it is not logged twice.
 Do not delete foods or diary entries unless Simon explicitly asks.
+In the wind-down and the morning brief, SparkyFitness is read-only: their
+ratings and answers stay where those skills keep them.

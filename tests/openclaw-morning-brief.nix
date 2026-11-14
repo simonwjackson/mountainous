@@ -34,6 +34,11 @@ assert lib.hasInfix "relevant memory" job.payload.message;
 assert lib.hasInfix "wind_down_state" job.payload.message;
 assert lib.hasInfix "assuming an ordinary day" job.payload.message;
 assert lib.hasInfix "do not post a duplicate" job.payload.message;
+# SparkyFitness is the read-only source for food, training, sleep and body data.
+assert lib.hasInfix "come only from the sparkyfitness tools" job.payload.message;
+assert lib.hasInfix "never log, change or delete" job.payload.message;
+assert lib.hasInfix "Use only values they return" job.payload.message;
+assert !(lib.hasInfix "Logbook charge/sleep/HRV" job.payload.message);
 assert unit.after == [ "openclaw-gateway.service" ];
 assert unit.requires == [ "openclaw-gateway.service" ];
 assert unit.partOf == [ "openclaw-gateway.service" ];

@@ -29,8 +29,12 @@ second close unless Simon explicitly asks to revise it. Revisions replace only
 that block, never append a second one. Resume an unfinished close in this same
 conversation rather than resetting its answers.
 
-Say once near the start: “Body data, food, training, Atlas and the journal are
-not connected yet.” Calendar and Simon's own answers are the only day evidence.
+Say once near the start: “Atlas and the journal are not connected yet.”
+Calendar, Simon's own answers and the `sparkyfitness` tools are the only day
+evidence. Food, training, sleep and body data come only from `sparkyfitness`
+reads (for example `sparky_get_daily_report`); here they are read-only, so
+never log, change or delete through them. Use only values they return: if a
+read fails or returns nothing, say that source is unavailable.
 No Logbook reads/writes, Atlas calls, training or body estimates, burnout zones,
 Household summaries, journal entries, or Pi assistant workflow tools.
 Ratings, worries and notes stay only in Flakey's private workspace memory.
