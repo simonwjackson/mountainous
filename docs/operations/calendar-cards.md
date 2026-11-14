@@ -168,8 +168,8 @@ to c2**, replied **Not added.**, and made no additional write. Independent
 final reads found **all eight calendar/date pairs empty, no TEST events**.
 Each test conversation's audit proves exactly one add and one remove, each
 followed by chosen-calendar read-back, with no file/memory/delegation writes.
-An initial attempted skill-file read in the final test failed closed; the agent
-then used skills_read successfully. No calendar request failed in that run.
+An initial read call in the final test failed closed; its target was not
+inspected. The following skills_read and all calendar calls succeeded.
 
 **12 PNGs**: `/tmp/claw/calendar-card/` on Zao. Final corrected UI screenshots
 are **05–12** (1280×900 desktop and 390×844 phone). Opened/inspected picker,
