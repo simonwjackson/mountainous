@@ -206,6 +206,20 @@
         assert nodes.snowy == "nkT3Yhzyy121CNTRL";
         assert
           builtins.fromJSON prodTable.text == {
+            pace = {
+              backend = "http://127.0.0.1:3195/mcp";
+              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+              mcpTools = [ "pace_status" ];
+              mcpResources = [ "ui://pace/status" ];
+              bearerCredential = "mcp-pace";
+            };
+            pace-laure = {
+              backend = "http://127.0.0.1:3195/mcp";
+              callerNodeIds = [ "nkT3Yhzyy121CNTRL" ];
+              mcpTools = [ "pace_status" ];
+              mcpResources = [ "ui://pace/status" ];
+              bearerCredential = "mcp-pace-laure";
+            };
             sparkyfitness = {
               backend = "http://127.0.0.1:3010/mcp";
               # flakey (named claw-simon until the in-place rename; same ID).
@@ -321,11 +335,15 @@
         assert
           lib.sort builtins.lessThan prodAdded == [
             "ExecStart=${prodExecStart}"
+            "LoadCredential=mcp-pace-laure:/run/secrets/pace-key-laure"
+            "LoadCredential=mcp-pace:/run/secrets/pace-key-simon"
             "LoadCredential=mcp-scryer-laure:/run/secrets/scryer-password-laure"
             "LoadCredential=mcp-scryer:/run/secrets/scryer-password-simon"
             "LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key"
             "LoadCredential=mcp-websearch:/run/secrets/ai-gateway-key-openclaw-yari"
             # The defaults keep the unit starting if a sops file is absent.
+            "SetCredential=mcp-pace-laure:unavailable credential"
+            "SetCredential=mcp-pace:unavailable credential"
             "SetCredential=mcp-scryer-laure:unavailable credential"
             "SetCredential=mcp-scryer:unavailable credential"
             "SetCredential=mcp-sparkyfitness:unavailable credential"

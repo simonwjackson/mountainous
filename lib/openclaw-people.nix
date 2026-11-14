@@ -26,6 +26,10 @@ in
     # front door: https://ai.hummingbird-lake.ts.net/mcp/<row>. The row admits
     # this node's stable ID only; this gateway holds no key.
     mcpServers = {
+      pace = {
+        row = "pace";
+        inherit (rows.pace) tools;
+      };
       claw-ebay-simon = {
         row = "ebay";
         inherit (rows.ebay) tools;
@@ -132,6 +136,10 @@ in
     # Her servers keep their names and reach her rows on the production front
     # door; each row admits this node's stable ID only (stage 7).
     mcpServers = {
+      pace = {
+        row = "pace-laure";
+        inherit (rows.pace-laure) tools;
+      };
       claw-family-calendar = {
         row = "family-calendar-laure";
         inherit (rows.family-calendar-laure) tools;

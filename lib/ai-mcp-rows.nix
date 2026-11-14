@@ -11,6 +11,16 @@
 #   that lists a tool not named here, a row not named here, or a row whose
 #   callers differ from these fails evaluation.
 {
+  pace = {
+    callers = [ "flakey" ];
+    server = "pace";
+    tools = [ "pace_status" ];
+  };
+  pace-laure = {
+    callers = [ "snowy" ];
+    server = "pace";
+    tools = [ "pace_status" ];
+  };
   sparkyfitness = {
     callers = [ "flakey" ];
     server = "sparkyfitness";

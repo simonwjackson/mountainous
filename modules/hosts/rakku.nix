@@ -23,6 +23,7 @@ in
       "tailnet-names"
       "claw-tools"
       "claw-scryer"
+      "pace2"
       "claw-ebay"
       "claw-websearch"
       "decision-gateway"
