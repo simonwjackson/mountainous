@@ -8,8 +8,12 @@ SparkyFitness stays on Rakku; this is a new route, not a controlled move.
 
 **Stage 5** (section "Stage 5: Simon's own tools on /mcp rows" below) adds
 five rows for Simon's own tools and retires their per-tool tailnet nodes.
-The stage-2 sections describe the router and the sparkyfitness row as
-deployed then; where they say "one row", read "six rows" since stage 5.
+**Stage 7** (section "Stage 7: Laure's and the shared tools on /mcp rows")
+adds four more, two of them for Laure's gateway and two for both gateways,
+and retires the last per-tool nodes. The stage-2 sections describe the router
+and the sparkyfitness row as deployed then; where they say "one row", read
+"ten rows" since stage 7, and where they say "flakey only", read "the row's
+callers in `lib/ai-mcp-rows.nix`".
 
 ## Contract
 
@@ -361,6 +365,201 @@ check (`openclaw config validate`, both people).
   The switch script now also compares drop-in files (`*.service.d/`).
 - Final `accept-auth`: 49/49 and 15/15; no failed units on Rakku, Yari or in
   either container. Scripts and logs: `/tmp/claw/simon-tools-*` on Zao.
+
+## Stage 7: Laure's and the shared tools on /mcp rows
+
+The last per-tool tailnet nodes move to rows on this front door. Each row
+keeps the backend, tools and server-side key of the node it replaces and
+admits only the stable node IDs its callers have in `lib/tailnet-nodes.nix`.
+Both gateways keep every MCP server name, so tool names (`<server>__<tool>`),
+permissions, skills, `dispatch_action` IDs and the morning briefs do not
+change. Only the URLs move. OpenClaw holds no key.
+
+| Row | Callers (stable ID) | Server (unchanged name) | Backend | Tools | Server-side key | Old node (retired) |
+| --- | --- | --- | --- | --- | --- | --- |
+| `/mcp/family-calendar-laure` | Laure's `claw` `nkT3Yhzyy121CNTRL` | `claw-family-calendar` (Laure) | Google app `127.0.0.1:3171/mcp` | `family_calendar_events` | none (loopback) | `claw-family-calendar` `nw4DmtiXHN11CNTRL` |
+| `/mcp/scryer-laure` | `claw` | `claw-scryer-laure` (Laure) | native: `https://scryer.hummingbird-lake.ts.net/graphql` as `laure` | the 5 Scryer tools, plus `ui://scryer/media.html` | sops `scryer-password-laure` as `mcp-scryer-laure` | `claw-scryer-laure` `nn4JrFbREK11CNTRL` |
+| `/mcp/maps` | `flakey` `nbQJZMcewG11CNTRL` and `claw` | `claw-maps` (both) | Maps app `127.0.0.1:3172/mcp` | `travel_time` | none (loopback) | `claw-maps` `naQB5pjsTM11CNTRL` |
+| `/mcp/websearch` | `flakey` and `claw` | `claw-websearch` (both) | native: `http://127.0.0.1:8430/v1/responses`, model `gpt-6.1-sol` | `web_search` | sops `ai-gateway-key-openclaw-yari` (the gateways' own `openclaw@yari` key) as `mcp-websearch` | `claw-websearch` `nut8ipE3di11CNTRL` |
+
+Afterwards `tailscale status` shows `ai`, `ai-staging`, `flakey` and `claw`
+for this feature, and no `claw-*` tool node. No node changes its tags; the
+tailnet policy does not change (both gateways already reach `ai`, and every
+row's backend is on Rakku's loopback or leaves Rakku's host network exactly as
+the old node's request did).
+
+### What changed
+
+- `lib/ai-mcp-rows.nix` names each row's `callers` as keys of
+  `lib/tailnet-nodes.nix` (now with `claw`). Every row module reads its
+  callers, tools and server from it. `ai`'s assertion now also refuses a row
+  whose caller IDs differ from that list, as it refuses an unknown row or tool.
+- The router gains a native **web search** row kind beside loopback and
+  Scryer rows. It runs the same `websearch.go` handler as the `claw-websearch`
+  endpoint: only `web_search`, only the fixed loopback front-door Responses URL
+  (checked by the table's type and by the router), a granted model, and the key
+  as the row's credential. The router refuses an empty, multi-line or default
+  key, as for the other credentials. A row has exactly one of a backend, a
+  Scryer account or web search.
+- `tsnet-proxy-ai` loads two new credentials, `mcp-scryer-laure` and
+  `mcp-websearch`, each with its `SetCredential=…:unavailable credential`
+  default. Both arrive in one Rakku switch: `ai` restarts once (and
+  `ai-staging` for the new binary). Either secret's new value restarts `ai`.
+- Both gateways' servers have a `row`; `lib/openclaw-container.nix` writes
+  `https://ai.hummingbird-lake.ts.net/mcp/<row>` for every tool server and
+  fails evaluation for a server without one. The shared `claw-maps` and
+  `claw-websearch` come from one place there.
+- The gateway unit restarts when its config changes
+  (`restartTriggers = [ <openclaw.json> ]`). Laure's container switches in
+  place, which restarts only changed units; without the trigger her new URLs
+  would wait for OpenClaw's file watcher (hot reload, up to five minutes).
+  With it, the switch stops her gateway before `/etc` changes and starts it
+  once on the new file. Her container, tailnet node, sessions, pairings and
+  memory stay. flakey's container still restarts on change.
+
+### Guards
+
+`/tmp/claw/laure-tools-negative.py CHECKOUT` proves 17 wrong configurations
+fail evaluation: a row with no callers (Laure's two), a node name as a
+caller, Zao added to a shared row, flakey added to Laure's Scryer row in its
+module, an unknown tool on Laure's calendar or Scryer row, `web_fetch` on the
+web search row even when listed, a web search row with a backend too, web
+search to another port, an unnamed row, Laure's calendar server on Simon's
+row, flakey's Scryer server on Laure's row, flakey added to Laure's row in
+the allowlist without a server, a Laure or shared server without a row, and
+a gateway unit without the config restart trigger.
+`tests/openclaw-people.nix` requires each gateway's URL servers to be exactly
+the rows that admit its node, with the row's tools and no credential. The Go
+tests (49) cover the web search row: both callers served, others 403 without
+reaching the front door, only the row's key upstream, 19 invalid rows, and a
+default key that leaves `/v1` up with every row at 404.
+
+### Verification before approval
+
+On Zao, one at a time. Never the aggregate flake check; Rakku never builds.
+
+```sh
+/tmp/claw/ai-mcp-go-check.sh "$PWD"           # gofmt, go test (49), go vet, race
+/tmp/claw/laure-tools-checks.sh "$PWD"        # ai-mcp-proxy tailnet-names ai-gateway ai-gateway-staging
+                                              # claw-tools claw-scryer claw-websearch claw-ebay
+                                              # openclaw openclaw-people openclaw-in-place
+/tmp/claw/laure-tools-identity.sh "$PWD" LABEL   # then laure-tools-identity-compare.py BEFORE AFTER EXPECT.json
+/tmp/claw/laure-tools-negative.py "$PWD"
+```
+
+Expected differences from `cfb5bd31`: rows commit, on Rakku exactly
+`tsnet-proxy-ai` and `tsnet-proxy-ai-staging`, and the four new rows in the
+table; Yari byte-identical. Gateway commit: on Yari exactly
+`container@openclaw` (reloads in place) and `container@claw-simon`; in each
+container only `openclaw-gateway.service`; in Laure's config only the URLs of
+her four servers, in flakey's only those of `claw-maps` and `claw-websearch`;
+Rakku byte-identical. Retire commit: on Rakku exactly the four old proxy
+units; Yari byte-identical.
+
+### Deploy
+
+Rakku first, then Yari, then acceptance; retire and delete only after every
+gateway works on the new paths. Same machinery as stage 5 (scripts
+`/tmp/claw/laure-tools-*` on Zao, each with a Nix shebang): Rakku built on
+Unzen and copied through Zao with `--no-check-sigs`; Yari built natively with
+the aarch64 `openclaw-config` and `openclaw-in-place-config` checks; every
+switch and rollback under `systemd-run` with a fixed unit name
+(`laure-tools-<step>`); the Rakku switch waits for both gateways to be idle and
+for a `go` holding its nonce; automatic rollback in the same unit.
+
+```sh
+EXPECTED_SOURCE_SHA=<landed gateway or runbook commit>
+/tmp/claw/laure-tools-build.sh rows "$PWD" "$EXPECTED_SOURCE_SHA"
+/tmp/claw/laure-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" rehearse-gate
+/tmp/claw/laure-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" rakku
+/tmp/claw/laure-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" accept-rakku
+/tmp/claw/laure-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" check-yari
+/tmp/claw/laure-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" yari
+/tmp/claw/laure-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" accept-yari
+/tmp/claw/laure-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" check-rollback-yari
+```
+
+- `rakku`: preflight (exactly the two proxy units differ; keyed `/v1/models`
+  baseline), idle gate, ready/go. Only the two proxies may change identity;
+  `ai-gateway`, SparkyFitness, `ebay-server`, the Google and Maps apps,
+  Laure's Pi assistant, the four old proxies (still running), Home Assistant
+  and Z-Wave keep theirs; keyed `/v1/models` matches the baseline; all ten
+  rows answer the Rakku host with 403. Any problem rolls back at once; all
+  ten 404 (table rejected, `/v1` healthy) exits 5: fix forward.
+  `ai-mcp-rakku-health.py` then checks Home Assistant and the Z-Wave
+  handshake.
+- `yari` (`laure-tools-yari-switch.py forward`): refuses unless the target's
+  `container@openclaw` carries `X-ReloadIfChanged=true`, only
+  `openclaw-gateway.service` differs in her container, her config differs
+  only in her four server URLs (all row URLs), both gateways are healthy and
+  idle (checked again right before activation). It rolls back at once if the
+  switch fails, health does not return in 180 s, her container restarted, her
+  gateway did not restart exactly once (one new InvocationID, NRestarts 0),
+  her container or flakey's does not run the target, or her live config is
+  not the target's. A lost session or paired device is an alert (exit 6),
+  not a rollback: a rollback cannot restore state.
+
+### Acceptance
+
+All read-only. No calendar edit, no Scryer change.
+
+1. `accept-rakku`: from each container as `openclaw`, every row that admits
+   that gateway answers initialize and `tools/list` with exactly its
+   allowlist, refuses an unlisted tool (`-32601`), ignores a forged
+   `Authorization`, and lists exactly its views; every other row returns 403
+   to it (Laure's rows to flakey, Simon's to Laure). From Zao every row 403,
+   also with forged headers; `/mcp/missing` and `/mcp` 404; `/v1/models`
+   without a key 401. Keyed `/v1/models` 200 from both containers.
+2. `accept-yari`: the above, plus both gateways' live configs (every URL
+   server is its row, no credential, no per-tool host), `laure-tools-mcp.py`
+   for both gateways (initialize, exact list, one read each:
+   `family_calendar_events`, `scryer_search`, `travel_time` between two public
+   city centres, one `web_search`, and on flakey all of its stage-5 reads),
+   OpenClaw's own CLI `mcp probe` for both gateways with no diagnostics,
+   Session Share both ways (`flakey-share.py`), Laure's gateway InvocationID
+   is the one the switch recorded, and no failed units on Yari or in either
+   container.
+
+### Retire the old nodes
+
+Only after acceptance passes. The retire commit removes the four tailnet
+names (`lib/claw-tools.nix` goes, `claw-scryer-laure` from `claw-scryer`,
+the endpoint from `claw-websearch`); Yari does not change and production `ai`
+does not restart.
+
+```sh
+EXPECTED_SOURCE_SHA=<retire commit>
+/tmp/claw/laure-tools-build.sh retire "$PWD" "$EXPECTED_SOURCE_SHA"   # refuses if Yari would change
+/tmp/claw/laure-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" retire-rakku
+/tmp/claw/laure-tools-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" accept-retire
+/tmp/claw/laure-tools-delete-nodes.sh dry-run
+/tmp/claw/laure-tools-delete-nodes.sh delete
+```
+
+`laure-tools-delete-nodes.sh` checks that neither gateway's live config names
+any of the four hosts, that the old units are gone from Rakku, and then, per
+device through the fleet OAuth client: exactly one device with that exact
+name, the recorded node ID, only `tag:claw-tools`, not connected. Anything
+else stops the run before that device.
+
+### Rollback (stage 7)
+
+- Before the retire step: `rollback-yari` (Laure's gateway restarts once more
+  onto the old URLs, in place; flakey restarts), then `rollback-rakku`
+  (production `ai` restarts once onto the stage-5 binary and six rows; the
+  old nodes still run). Both are `laure-tools-deploy.sh` steps with Laure's
+  guards only.
+- After the retire step, before the deletion: `rollback-retire` brings the
+  old units back on their saved identities.
+- After the deletion: move each old node's state aside on Rakku, as root,
+  `mv /tundra/permafrost/var/lib/tsnet-proxy-<name> /tundra/permafrost/var/lib/tsnet-proxy-<name>.deleted`,
+  then `rollback-retire`; each unit enrolls a new node with a new ID through
+  the OAuth client. Then `rollback-yari` and `rollback-rakku` if the rows must
+  go too.
+- Without `/tmp/claw`, use the pinned systems from the deployment record with
+  `nix-env -p /nix/var/nix/profiles/system --set <system>` and
+  `systemd-run --wait --collect --unit laure-tools-manual-rollback <system>/bin/switch-to-configuration switch`,
+  while Laure's gateway is idle. Do not use `nixos-rebuild switch --rollback`.
 
 ## The key
 

@@ -287,6 +287,10 @@ for laure. Each agent denies the other endpoint's tool namespace; neither
 endpoint loads the admin password. The old `claw-scryer` unit is retired.
 Its saved tsnet identity is retained for rollback, but has no listener.
 The new identities enroll with fleet OAuth and `tag:claw-tools`.
+Since stages 5 and 7 (`operations/ai-mcp-production.md`) both accounts are
+native rows on the production front door instead: `/mcp/scryer` as `simon`
+for flakey and `/mcp/scryer-laure` as `laure` for Laure's gateway, each with
+the same password as a systemd credential; both nodes are retired.
 
 OpenClaw's Scryer card asks which library an add goes to and proposes the
 caller's own (the library named after the signed-in Scryer account). When the

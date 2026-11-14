@@ -23,7 +23,12 @@ names but reach rows on the production front door, locked to flakey's node ID:
 and `claw-scryer-simon` use `https://ai.hummingbird-lake.ts.net/mcp/<row>`
 (`calendar`, `gmail`, `family-calendar`, `ebay`, `scryer`). Their old per-tool
 tailnet nodes are retired in the same stage; sections below that name them are history.
-Laure's servers and the shared `claw-maps` and `claw-websearch` did not move.
+Since stage 7, Laure's `claw-family-calendar` and `claw-scryer-laure` and the
+shared `claw-maps` and `claw-websearch` are rows too (`family-calendar-laure`,
+`scryer-laure`, `maps`, `websearch`), locked to her node ID, or to both
+gateways' IDs for the shared two; their per-tool nodes are retired. No
+per-tool tailnet node remains. A gateway's config change now restarts its
+gateway unit, also in Laure's in-place container.
 
 The temporary rehearsal container and tailnet node `claw-laure` have been
 retired. Its cloned private state and synthetic profile were wiped before the
