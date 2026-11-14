@@ -23,11 +23,12 @@ SCOPES = (
     "email",
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events.owned",
     "https://www.googleapis.com/auth/gmail.modify",
 )
 # Google may also report scopes this account granted earlier, and may report
 # "email" only in its long form. These are the only differences accepted; any
-# other granted scope (settings, send-only, full mail, calendar write) refuses.
+# other granted scope (settings, send-only, full mail, full calendar or unowned event write) refuses.
 REQUIRED = frozenset(SCOPES) - {"email"}
 TOLERATED = frozenset({"email", "https://www.googleapis.com/auth/gmail.readonly"})
 STATE_FILE = ".google-oauth-state.json"

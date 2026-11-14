@@ -38,13 +38,20 @@ in
       };
       claw-gmail.tools = mailTools;
       claw-calendar.tools = [ "calendar_busy" ];
+      claw-family-calendar-simon = {
+        tools = (import ./claw-tools.nix).claw-family-calendar-simon.tools;
+        codex.defaultToolsApprovalMode = "approve";
+      };
       claw-scryer-simon.tools = scryerTools;
     };
     extraToolPermissions = [
       "show_widget"
     ]
     ++ (map (tool: "claw-ebay-simon__${tool}") (import ./openclaw-ebay-tools.nix))
-    ++ mailPermissions;
+    ++ mailPermissions
+    ++ (map (tool: "claw-family-calendar-simon__${tool}")
+      (import ./claw-tools.nix).claw-family-calendar-simon.tools
+    );
     agentTools = {
       deny = [ "claw-gmail__*" ];
       agentToAgent.send = [ "mail" ];

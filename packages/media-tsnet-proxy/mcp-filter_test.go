@@ -167,3 +167,71 @@ func TestMCPEbayViewsBoundary(t *testing.T) {
 		}
 	}
 }
+
+func TestMCPNodeRestriction(t *testing.T) {
+	for _, c := range []struct {
+		id, configured string
+		want           bool
+	}{
+		{"nbQJZMcewG11CNTRL", "nbQJZMcewG11CNTRL", true},
+		{"laure-node", "nbQJZMcewG11CNTRL", false},
+		{"", "nbQJZMcewG11CNTRL", false},
+		{"nbQJZMcewG11CNTRL", ",", false},
+		{"nbQJZMcewG11CNTRL-extra", "nbQJZMcewG11CNTRL", false},
+		{"existing-peer", "", true},
+		{"", "", false},
+	} {
+		if got := mcpNodeAllowed(c.id, c.configured); got != c.want {
+			t.Errorf("mcpNodeAllowed(%q,%q)=%v", c.id, c.configured, got)
+		}
+	}
+}
+
+func TestMCPFamilySimonBoundary(t *testing.T) {
+	calls := 0
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"family_calendar_events"},{"name":"family_calendar_add"},{"name":"family_calendar_remove"},{"name":"calendar_add_event"},{"name":"mail_send"}]}}`))
+	}))
+	defer backend.Close()
+	target, _ := url.Parse(backend.URL)
+	tools := []string{"family_calendar_events", "family_calendar_add", "family_calendar_remove"}
+	for _, peer := range []string{"nbQJZMcewG11CNTRL", "laure-node"} {
+		handler := mcpHandler(target, tools, func(*http.Request) bool { return mcpNodeAllowed(peer, "nbQJZMcewG11CNTRL") })
+		for _, tool := range append(tools, "calendar_add_event", "mail_send") {
+			before := calls
+			r := httptest.NewRequest("POST", "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"`+tool+`","arguments":{}}}`))
+			r.Header.Set("Tailscale-User-Login", "simon.jackson@gmail.com")
+			r.Header.Set("X-Forwarded-For", "100.64.0.1")
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, r)
+			if peer != "nbQJZMcewG11CNTRL" {
+				if w.Code != 403 || calls != before {
+					t.Fatal("Laure peer accepted", tool)
+				}
+			} else if tool == "calendar_add_event" || tool == "mail_send" {
+				if calls != before || !strings.Contains(w.Body.String(), `"code":-32601`) {
+					t.Fatal("unsafe tool forwarded", tool)
+				}
+			} else if calls != before+1 {
+				t.Fatal("Family tool not forwarded", tool)
+			}
+		}
+		before := calls
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest("POST", "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`)))
+		if peer == "nbQJZMcewG11CNTRL" {
+			if calls != before+1 || strings.Contains(w.Body.String(), "calendar_add_event") || strings.Contains(w.Body.String(), "mail_send") {
+				t.Fatal(w.Body.String())
+			}
+			for _, tool := range tools {
+				if !strings.Contains(w.Body.String(), tool) {
+					t.Fatal("missing tool", tool)
+				}
+			}
+		} else if calls != before || w.Code != 403 {
+			t.Fatal("Laure listed tools")
+		}
+	}
+}

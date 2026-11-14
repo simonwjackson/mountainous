@@ -22,6 +22,16 @@
     app = "google";
     tools = [ "family_calendar_events" ];
   };
+  # Stable tailnet node ID, not a caller-controlled HTTP header or shared tag.
+  claw-family-calendar-simon = {
+    app = "google";
+    tools = [
+      "family_calendar_events"
+      "family_calendar_add"
+      "family_calendar_remove"
+    ];
+    allowedNodeIds = [ "nbQJZMcewG11CNTRL" ];
+  };
   claw-maps = {
     app = "maps";
     tools = [ "travel_time" ];

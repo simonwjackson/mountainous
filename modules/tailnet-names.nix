@@ -142,6 +142,11 @@
                 default = [ ];
                 description = "Exact UI resource URI allowlist for filtered MCP. Empty denies resource methods.";
               };
+              mcpAllowedNodeIds = lib.mkOption {
+                type = lib.types.listOf (lib.types.strMatching "[a-zA-Z0-9]+");
+                default = [ ];
+                description = "Restrict a filtered MCP endpoint to these stable Tailscale node IDs. Empty preserves the existing any-tailnet-peer policy.";
+              };
               mcpTools = lib.mkOption {
                 type = lib.types.nullOr (lib.types.nonEmptyListOf (lib.types.strMatching "[a-zA-Z0-9_-]+"));
                 default = null;
@@ -157,7 +162,7 @@
       config = lib.mkIf (names != { }) {
         assertions =
           lib.mapAttrsToList (name: cfg: {
-            assertion = cfg.mcpResources == [ ] || cfg.mcpTools != null;
+            assertion = (cfg.mcpResources == [ ] && cfg.mcpAllowedNodeIds == [ ]) || cfg.mcpTools != null;
             message = "${name}: MCP resources require filtered tools.";
           }) names
           ++ lib.mapAttrsToList (name: cfg: {
@@ -214,6 +219,9 @@
                 + lib.optionalString (
                   cfg.mcpTools != null
                 ) " -mcp-tools ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpTools)}"
+                + lib.optionalString (
+                  cfg.mcpAllowedNodeIds != [ ]
+                ) " -mcp-allowed-node-ids ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpAllowedNodeIds)}"
                 + lib.optionalString (
                   cfg.mcpResources != [ ]
                 ) " -mcp-resources ${lib.escapeShellArg (lib.concatStringsSep "," cfg.mcpResources)}"

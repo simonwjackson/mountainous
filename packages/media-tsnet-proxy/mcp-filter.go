@@ -16,6 +16,23 @@ import (
 // allowlist; adding an upstream tool or resource never widens either list.
 const mcpMaxBody = 4 << 20
 
+// Called only with the node identity returned by tsnet WhoIs. Never use HTTP
+// identity headers, source IP text, DNS names or the shared tag:claw here.
+func mcpNodeAllowed(stableID, configured string) bool {
+	if stableID == "" {
+		return false
+	}
+	if configured == "" {
+		return true
+	}
+	for _, allowed := range strings.Split(configured, ",") {
+		if stableID == allowed {
+			return true
+		}
+	}
+	return false
+}
+
 type mcpRequest struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      json.RawMessage `json:"id,omitempty"`

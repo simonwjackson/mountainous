@@ -27,6 +27,7 @@ SCOPES = {
     "email",
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events.owned",
     "https://www.googleapis.com/auth/gmail.modify",
 }
 DAY = "2026-11-10"
@@ -350,6 +351,11 @@ class ExactConsent(unittest.TestCase):
         for scopes in (
             SCOPES | {"https://www.googleapis.com/auth/gmail.settings.sharing"},
             SCOPES | {"https://mail.google.com/"},
+            SCOPES | {"https://www.googleapis.com/auth/gmail.send"},
+            SCOPES | {"https://www.googleapis.com/auth/calendar"},
+            SCOPES | {"https://www.googleapis.com/auth/calendar.events"},
+            SCOPES | {"https://www.googleapis.com/auth/calendar.settings.readonly"},
+            SCOPES - {"https://www.googleapis.com/auth/calendar.events.owned"},
             SCOPES - {"https://www.googleapis.com/auth/gmail.modify"},
             set(),
         ):

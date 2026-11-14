@@ -301,7 +301,7 @@ def main():
         "Verified: a new successful assistant calendar_busy tool result matches both endpoints."
     )
     print(
-        "Done. Calendar read-only and Gmail modify OAuth is installed (read, label, archive and drafts). No send-only or settings scopes were requested."
+        "Done. Calendar read plus owned-event write and Gmail modify OAuth is installed (read, label, archive and drafts). No send-only or settings scopes were requested."
     )
     print(
         "GOG_ACCOUNT is selected in",

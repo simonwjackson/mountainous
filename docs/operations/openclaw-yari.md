@@ -2598,3 +2598,69 @@ wind-down job through `cron.update`, then restores pre-feature **generation 48**
 The helper refuses a later deployment or a Laure unit/config change. Nix rollback
 alone does not remove gateway-owned jobs. Neither rollback was executed. Keep
 real memory and job history; never restore the removed TEST data.
+
+
+## Simon Family calendar writes and Undo — 2026-11-13
+
+Simon's approved boundary is calendar read plus owned-event write. Google documents
+`calendar.events.owned` as “See, create, change, and delete events on Google calendars
+you own”: https://developers.google.com/workspace/calendar/api/auth. Simon owns
+both primary and Family, so broader `calendar.events` is not needed. Retain
+`calendar.readonly`: `calendar_busy` lists events across calendars and gog needs
+calendar-list access; Family reads remain unchanged. OAuth refuses full calendar,
+unowned-event write, settings and Gmail send-only grants. Existing Gmail modify
+is unchanged (and itself includes sending capability); no send tool is exposed.
+
+New `claw-family-calendar-simon` exposes only events/add/remove. The old Laure
+`claw-family-calendar` remains read-only. Existing endpoints verify only that
+WhoIs returns a tailnet node, so omitting a server from Laure's config would not
+be a security boundary. The new proxy verifies **stable node ID
+`nbQJZMcewG11CNTRL`**, measured from claw-simon's real Tailscale status, on every
+request. HTTP identity headers, shared `tag:claw`, hostname and source-IP strings
+cannot grant access. Re-enrolling Simon as a new node fails closed until this
+explicit Nix allowlist is updated. Other endpoints keep their existing policy.
+The shared proxy binary change restarts existing Rakku proxies, not assistants.
+
+The Google app's durable write store is the authority for idempotency and Undo.
+Keep it private and retain it across rollback. Remove permits only completed adds
+recorded in the currently configured Family calendar. No arbitrary calendar,
+attendees or notification-bearing tool is exposed. A timed event needs offsets;
+all-day end dates are exclusive. The skill uses a labelled one-hour default when
+Simon gives only a start; vague date/time asks one short question. Duplicate reads
+and model adherence are skill policy, not a transactional cross-key uniqueness
+constraint. Ambiguous outcomes are never retried with a new key.
+
+### Consent handoff (do not start until Simon is ready)
+
+1. Parent asks Simon whether he is ready. Preflight is untimed:
+   `ssh -F /dev/null root@rakku claw-google-auth --check`.
+2. Once ready, run `ssh -F /dev/null -t root@rakku claw-google-auth`. It uses the
+   saved Google account. Press Enter through the intro; answer `y` only when
+   ready for the ten-minute consent URL. No URL should be generated in advance.
+3. Open the exact `https://accounts.google.com/o/oauth2/v2/auth?...` URL printed
+   by the wizard, including its PKCE/state query. It can be opened on a phone;
+   choose the saved account, approve calendar read plus owned-event write and
+   existing Gmail modify. If shown, use Advanced to continue past Google's
+   unverified-app warning. Do not broaden scopes or enable settings/send-only.
+4. The phone/desktop browser ends on a **failed loopback page**. This is expected:
+   the wizard does not run a callback web server. Copy the complete address-bar
+   URL (`http://127.0.0.1:<port>/oauth2/callback?state=...&code=...`) and paste
+   it into the wizard's hidden prompt. Do not share that URL in chat or logs.
+5. The helper validates state, PKCE, age, scopes and account before importing
+   the refresh token. The launcher restarts only assistant-app-simon-google and
+   verifies reads. A successful read alone does not prove write scope: inspect
+   imported scope **names only**, then use Simon's restricted endpoint.
+
+After consent, first read 2026-11-14 to avoid a duplicate, then add “Lego Robotics
+event”, 13:00–14:00 America/Denver (`-07:00`), location “Fort Collins (place TBD)”.
+Read back and record the returned event ID. Test Undo only with a separate
+“TEST – delete me” event on a read-confirmed empty date; read back after removal.
+No real write or timed OAuth session runs before that handoff.
+
+Rollback: revert the Simon server/permissions/skill and new endpoint, rebuild
+Rakku then Yari with the existing Laure continuity guard. Keep Google write
+store and tsnet identities. A system rollback does not delete calendar events,
+revoke Google's grants, or erase persistent state. Undo events separately through
+the restricted remove tool. Prefer a forward revert if later generations include
+unrelated work; do not restart Laure. App rollback selects the prior application
+profile then restarts **only assistant-app-simon-google**.

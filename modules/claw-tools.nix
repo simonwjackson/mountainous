@@ -14,6 +14,7 @@ in
         after = [ "assistant-app-simon-${endpoint.app}.service" ];
         tags = [ "tag:claw-tools" ];
         mcpTools = endpoint.tools;
+        mcpAllowedNodeIds = endpoint.allowedNodeIds or [ ];
       }) endpoints;
     };
   perSystem =
@@ -58,6 +59,31 @@ in
           rakku.mountainous.features.pi-assistant.people.simon.apps.google.readOnlyTools;
         assert endpoints.claw-maps.tools == [ "travel_time" ];
         assert endpoints.claw-family-calendar.tools == [ "family_calendar_events" ];
+        assert
+          endpoints.claw-family-calendar-simon.tools == [
+            "family_calendar_events"
+            "family_calendar_add"
+            "family_calendar_remove"
+          ];
+        assert
+          rakku.mountainous.tailnetNames.claw-family-calendar-simon.mcpAllowedNodeIds
+          == [ "nbQJZMcewG11CNTRL" ];
+        assert lib.hasInfix "-mcp-allowed-node-ids nbQJZMcewG11CNTRL"
+          rakku.systemd.services.tsnet-proxy-claw-family-calendar-simon.serviceConfig.ExecStart;
+        assert
+          !(
+            containers.${laureContainer}.config.services.openclaw-gateway.config.mcp.servers
+            ? claw-family-calendar-simon
+          );
+        assert lib.all
+          (
+            tool:
+            !(lib.elem tool rakku.mountainous.features.pi-assistant.people.simon.apps.google.readOnlyTools)
+          )
+          [
+            "family_calendar_add"
+            "family_calendar_remove"
+          ];
         assert
           rakku.systemd.services.assistant-app-simon-google.environment.GOOGLE_FAMILY_CALENDAR_ID
           == "46g7he3srihobgru1lmoegsar8@group.calendar.google.com";

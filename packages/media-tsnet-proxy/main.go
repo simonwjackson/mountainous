@@ -199,13 +199,14 @@ func main() {
 	oauthSecret := flag.String("oauth-secret-file", "", "OAuth secret file")
 	tags := flag.String("tags", "tag:mountainous", "Comma-separated enrollment tags")
 	mcpTools := flag.String("mcp-tools", "", "Enable restricted stateless MCP endpoint with these comma-separated tool names")
+	mcpAllowedNodeIDs := flag.String("mcp-allowed-node-ids", "", "Restrict filtered MCP to these stable Tailscale node IDs")
 	mcpResources := flag.String("mcp-resources", "", "Exact comma-separated resource URIs for a filtered MCP endpoint")
 	scryerUsername := flag.String("scryer-username", "admin", "Scryer account username")
 	scryerPassword := flag.String("scryer-password-file", "", "Serve account-scoped Scryer MCP using this credential file and the backend GraphQL URL")
 	webSearchKey := flag.String("websearch-key-file", "", "Serve model-native web search MCP using this gateway credential and the backend Responses URL")
 	webSearchModel := flag.String("websearch-model", "gpt-6.1-sol", "Fixed model for native web search")
 	flag.Parse()
-	if *mcpResources != "" && *mcpTools == "" {
+	if (*mcpResources != "" || *mcpAllowedNodeIDs != "") && *mcpTools == "" {
 		log.Fatal("MCP resources require filtered tools")
 	}
 	backendURL, err := url.Parse(*backend)
@@ -273,7 +274,7 @@ func main() {
 		}
 		verifyPeer := func(r *http.Request) bool {
 			peer, err := local.WhoIs(r.Context(), r.RemoteAddr)
-			return err == nil && peer != nil && peer.Node != nil
+			return err == nil && peer != nil && peer.Node != nil && mcpNodeAllowed(string(peer.Node.StableID), *mcpAllowedNodeIDs)
 		}
 		if *webSearchKey != "" {
 			if backendURL.Scheme != "http" || backendURL.Host != "127.0.0.1:8430" || backendURL.Path != "/v1/responses" || backendURL.RawQuery != "" || backendURL.Fragment != "" || *webSearchModel == "" {

@@ -409,7 +409,17 @@
               "claw-gmail__mail_archive"
               "claw-gmail__mail_draft"
               "claw-gmail__mail_discard_draft"
+              "claw-family-calendar-simon__family_calendar_events"
+              "claw-family-calendar-simon__family_calendar_add"
+              "claw-family-calendar-simon__family_calendar_remove"
             ];
+          assert
+            gateway.config.mcp.servers.claw-family-calendar-simon.toolFilter.include
+            == (import ../lib/claw-tools.nix).claw-family-calendar-simon.tools;
+          assert
+            gateway.config.mcp.servers.claw-family-calendar-simon.codex.defaultToolsApprovalMode == "approve";
+          assert lib.pathExists
+            "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/family-calendar/SKILL.md";
           assert !(gateway.config.mcp.servers ? claw-scryer);
           assert lib.all (
             username:
