@@ -360,6 +360,22 @@
           assert c.networking.hostName == "flakey";
           assert lib.hasInfix "--host flakey.hummingbird-lake.ts.net "
             host.containers.openclaw.config.systemd.services.openclaw-session-share.script;
+          # Laure's node is snowy (claw until the in-place rename); her container
+          # and its state stay openclaw. flakey's Session Share source follows.
+          assert lib.hasInfix "--host snowy.hummingbird-lake.ts.net "
+            c.systemd.services.openclaw-session-share.script;
+          assert host.containers.openclaw.config.networking.hostName == "snowy";
+          assert lib.hasInfix "--hostname=snowy "
+            host.containers.openclaw.config.systemd.services.claw-tailnet.script;
+          assert laure.gateway.publicOrigin == "https://snowy.hummingbird-lake.ts.net";
+          assert laure.gateway.controlUi.allowedOrigins == [ "https://snowy.hummingbird-lake.ts.net" ];
+          assert laure.mcp.apps.sandboxOrigin == "https://snowy.hummingbird-lake.ts.net:8443";
+          assert
+            laure.gateway.trustedProxies == [
+              "127.0.0.1"
+              "::1"
+            ];
+          assert !(lib.hasInfix "claw.hummingbird-lake.ts.net" (builtins.toJSON laure));
           assert !(lib.hasInfix "claw-simon" (builtins.toJSON gateway.config));
           assert lib.hasInfix "--advertise-tags=tag:claw" c.systemd.services.claw-tailnet.script;
           assert c.systemd.services.claw-tailnet.serviceConfig.User == "tailscale";
@@ -653,7 +669,7 @@
               export HOME=$TMPDIR OPENCLAW_STATE_DIR=$TMPDIR/state
               export OPENCLAW_CONFIG_PATH="$system/etc/openclaw/openclaw.json"
               export FRONT_DOOR_API_KEY=test-only OPENCLAW_GATEWAY_PASSWORD=test-only
-              jq -e '.gateway.publicOrigin == "https://claw.hummingbird-lake.ts.net" and .gateway.auth.trustedProxy.allowUsers == ["chancerellelaure@gmail.com"] and .gateway.roles.default == "laure" and (.gateway.roles.definitions | keys) == ["laure"] and (.agents.entries | keys) == ["laure"] and .agents.defaults.workspace == "/var/lib/openclaw/workspace-laure" and (.mcp.servers | keys) == ["claw-family-calendar","claw-maps","claw-scryer-laure","claw-websearch"] and .plugins.entries["session-share"].enabled' "$OPENCLAW_CONFIG_PATH"
+              jq -e '.gateway.publicOrigin == "https://snowy.hummingbird-lake.ts.net" and .gateway.auth.trustedProxy.allowUsers == ["chancerellelaure@gmail.com"] and .gateway.roles.default == "laure" and (.gateway.roles.definitions | keys) == ["laure"] and (.agents.entries | keys) == ["laure"] and .agents.defaults.workspace == "/var/lib/openclaw/workspace-laure" and (.mcp.servers | keys) == ["claw-family-calendar","claw-maps","claw-scryer-laure","claw-websearch"] and .plugins.entries["session-share"].enabled' "$OPENCLAW_CONFIG_PATH"
               ${gateway.package}/bin/openclaw config validate
               touch $out
             '';

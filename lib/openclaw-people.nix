@@ -115,7 +115,9 @@ in
   };
   laure = {
     name = "laure";
-    nodeName = "claw";
+    # The tailnet node was claw until the in-place rename to snowy (same node
+    # ID). The container and its state keep the name openclaw.
+    nodeName = "snowy";
     containerName = "openclaw";
     workspacePath = "/var/lib/openclaw/workspace-laure";
     roleName = "laure";

@@ -203,7 +203,7 @@
           && services.${name}.reloadTriggers == before.${name}.reloadTriggers
         ) unchanged;
         assert flakey == "nbQJZMcewG11CNTRL";
-        assert nodes.claw == "nkT3Yhzyy121CNTRL";
+        assert nodes.snowy == "nkT3Yhzyy121CNTRL";
         assert
           builtins.fromJSON prodTable.text == {
             sparkyfitness = {
@@ -257,7 +257,7 @@
             };
             # Laure's tools and the two both gateways share (stage 7). Same
             # backend and server-side key as their old per-tool nodes. Laure's
-            # claw is nkT3Yhzyy121CNTRL.
+            # snowy (claw until its rename) is nkT3Yhzyy121CNTRL.
             family-calendar-laure = {
               backend = "http://127.0.0.1:${googlePort}/mcp";
               callerNodeIds = [ "nkT3Yhzyy121CNTRL" ];
@@ -376,7 +376,7 @@
           {
             mountainous.tailnetNames.ai.mcpRoutes.maps.callerNodeIds = lib.mkForce [
               nodes.flakey
-              nodes.claw
+              nodes.snowy
               nodes.zao
             ];
           }
@@ -386,7 +386,7 @@
           {
             mountainous.tailnetNames.ai.mcpRoutes.scryer-laure.callerNodeIds = lib.mkForce [
               nodes.flakey
-              nodes.claw
+              nodes.snowy
             ];
           }
         );

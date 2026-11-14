@@ -60,13 +60,13 @@
   # Laure's (stage 7). Reads only the Family calendar, through the same Google
   # app; no add or remove.
   family-calendar-laure = {
-    callers = [ "claw" ];
+    callers = [ "snowy" ];
     server = "claw-family-calendar";
     tools = [ "family_calendar_events" ];
   };
   # Served natively by the proxy for Laure's Scryer account.
   scryer-laure = {
-    callers = [ "claw" ];
+    callers = [ "snowy" ];
     server = "claw-scryer-laure";
     tools = import ./openclaw-scryer-tools.nix;
   };
@@ -74,7 +74,7 @@
   maps = {
     callers = [
       "flakey"
-      "claw"
+      "snowy"
     ];
     server = "claw-maps";
     tools = [ "travel_time" ];
@@ -84,7 +84,7 @@
   websearch = {
     callers = [
       "flakey"
-      "claw"
+      "snowy"
     ];
     server = "claw-websearch";
     tools = [ "web_search" ];

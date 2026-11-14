@@ -177,7 +177,8 @@ let
 in
 assert (import ../lib/openclaw-people.nix).laure.login == "chancerellelaure@gmail.com";
 assert (import ../lib/openclaw-people.nix).laure.containerName == "openclaw";
-assert (import ../lib/openclaw-people.nix).laure.nodeName == "claw";
+# Renamed in place: claw -> snowy, the same container, state and node ID.
+assert (import ../lib/openclaw-people.nix).laure.nodeName == "snowy";
 # Renamed in place: a new tailnet name, the same container and state.
 assert (import ../lib/openclaw-people.nix).simon.nodeName == "flakey";
 assert (import ../lib/openclaw-people.nix).simon.containerName == "claw-simon";
