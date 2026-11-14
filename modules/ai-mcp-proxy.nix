@@ -20,13 +20,17 @@
       extend = modules: (system.extendModules { inherit modules; }).config;
       before = builtins.fromJSON (builtins.readFile ../tests/ai-mcp-proxy-units-before.json);
       services = lib.filterAttrs (name: _: lib.hasPrefix "tsnet-proxy-" name) c.systemd.services;
-      # Stage 5 retired Simon's per-tool nodes: their rows are on production ai.
+      # Stages 5 and 7 retired every per-tool node: their rows are on production ai.
       retired = [
         "tsnet-proxy-claw-calendar"
         "tsnet-proxy-claw-ebay-simon"
         "tsnet-proxy-claw-family-calendar-simon"
         "tsnet-proxy-claw-gmail"
         "tsnet-proxy-claw-scryer-simon"
+        "tsnet-proxy-claw-family-calendar"
+        "tsnet-proxy-claw-maps"
+        "tsnet-proxy-claw-scryer-laure"
+        "tsnet-proxy-claw-websearch"
       ];
       # Only the two routed front doors may differ from the before fixture.
       unchanged = lib.subtractLists (
@@ -190,7 +194,7 @@
         assert rowsValid;
         assert lib.all (name: before ? ${name}) retired;
         assert lib.attrNames services == lib.subtractLists retired (lib.attrNames before);
-        assert lib.length unchanged == 11;
+        assert lib.length unchanged == 7;
         assert lib.all (
           name:
           c.systemd.units."${name}.service".text == before.${name}.text

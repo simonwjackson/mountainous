@@ -12,38 +12,23 @@ in
   nixos.modules.claw-scryer =
     { config, lib, ... }:
     {
-      mountainous.tailnetNames = lib.mkMerge [
-        # flakey's and Laure's Scryer, on the production front door: the proxy
-        # serves each account itself, with the same GraphQL URL and password as
-        # its claw-scryer-<user> node. Callers come from lib/ai-mcp-rows.nix.
-        (lib.mkIf config.mountainous.features.ai-gateway.enable {
-          ai.mcpRoutes = lib.mapAttrs (row: username: {
-            callerNodeIds = map (node: nodes.${node}) rows.${row}.callers;
-            mcpTools = rows.${row}.tools;
-            scryer = {
-              url = "https://scryer.hummingbird-lake.ts.net/graphql";
-              inherit username;
-              passwordFile = config.sops.secrets."scryer-password-${username}".path;
-            };
-          }) accounts;
-        })
-        # Laure's own node stays. Simon's claw-scryer-simon node is retired.
-        {
-          claw-scryer-laure = {
-            description = "laure's Scryer MCP endpoint for OpenClaw";
-            backend = "https://scryer.hummingbird-lake.ts.net/graphql";
-            tags = [ "tag:claw-tools" ];
-            scryerUsername = "laure";
-            scryerPasswordFile = config.sops.secrets.scryer-password-laure.path;
+      # flakey's and Laure's Scryer, on the production front door: the proxy
+      # serves each account itself, with the same GraphQL URL and password as
+      # its retired claw-scryer-<user> node. Callers come from lib/ai-mcp-rows.nix.
+      mountainous.tailnetNames = lib.mkIf config.mountainous.features.ai-gateway.enable {
+        ai.mcpRoutes = lib.mapAttrs (row: username: {
+          callerNodeIds = map (node: nodes.${node}) rows.${row}.callers;
+          mcpTools = rows.${row}.tools;
+          scryer = {
+            url = "https://scryer.hummingbird-lake.ts.net/graphql";
+            inherit username;
+            passwordFile = config.sops.secrets."scryer-password-${username}".path;
           };
-        }
-      ];
+        }) accounts;
+      };
       # systemd copies the password at unit start: a new value restarts ai once.
       sops.secrets.scryer-password-simon.restartUnits = [ "tsnet-proxy-ai.service" ];
-      sops.secrets.scryer-password-laure.restartUnits = [
-        "tsnet-proxy-ai.service"
-        "tsnet-proxy-claw-scryer-laure.service"
-      ];
+      sops.secrets.scryer-password-laure.restartUnits = [ "tsnet-proxy-ai.service" ];
     };
   perSystem =
     { pkgs, lib, ... }:
@@ -54,11 +39,20 @@ in
     {
       checks.claw-scryer =
         assert !(cfg.mountainous.tailnetNames ? claw-scryer);
-        # Stage 5 retired claw-scryer-simon; Laure's claw-scryer-laure stays.
-        assert !(cfg.mountainous.tailnetNames ? claw-scryer-simon);
-        assert !(cfg.systemd.services ? tsnet-proxy-claw-scryer-simon);
-        assert
-          !(lib.elem "tsnet-proxy-claw-scryer-simon.service" cfg.sops.secrets.scryer-password-simon.restartUnits);
+        # Stage 5 retired claw-scryer-simon, stage 7 claw-scryer-laure.
+        assert lib.all
+          (
+            user:
+            !(cfg.mountainous.tailnetNames ? "claw-scryer-${user}")
+            && !(cfg.systemd.services ? "tsnet-proxy-claw-scryer-${user}")
+            && !(lib.elem "tsnet-proxy-claw-scryer-${user}.service"
+              cfg.sops.secrets."scryer-password-${user}".restartUnits
+            )
+          )
+          [
+            "simon"
+            "laure"
+          ];
         # Stage 5: /mcp/scryer on production ai serves Simon's account natively,
         # flakey only, with the same GraphQL URL and password as claw-scryer-simon.
         assert
@@ -103,25 +97,10 @@ in
         assert
           self.nixosConfigurations.yari.config.containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers.claw-scryer-simon.url
           == "https://ai.hummingbird-lake.ts.net/mcp/scryer";
-        assert builtins.all
-          (
-            username:
-            let
-              endpoint = cfg.mountainous.tailnetNames."claw-scryer-${username}";
-              unit = cfg.systemd.services."tsnet-proxy-claw-scryer-${username}".serviceConfig;
-            in
-            endpoint.tags == [ "tag:claw-tools" ]
-            && endpoint.mcpTools == null
-            && endpoint.scryerUsername == username
-            && endpoint.scryerPasswordFile == cfg.sops.secrets."scryer-password-${username}".path
-            && lib.elem "scryer-password:${endpoint.scryerPasswordFile}" unit.LoadCredential
-            && !(lib.any (c: lib.hasInfix "scryer-admin-password" c) unit.LoadCredential)
-            && lib.hasInfix "-scryer-password-file %d/scryer-password" unit.ExecStart
-            && lib.hasInfix "-scryer-username ${lib.escapeShellArg username}" unit.ExecStart
-          )
-          [
-            "laure"
-          ];
+        assert
+          !(lib.any (
+            c: lib.hasInfix "scryer-admin-password" c
+          ) cfg.systemd.services.tsnet-proxy-ai.serviceConfig.LoadCredential);
         pkgs.runCommand "claw-scryer-boundary" { nativeBuildInputs = [ pkgs.go ]; } ''
           export HOME=$TMPDIR GOCACHE=$TMPDIR/go-cache CGO_ENABLED=0
           # The MCP App view is embedded from scryer-view/dist and stamped by its sources.
