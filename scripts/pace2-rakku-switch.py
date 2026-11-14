@@ -21,8 +21,9 @@ ROWS = ["calendar", "ebay", "family-calendar", "family-calendar-laure", "gmail",
         "sparkyfitness", "websearch", "pace", "pace-laure"]
 OLD_NODES = []
 if phase == "rows":
-    EXPECTED = {"tsnet-proxy-ai.service", "pace2.service"}
-    MAY_CHANGE = set(EXPECTED)
+    EXPECTED = {"tsnet-proxy-ai.service", "pace2.service",
+                "dbus-broker.service.d/overrides.conf", "systemd-tmpfiles-resetup.service"}
+    MAY_CHANGE = {"tsnet-proxy-ai.service", "pace2.service", "systemd-tmpfiles-resetup.service"}
     STAY = [f"tsnet-proxy-{n}.service" for n in OLD_NODES]
 else:
     EXPECTED = {f"tsnet-proxy-{n}.service" for n in OLD_NODES}
@@ -105,6 +106,16 @@ def unit_differences():
     return differ
 
 
+def activation_trigger_only():
+    # A new dedicated user and database ownership rule change these generated
+    # triggers. Their command, security settings and every other byte must stay.
+    for name in ("dbus-broker.service.d/overrides.conf", "systemd-tmpfiles-resetup.service"):
+        def without_trigger(root):
+            with open(f"{root}/etc/systemd/system/{name}") as handle:
+                return [line for line in handle if not line.startswith("X-Restart-Triggers=")]
+        assert without_trigger("/run/current-system") == without_trigger(new), name
+
+
 def identities():
     names = [line.split()[0] for line in
              run("systemctl", "list-units", "--all", "--type=service", "--plain", "--no-legend").splitlines() if line.strip()]
@@ -130,6 +141,7 @@ def activate(system, log):
 if action == "preflight":
     current = os.path.realpath("/run/current-system")
     differ = unit_differences()
+    activation_trigger_only()
     status, ids = models()
     before_rows = rows()
     print(f"phase {phase}; running {current} (expected OLD: {current == old})")
@@ -215,7 +227,7 @@ print(f"home-assistant HTTP {ha}; failed units: {failed_after or 'none'} (before
 problems = [f"{n} changed identity" for n in PROTECTED if n in changed]
 problems += [f"{n} not active" for n in PROTECTED if after.get(n, {}).get("ActiveState") != "active"]
 if phase == "rows":
-    problems += [f"{n} not active" for n in sorted(EXPECTED) if after.get(n, {}).get("ActiveState") != "active"]
+    problems += [f"{n} not active" for n in ("tsnet-proxy-ai.service", "pace2.service") if after.get(n, {}).get("ActiveState") != "active"]
 elif phase == "retire":
     problems += [f"{n} still present ({after[n].get('ActiveState')})" for n in sorted(EXPECTED)
                  if after.get(n, {}).get("ActiveState") not in (None, "inactive")]
