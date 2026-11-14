@@ -272,6 +272,8 @@ A deleted tailnet node cannot come back with its identity. After the
 deletion, the rollback is a redeploy of the old units, which registers new
 nodes with new IDs.
 
+- Undo the `claw-google-auth` step first if it is deployed: `rollback-auth`
+  (dbus-broker reloads; nothing restarts).
 - Before the retire step: `rollback-yari`, then `rollback-rakku` (production
   `ai` restarts once onto the stage-2 binary and table; the old nodes still
   run). Both are `simon-tools-deploy.sh` steps with Laure's guards only.
@@ -288,6 +290,77 @@ nodes with new IDs.
   `nix-env -p /nix/var/nix/profiles/system --set <system>` and
   `systemd-run --wait --collect --unit simon-tools-manual-rollback <system>/bin/switch-to-configuration switch`,
   while Laure's gateway is idle. Do not use `nixos-rebuild switch --rollback`.
+
+### Stage 5 deployment record — 2026-11-14 UTC
+
+Simon approved the whole stage. Landed on cairn by fast-forward:
+`13bc4b78` (rows), `9c80497b` (flakey's URLs), `1c0587c5` (runbook) from
+`6685b6e8`; then `59f1d6c2` (retire) and `8b48fc83` (`claw-google-auth
+--verify`). Rakku: evaluated on Zao, built on Unzen, copied through Zao with
+`--no-check-sigs`. Yari: built natively, with the aarch64 `openclaw-config`
+check (`openclaw config validate`, both people).
+
+| Host | Step | Generation and system |
+| --- | --- | --- |
+| Rakku | before | 158 `/nix/store/11a2g7zh8zmb286903b35js57znqrmi2-nixos-system-rakku-26.11.20260923.4975466` |
+| Rakku | rows (`1c0587c5`) | 159 `/nix/store/pp9xl85kqsm4zyq0msbnhy6sz4138pbl-nixos-system-rakku-26.11.20260923.4975466` |
+| Rakku | retire (`59f1d6c2`) | 160 `/nix/store/z2hdr8a06p84b612m3xhl7zly0x728x8-nixos-system-rakku-26.11.20260923.4975466` |
+| Rakku | auth (`8b48fc83`) | 161 `/nix/store/jpv87gsdpii270c23xxh4cwyfqcca464-nixos-system-rakku-26.11.20260923.4975466` |
+| Yari | before | 53 `/nix/store/rfvqx5amjsyd6qcjf22fnv75nzap42a2-nixos-system-yari-26.11.20260923.4975466` |
+| Yari | flakey's URLs (`1c0587c5`) | 54 `/nix/store/vpq1hk8ffc2bxdkwjadxn01w3hd6n8q4-nixos-system-yari-26.11.20260923.4975466` (unchanged by the later steps) |
+
+- Before deploying: both running systems equalled the evaluation of
+  `6685b6e8`. Identity comparison: Laure's container system, gateway JSON
+  (`3g17ic2w…-openclaw.json`, SHA256 `00c26526…3a3ac9`), gateway unit,
+  `claw-tailnet` unit, host `container@openclaw` unit and container conf
+  byte-identical at every commit; Rakku differed in exactly
+  `tsnet-proxy-ai` and `tsnet-proxy-ai-staging` (rows), then exactly the five
+  retired proxies (retire); Yari only in `container@claw-simon`. Negative
+  cases 12/12 on both trees. Go: 46 tests, vet, race. The real router with
+  the real table and credentials, under systemd-run on Rakku as
+  `tsnet-proxy`: all six rows exactly their tools, Laure's ID 403, Scryer
+  signed in. Baseline from flakey on the old nodes: 30/30 and a clean CLI probe.
+- Rakku rows: both gateways idle (1.4 s rehearsal from ready to go). Switch
+  rc 0 in 24.1 s. `tsnet-proxy-ai` stopped at 15:31:44.729 and logged
+  `MCP table loaded` and `proxy ready` at 15:32:07.786: **`/v1` was down
+  23.1 s**, started once (NRestarts 0). Only the two proxies restarted; Home
+  Assistant HTTP 200; Z-Wave handshake (driver 15.15.0, server 3.4.0); no
+  failed units; all six rows 403 to the Rakku host.
+- `accept-rakku` 34/34 from the containers and 15/15 from Zao. Laure's `/v1`
+  (keyed `/v1/models`, five models) worked after the restart.
+- Yari: Laure byte-identical, both gateways idle and healthy. Switch rc 0.
+  Laure unhealthy 0 s, gateway InvocationID `5dbd700ddc1f4214b772e5a0522652ff`
+  unchanged; flakey restarted onto the new config (about 20 s).
+- `accept-yari` 49/49 (with `flakey-mcp.py` 30/30: one read on each server,
+  nothing written; CLI probe: every server, no diagnostics; Laure's four
+  servers answer her) and 15/15 from Zao. `mail-agent` 6/6: the reader's
+  `claw-gmail__mail_list` succeeded through `/mcp/gmail`, no write tool ran,
+  main called no Gmail tool and its warm `tools.effective` holds none; both
+  disposable sessions deleted.
+- Retire: only the five old proxies stopped (and their bind mounts);
+  `tsnet-proxy-ai` was not restarted (`/v1` had no downtime). `accept-retire`
+  49/49 and 15/15.
+- Deleted from the tailnet (fleet OAuth client, scope `devices:core
+  auth_keys`), each checked first: exact name, recorded ID, only
+  `tag:claw-tools`, not connected, named by neither gateway's live config.
+  Each DELETE returned HTTP 200; 92 devices became 86; none is in
+  `tailscale status`.
+
+  | Node | Node ID | Last seen |
+  | --- | --- | --- |
+  | `claw-calendar` | `nfm68HkCdg11CNTRL` | 2026-11-14 15:49:13 UTC |
+  | `claw-gmail` | `njBnm9PE4S11CNTRL` | 2026-11-14 15:49:13 UTC |
+  | `claw-ebay-simon` | `nwHWf8RDwt11CNTRL` | 2026-11-14 15:49:13 UTC |
+  | `claw-scryer-simon` | `nANYvp9y2X11CNTRL` | 2026-11-14 15:49:13 UTC |
+  | `claw-family-calendar-simon` | `nCziJXC7GY11CNTRL` | 2026-11-14 15:49:13 UTC |
+  | `claw-scryer` | `nWonQ4d7xB11CNTRL` | 2026-11-11 08:37:50 UTC |
+
+- `claw-google-auth --verify` compared the loopback app with the
+  `claw-calendar` node, which no longer exists, so it now reads the loopback
+  app only. Its Rakku switch (161) only reloaded dbus-broker; `--check` passes.
+  The switch script now also compares drop-in files (`*.service.d/`).
+- Final `accept-auth`: 49/49 and 15/15; no failed units on Rakku, Yari or in
+  either container. Scripts and logs: `/tmp/claw/simon-tools-*` on Zao.
 
 ## The key
 
