@@ -71,3 +71,95 @@ exception. Do not use `nixos-rebuild switch --rollback`: a failed attempt can
 make “previous” point at the wrong generation. Keep data and encrypted secrets.
 The Rakku rollback also uses the ready/idle/go gate. Record the exact pinned
 commands and resulting health in the deploy report.
+
+## Deployment record — 2026-11-14 UTC
+
+Pace source: `886fe83d65b9a7e9e7a30c6d627e9becacf4cb07`, landed on its local
+Zao `main`. Rust: 52 tests; SDK: 10 checks across Simon and Laure; fmt/clippy
+passed. Both generated keys are distinct 64-character random hex values.
+No plaintext key or SimpleFIN URL exists in tracked files or the branch diff.
+The initial private import was copied before first service start; Zao's temporary
+state was deleted. Database ownership/mode and loopback binding passed live.
+
+The original one-restart target was **not met**. The first acceptance script
+expected `outcome=complete`, but tracing writes `outcome="complete"`. Its parser
+exception caused the prescribed rollback of both hosts. The supervisor authorized
+one more forward credential restart, reusing exactly the tested Rakku build.
+The parser now passes on the filtered real log and four permanent regression
+tests in `checks.pace2`. No new bank sync was requested for this correction.
+
+| Host | Generation sequence | Final system |
+| --- | --- | --- |
+| Rakku | 163 → 164 (Pace) → 165 (rollback) → 166 (same Pace build) | `/nix/store/zy7x2f3kq24fy7b29fd7d4712fm9dplb-nixos-system-rakku-26.11.20260923.4975466` |
+| Yari | 56 → 57 (Pace) → 58 (rollback) → 59 (another session's Family plans) → 60 (Pace rebased onto that change) | `/nix/store/d63gws8c0qpziylcmh2fhilghcq05lq8-nixos-system-yari-26.11.20260923.4975466` |
+
+Production ai restarted **three times total**, each forward switch loading both
+Pace credentials together. Stop-to-ready times from its journal were **21.6 s,
+21.4 s, 21.4 s** (the middle one was rollback). Staging ai did not restart.
+Every Rakku switch preserved Home Assistant, Z-Wave and the model backend;
+final Home Assistant HTTP 200, Z-Wave driver 15.15.0/server 3.4.0, `/v1` healthy.
+No host or container was rebooted.
+
+Yari's rollback returned status 4 because the existing brief/wind-down/mail/eBay
+reconcile oneshots called the gateway before it was ready. The same startup race
+occurred on forward. All four retried successfully without a code/config fix or
+manual restart; the gateways stayed at NRestarts=0. The final acceptance checks
+all four active/success and no failed units on the hosts or inside the containers.
+
+Another session deployed `fec704f3` while our idle gate held Yari. The gate refused
+our stale source system. We rebased onto `origin/cairn` (`fec704f3`, including
+`b63642d8`), preserving both changes, then rebuilt **only Yari**, natively.
+Focused checks `pace2`, `openclaw`, `openclaw-people`, `openclaw-in-place`,
+`ai-mcp-proxy` and both native ARM config checks passed. Earlier checks also
+covered tailnet-names, ai-gateway/staging, claw-tools/eBay/Scryer/websearch,
+and Go's 49 tests, vet, formatting and race checks. No aggregate flake check ran.
+
+The live-generation-59 comparison proved exactly the two host container unit
+changes, only each guest's gateway unit changes, and exactly the `pace` server
+and shared skill in each JSON config. Both container conf files otherwise
+matched. Reversing only our four Pace commits produced the exact `fec704f3`
+source tree, whose Rakku output equals the recorded original Rakku system.
+Our rebased Rakku output equals running 166. Rakku was **not** redeployed after
+that rebase. Thus the other session's Rakku needs were not reverted.
+
+Before the final Yari-only switch, both gateways stayed idle for 93 s, checked
+at 30 s intervals and again by the switch guard immediately before activation.
+Earlier busy receipts were main/dashboard runs, sub-agents and automatic
+requester-settle resumptions, not cron sessions. Only audit metadata was read.
+Both containers kept their identities; each gateway restarted once onto the
+rebased config. The Laure config guard remained strict outside Pace.
+
+All final acceptance checks **passed**:
+
+- First Rakku sync: **complete**, warnings **none**. No financial figures reported.
+- From flakey and snowy: initialize, exactly `pace_status`, successful status and
+  `ui://pace/status` read; unlisted tools refused; forged caller auth ignored.
+- Cross-person rows and Zao: HTTP **403**. Pace admission identifies **laure**.
+- A real flakey agent call succeeded and returned text plus the card resource in
+  the gateway's history projection. Only this disposable verification session
+  was inspected, then deleted. No Laure conversation or login was used.
+- Both deployed OpenClaw CLI probes: Pace has one tool, no diagnostics; all
+  existing servers still present. Home Assistant/Z-Wave and failed-unit checks pass.
+
+Evidence/scripts on Zao: `/tmp/pace2-*`; final acceptance log:
+`/tmp/pace2-rebased-idle-switch-accept.log`. No financial contents are printed.
+
+### Pinned rollback for this final deployment
+
+Keep the other session's Family plans on Yari: rollback there to generation 59,
+not our original generation 56. The local helper's saved previous paths now pin:
+
+- Yari: `/nix/store/qd9w4q53a2ankyvb6cb0md79wwpy9kf2-nixos-system-yari-26.11.20260923.4975466`
+- Rakku: `/nix/store/kisiwq6lw147f80kl7bb5k88j5bq4zn9-nixos-system-rakku-26.11.20260923.4975466`
+
+On Zao, with both gateways idle:
+
+```sh
+/tmp/pace2-deploy.sh /tmp/pace2-deploy-source rollback
+```
+
+The helper switches Yari first, then uses the nonce/idle gate for Rakku, under
+systemd-run on each. Removing the Pace credentials restarts production ai again.
+It retains Pace's data and encrypted secrets. If `/tmp` is gone, copy the tracked
+`pace2-*` deployment scripts to the hosts and use these exact pinned store paths,
+never an ambiguous `nixos-rebuild switch --rollback`.
