@@ -16,6 +16,8 @@
     solar = 0.004;
   },
   modelPrices ? { },
+  # Production-only local STT/TTS; staging grants and egress remain unchanged.
+  localAudio ? false,
   # Provider accounts that cannot bill past a prepaid balance. Their calls skip
   # every key's monthly cap; the balance is the limit. Staging keeps its caps.
   prepaidProviders ? [ ],
@@ -89,7 +91,11 @@ let
     http_access deny !loopback_client
     http_access deny !connect_method
     http_access deny !tls_port
-    http_access deny !provider
+    ${lib.optionalString localAudio ''
+      acl local_audio dstdomain -n voice.hummingbird-lake.ts.net
+      acl local_audio_tailnet dst 100.64.0.0/10
+      http_access allow loopback_client connect_method tls_port local_audio local_audio_tailnet
+    ''}http_access deny !provider
     http_access deny non_public
     http_access allow loopback_client connect_method tls_port provider
     http_access deny all
@@ -198,6 +204,28 @@ let
       inherit base_url;
       key_file = credential name;
     }) enabledProviders;
+    ${if localAudio then "local_backends" else null}.zao = {
+      kind = "openai_audio";
+      base_url = "https://voice.hummingbird-lake.ts.net/v1";
+    };
+    ${if localAudio then "local_models" else null} = [
+      {
+        id = "whisper-1";
+        backend = "zao";
+        dialect = "transcription";
+        upstream_model = "whisper-1";
+      }
+      {
+        id = "kokoro";
+        backend = "zao";
+        dialect = "speech";
+        upstream_model = "tts-1";
+        voices = [
+          "af_heart"
+          "af_bella"
+        ];
+      }
+    ];
     paid_models =
       map (id: {
         inherit id;

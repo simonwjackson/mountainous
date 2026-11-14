@@ -493,6 +493,42 @@
               ]
           ) gateway.config.models.providers.front-door.models;
           assert gateway.config.agents.defaults.mediaModels.image.primary == "openai/gemini-3.1-flash-image";
+          assert
+            gateway.config.tools.media == {
+              audio.enabled = true;
+              models = [
+                {
+                  provider = "openai";
+                  model = "whisper-1";
+                  language = "en";
+                  capabilities = [ "audio" ];
+                }
+              ];
+            };
+          assert gateway.config.models.providers.openai.baseUrl == "https://ai.hummingbird-lake.ts.net/v1";
+          assert gateway.config.models.providers.openai.apiKey == "\${FRONT_DOOR_API_KEY}";
+          assert gateway.config.models.providers.openai.request == { allowPrivateNetwork = true; };
+          assert
+            gateway.config.tts == {
+              provider = "openai";
+              providers.openai = {
+                baseUrl = "https://ai.hummingbird-lake.ts.net/v1";
+                apiKey = "\${FRONT_DOOR_API_KEY}";
+                model = "kokoro";
+                speakerVoice = "af_heart";
+                responseFormat = "wav";
+              };
+            };
+          assert gateway.config.talk.realtime == { mode = "stt-tts"; };
+          assert !(gateway.config.talk ? provider);
+          assert
+            let
+              laure = productionHost.containers.openclaw.config.services.openclaw-gateway.config;
+            in
+            !(laure ? tts)
+            && !(laure.tools ? media)
+            && !(laure.talk ? realtime)
+            && !(laure.models.providers.openai ? request);
           assert !(gateway.config.mcp.servers ? system-monitor);
           assert c.environment.etc."openclaw/openclaw.json".mode == "0600";
           assert lib.elem "/nix/var/nix/daemon-socket" unit.InaccessiblePaths;
@@ -522,6 +558,8 @@
               "gemini-3.8-flash-high"
               "gemini-3.1-flash-image"
               "gpt-image-2"
+              "whisper-1"
+              "kokoro"
             ];
           assert
             key.dialects == [
@@ -529,6 +567,8 @@
               "responses"
               "models"
               "images"
+              "transcription"
+              "speech"
             ];
           assert key.monthly_cap_usd == 1000000000 && key.requests_per_minute == 300;
           pkgs.runCommand "openclaw-isolation" {

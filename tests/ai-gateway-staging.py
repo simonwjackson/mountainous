@@ -63,13 +63,22 @@ if production:
     assert keys["openclaw@yari"] == {
         "name": "openclaw@yari",
         "key_file": f"{credential_dir}/openclaw-yari",
-        "dialects": ["chat_completions", "responses", "models", "images"],
+        "dialects": [
+            "chat_completions",
+            "responses",
+            "models",
+            "images",
+            "transcription",
+            "speech",
+        ],
         "models": [
             "claude-opus-5-5",
             "gpt-6.1-sol",
             "gemini-3.8-flash-high",
             "gemini-3.1-flash-image",
             "gpt-image-2",
+            "whisper-1",
+            "kokoro",
         ],
         "monthly_cap_usd": 1000000000,
         "requests_per_minute": 300,
@@ -114,7 +123,38 @@ if production:
     for price in settings["prices"].values():
         if "image_per_size" in price:
             assert price["image_per_unit"] == max(price["image_per_size"].values())
-    # The only speech provider is ElevenLabs; no aliases replace voice IDs.
+    assert settings["local_backends"] == {
+        "zao": {
+            "kind": "openai_audio",
+            "base_url": "https://voice.hummingbird-lake.ts.net/v1",
+        }
+    }
+    assert settings["local_models"] == [
+        {
+            "id": "whisper-1",
+            "backend": "zao",
+            "dialect": "transcription",
+            "upstream_model": "whisper-1",
+        },
+        {
+            "id": "kokoro",
+            "backend": "zao",
+            "dialect": "speech",
+            "upstream_model": "tts-1",
+            "voices": ["af_heart", "af_bella"],
+        },
+    ]
+    assert all(
+        "transcription" not in k["dialects"]
+        for k in keys.values()
+        if k["name"] != "openclaw@yari"
+    )
+    assert all(
+        not ({"whisper-1", "kokoro"} & set(k["models"]))
+        for k in keys.values()
+        if k["name"] != "openclaw@yari"
+    )
+    # The only paid speech provider is ElevenLabs; no aliases replace voice IDs.
     assert settings["providers"]["elevenlabs"] == {
         "base_url": "https://api.elevenlabs.io",
         "key_file": f"{credential_dir}/elevenlabs",
@@ -126,6 +166,7 @@ if production:
         "audio_per_million_characters": 40.0,
     }
 else:
+    assert "local_backends" not in settings and "local_models" not in settings
     assert len(settings["gateway_keys"]) == 2
     b = settings["gateway_keys"][1]
     assert (a["monthly_cap_usd"], a["requests_per_minute"]) == (2, 10)
@@ -208,11 +249,23 @@ assert [line for line in policy.splitlines() if line.startswith("http_access ")]
     "http_access deny !loopback_client",
     "http_access deny !connect_method",
     "http_access deny !tls_port",
+] + (
+    [
+        "http_access allow loopback_client connect_method tls_port local_audio local_audio_tailnet"
+    ]
+    if production
+    else []
+) + [
     "http_access deny !provider",
     "http_access deny non_public",
     "http_access allow loopback_client connect_method tls_port provider",
     "http_access deny all",
 ]
+if production:
+    assert "acl local_audio dstdomain -n voice.hummingbird-lake.ts.net\n" in policy
+    assert "acl local_audio_tailnet dst 100.64.0.0/10\n" in policy
+else:
+    assert "local_audio" not in policy
 private_line = next(
     line for line in policy.splitlines() if line.startswith("acl non_public ")
 )
@@ -238,7 +291,7 @@ with tempfile.TemporaryDirectory() as tmp:
     hosts = root / "hosts"
     # Force a permitted provider name to resolve privately. Its CONNECT must
     # still fail. No test sends a request to an external provider.
-    hosts.write_text("127.0.0.1 api.typesafe.ai\n")
+    hosts.write_text("127.0.0.1 api.typesafe.ai voice.hummingbird-lake.ts.net\n")
     test_config = root / "squid.conf"
     test_config.write_text(
         policy.replace(f"{runtime}/", f"{root}/") + f"\nhosts_file {hosts}\n"
@@ -267,6 +320,11 @@ with tempfile.TemporaryDirectory() as tmp:
                     f"CONNECT {host} HTTP/1.1\r\nHost: {host}\r\n"
                     for host in [
                         "example.com:443",
+                        "voice.hummingbird-lake.ts.net:443",  # private name must resolve in CGNAT range, not loopback
+                        "voice.hummingbird-lake.ts.net:80",
+                        "voice.hummingbird-lake.ts.net.evil.example:443",
+                        "sub.voice.hummingbird-lake.ts.net:443",
+                        "dictate.hummingbird-lake.ts.net:443",
                         "api.typesafe.ai.evil.example:443",
                         "sub.api.typesafe.ai:443",
                         "api.typesafe.ai:80",

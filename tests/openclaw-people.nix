@@ -9,8 +9,10 @@ let
     _: person: host.containers.${person.containerName}.config.services.openclaw-gateway.config
   ) people;
   normalize =
-    person: c:
+    person: original:
     let
+      voice = person.enableVoice or false;
+      c = builtins.removeAttrs original (lib.optional voice "tts");
       agent = c.agents.entries.${person.agentId};
     in
     c
@@ -43,7 +45,12 @@ let
           "tools"
         ];
       };
-      talk = builtins.removeAttrs c.talk [ "agentId" ];
+      talk = builtins.removeAttrs c.talk ([ "agentId" ] ++ lib.optional voice "realtime");
+      models = c.models // {
+        providers = c.models.providers // {
+          openai = builtins.removeAttrs c.models.providers.openai (lib.optional voice "request");
+        };
+      };
       mcp = c.mcp // {
         servers = builtins.removeAttrs c.mcp.servers (
           (lib.attrNames person.mcpServers) ++ map (s: s.name) (person.extraMcpServers or [ ])
@@ -58,7 +65,7 @@ let
       plugins = c.plugins // {
         allow = lib.filter (id: !(lib.elem id (person.extraPlugins or [ ]))) c.plugins.allow;
       };
-      tools = c.tools // {
+      tools = (builtins.removeAttrs c.tools (lib.optional voice "media")) // {
         agentToAgent = {
           enabled = false;
         };

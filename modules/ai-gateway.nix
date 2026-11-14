@@ -38,6 +38,7 @@ in
           instance
           // {
             inherit inputs;
+            localAudio = true;
             # Root's LoadCredential can read Pi's existing root/simon-readable file.
             # This is the same fleet key as staging's alias; do not alter its ownership.
             loginKeeperSecret = "pi-cliproxyapi-api-key";
@@ -139,6 +140,8 @@ in
                     "responses"
                     "models"
                     "images"
+                    "transcription"
+                    "speech"
                   ];
                   models = [
                     "claude-opus-5-5"
@@ -146,6 +149,8 @@ in
                     "gemini-3.8-flash-high"
                     "gemini-3.1-flash-image"
                     "gpt-image-2"
+                    "whisper-1"
+                    "kokoro"
                   ];
                   # The remote account owns the spend cap; do not cap OpenClaw here.
                   monthly_cap_usd = 1000000000;

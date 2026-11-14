@@ -7,16 +7,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1793232402,
-        "narHash": "sha256-paJScjnuKhusrTUnjDnSdoj+G7ZYr5vrwtIAFAcExd4=",
-        "ref": "main",
-        "rev": "761f9de29323b09cc9a8653cc2f09245538027b4",
-        "revCount": 24,
+        "lastModified": 1794618091,
+        "narHash": "sha256-xbucTv/J9Xj8NP7mwMtm0KxEJIjuNKMiz3p/3QA4Caw=",
+        "ref": "claw-voice-front-door",
+        "rev": "f2d754ea588f72d768a27d8bc3fedc0367e011ef",
+        "revCount": 26,
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       },
       "original": {
-        "ref": "main",
+        "ref": "claw-voice-front-door",
+        "rev": "f2d754ea588f72d768a27d8bc3fedc0367e011ef",
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       }
