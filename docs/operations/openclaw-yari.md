@@ -3341,3 +3341,122 @@ System rollback does not remove the live Lego event. If Simon explicitly asks
 to undo it, call the current row's `family_calendar_remove` with eventId
 `1hkcf3hcugfn9lq8rvilj61mvo` and stable key
 `family-undo:1hkcf3hcugfn9lq8rvilj61mvo`; do not delete it as a deployment test.
+
+
+## Family calendar confirmation cards — 2026-11-14
+
+Simon asked for a card when calendar intent or fields are unclear, without
+slowing down clearly intended plans. **`fec704f3`** changes only the Simon-only
+family-calendar and wind-down skill text plus a focused Nix contract test/import.
+No Google app, OAuth scope, endpoint, other skill or job declaration changed.
+Clear intent plus day/start (or explicitly all-day) still adds immediately.
+Maybe/might, missing/ambiguous day/time, possible duplicates and passing
+reflections now show **Add to Family calendar?**, with uncertain fields and a
+short reason. Drafts remain only in the conversation, never memory. Buttons
+send explicit ID-bearing add/change/skip or all-day/set-time/skip prompts.
+A confirmed complete event is read for duplicates, added once, read back, then
+shown with Undo. Widget-less surfaces use ask_user Add/Don't add. No response
+never grants permission. Wind-down delegates to that same rule, not a second
+confirmation policy. Cards reuse Canvas tokens and neutral buttons, without an
+accent color or custom visual system; title, proposed facts and action stay
+visible at phone width.
+
+### Build and guarded in-place deployment
+
+Fetched cairn and read the in-place/rename runbook. No competing deployment was
+running. Source systems were Rakku **166** and Yari **58**; these used the same
+running outputs previously recorded as 164/56. Other active agent turns were
+left alone. Built natively on Yari while agents worked, remote builders off.
+The first build wrapper correctly refused an active turn; a build-only helper
+then built immutable closures without changing runtime. Activation waited for
+both agents idle. Its first idle window closed during the final guard, which
+refused before switching. The second guarded attempt succeeded.
+
+| Target | Result |
+| --- | --- |
+| Yari | **59**, `/nix/store/qd9w4q53a2ankyvb6cb0md79wwpy9kf2-nixos-system-yari-26.11.20260923.4975466` |
+| Rakku | **166**, unchanged; no deployment or service restart by this task |
+
+The host reloaded `container@claw-simon` in place. Its invocation ID stayed
+`090c096c50844218b7543fadd1a4b948`; claw-tailnet's stayed
+`e89923b738c645f1b65f145e777932ac`. Only flakey's changed gateway/config
+restarted during activation; sampled unhealthy interval **14.9 s**. Snowy's
+unit, container conf, closure, live config, container/gateway invocation IDs,
+app profile and session/device/job inventory matched before and after.
+Snowy had **0 s** unhealthy samples and no restart. No container restarted.
+The switch ran under a transient systemd unit with automatic guarded fallback;
+no fallback activation was needed.
+
+Passed focused x86 `openclaw`, `openclaw-people`, `openclaw-in-place`; Yari
+`toplevel.drvPath`; native ARM `openclaw-config`; native system build; Nix
+formatting, focused Statix, Ruff on retained operational helpers, and whitespace.
+The new family-calendar text contract **failed before implementation**, then
+passed. These are instruction-contract checks, not proof of model behaviour;
+the real browser tests below supply that proof for their two paths. No full
+suite or aggregate flake check ran. Existing ARM sandbox log-path warning
+remains; configuration validation succeeds.
+
+### Real Control UI acceptance and cleanup
+
+The requested historical URL `claw-simon.hummingbird-lake.ts.net` no longer
+resolves after the approved rename. Tests used the actual production Control UI
+**https://flakey.hummingbird-lake.ts.net**, in a NEW conversation, never main:
+`agent:main:dashboard:ff322b9e-3f04-4c68-a6c0-4f64ba4b8387`, session ID
+`b65b8150-b6f5-429c-a7d6-d6e5aac2f47d`. Every proposed event was explicitly TEST.
+The fresh browser's own pairing alone was approved and removed afterward.
+
+1. Successful Family reads first confirmed **2026-11-21** and **2026-11-22**
+   empty. “Laure said we might go to a TEST pumpkin thing next Saturday,
+   November 21, 2026” produced one confirm card. It showed the title, date,
+   **time?**, **place?**, reason **You said ‘might’**, and **All day / Set a
+   time… / Don't add**. Inspected at **1280×900** and **390×844**: readable,
+   wrapped, neutral buttons, all controls reachable. The actual Don't add click
+   sent `Family calendar: skip fc1`. Flakey replied **Not added.** A fresh Family
+   read remained empty. Audit metadata proves zero add/remove/file/memory writes.
+2. “We are going to a TEST family picnic on Sunday, November 22, 2026. I haven't
+   set a time” produced its own missing-time card, not a write. The actual
+   **All day** click sent `Family calendar: all-day fc2`. Flakey added exactly
+   one all-day event and read it back: start **2026-11-22**, exclusive end
+   **2026-11-23**, ID **`nu0onnghutmfjtv1o3dc3vnnfc`**. Its Added card with Undo
+   rendered at desktop and phone sizes. The actual **Undo** click sent that ID,
+   restricted remove succeeded, and Flakey read the date back empty.
+3. Independent final Family reads confirm both dates **empty, no TEST events**.
+   Test-only audit metadata proves exactly **one add** and **one remove**, each
+   followed by Family read-back, and no memory/file/runtime/delegation writes.
+
+Screenshots: **8 PNGs** in `/tmp/claw/family-confirm-card/` on Zao. All unique
+card states were opened and inspected, not just saved. More prose than needed
+appeared below the cards in this TEST conversation; the cards themselves are
+compact. Normal Add/Change, Set a time, ambiguous-day, possible-duplicate,
+multiple-event/three-card cap, typed-yes and native/cron fallback paths are
+instructed and text-checked, **not live-exercised in this acceptance run**.
+This remains an agent skill, not a deterministic workflow engine.
+
+Cleanup: closed the browser, deleted exactly the TEST conversation through the
+gateway, then selected its retained archive by full session ID for
+`openclaw memory forget --agent main`. Preview resolved only that session, with
+no mixed lineage/refusal; apply succeeded. Repeated preview had **zero tracked
+entries**, and both the test session and the unused, never-started initial URL
+session are absent. No SQLite writes or raw state-file deletion occurred.
+Only flakey's gateway stopped for the required offline Forget, then restarted;
+containers, tailnet and snowy did not restart. Reconcilers initially raced
+startup and failed, then their existing retries recovered: all four are now
+active, both gateways healthy. No scheduled job was force-run. The temporary
+browser pairing is gone. Retained transcript archives remain durably forgotten.
+
+Helpers/evidence: `/tmp/claw/family-confirm-*` on Zao and copied helpers on Yari;
+switch snapshots/summary at `/var/tmp/family-confirm-yari/`. Final proof reports
+test-session deletion, zero remaining memory entries, removed temporary pairing,
+unchanged snowy identities, healthy gateways and all four reconcilers active.
+
+### Forward rollback
+
+Do not restore historical Rakku or Yari generations: they would undo the ai
+front-door and node-name migrations. A forward `git revert fec704f3` (or an
+explicit inverse of its four-file diff if later edits overlap), rebased on
+current cairn, restores the prior skills and removes the added text contract.
+Build/check the current Yari output and switch **in place** with the same idle,
+unchanged-snowy and no-container-restart guards. Rakku and Google need no change.
+Keep real Google events, OAuth/keyring data and the durable write ledger. No
+pending draft was persisted, and the sole TEST event is already removed. A
+skill rollback does not undo a real event or recreate a skipped draft.
