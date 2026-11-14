@@ -4,9 +4,14 @@ Deployed to `ai-staging` only on 2026-11-14 UTC (Rakku generation 157); see
 the deployment record below. Production `ai`, its backend, client keys and
 other proxy units are out of scope and did not change.
 
+**Stage 2** (prepared, see `ai-mcp-production.md`) changes two things here.
+Rows now match callers by stable Tailscale node ID, not node name, and the
+staging row moves to IDs. Production `ai` also runs this router, with one
+row. The deployment record below describes stage 1 as it ran.
+
 ## Contract and cost
 
-- `ai-staging` alone uses `packages.ai-mcp-tsnet-proxy`. That package overlays
+- Stage 1: `ai-staging` alone uses `packages.ai-mcp-tsnet-proxy`. That package overlays
   `routing.patch` and `routes*.go` on the unchanged shared proxy source. The
   shared `media-tsnet-proxy` derivation does not change. The patch reuses the
   credential injection from local commit `8cf57067`; no personal-data route or
@@ -18,15 +23,20 @@ other proxy units are out of scope and did not change.
   front-door authorization, headers, streaming and server timeouts stay intact.
   `/mcp` itself is outside `/mcp/` and still goes to the front door.
 - The one row is `/mcp/echo`, backend `http://127.0.0.1:8422/mcp`, tool `echo`,
-  allowed callers `claw-simon` and `zao`. The backend always returns `ok`; it does not echo
+  allowed callers `claw-simon` (`nbQJZMcewG11CNTRL`) and `zao`
+  (`nto5J2nGb311CNTRL`). The backend always returns `ok`; it does not echo
   input, read files or call services. No credential is needed for this row.
   `zao` stays on this harmless staging row permanently. The Tailscale policy
   lets `tag:claw` reach only the production `ai` front door, so `claw-simon`
   cannot reach `ai-staging`; Zao proves the allowed-caller path instead.
-- Caller lists are plain `mountainous.tailnetNames.ai-staging.mcpRoutes.echo.callers`
-  options. After the real node rename, change `"claw-simon"` to `"flakey"`
-  in `modules/ai-gateway-staging.nix`. WhoIs's node DNS name is the source
-  of identity. Caller headers cannot grant access. Empty callers fail evaluation.
+- Caller lists are `mountainous.tailnetNames.<name>.mcpRoutes.<row>.callerNodeIds`
+  options: stable node IDs from `lib/tailnet-nodes.nix`, the source of truth.
+  WhoIs's `Node.StableID` is the identity. Stage 1 matched the node name, and a
+  removed node's name can be registered again by another node. A rename keeps
+  the ID, so the claw-simon to flakey rename needs no row change. Caller
+  headers cannot grant access. An empty list, a node name or a DNS name fails
+  evaluation (the type is `n[a-zA-Z0-9]+CNTRL`), and the router refuses such
+  a table and a stage-1 table with `callers`.
 - MCP requests use the existing stateless `mcpTools` filter, with separate
   allowlists per row. Caller auth headers and cookies never reach MCP backends.
   MCP has its existing bounded bodies and 60-second upstream timeout; normal
@@ -46,7 +56,7 @@ other proxy units are out of scope and did not change.
   Adding/rotating a systemd credential is **not** a table-only change: systemd
   loads credentials at service start, so this needs a separate reviewed staging
   restart. SIGHUP is asynchronous; inspect the reload log and test the row after reload.
-- The step-one check intentionally freezes all 17 other Rakku proxy units to
+- The check freezes the other Rakku proxy units (16 since stage 2) to
   the before-change evaluated fixture, including store paths. A later fleet
   package/input upgrade must deliberately retire or update this temporary guard.
   Do not regenerate the fixture just to make an unexpected production diff pass.
@@ -65,7 +75,7 @@ nix build --no-link -L .#checks.x86_64-linux.ai-mcp-proxy \
 `checks.ai-mcp-proxy` builds the actual staging proxy with its Go tests and
 `go vet ./...`, then exercises the real Python no-op backend over loopback HTTP.
 It checks callers and LoadCredential wiring on every configured
-row, freezes the other 17 Rakku units, and compares changed-caller and empty-table
+row, freezes the other Rakku units (16 since stage 2), and compares changed-caller and empty-table
 variants: only `X-Reload-Triggers` may change in their rendered units.
 
 For a local Go run against the same assembled source:
