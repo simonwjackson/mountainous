@@ -8,6 +8,7 @@ let
     listenPort = 8420;
     egressPort = 8421;
   };
+  nodes = import ../lib/tailnet-nodes.nix;
 in
 {
   perSystem = import ../lib/ai-gateway-check.nix (
@@ -40,9 +41,9 @@ in
               backend = "http://127.0.0.1:8422/mcp";
               # zao proves the allowed-caller path: the tag:claw policy reaches
               # only the production ai front door, not ai-staging.
-              callers = [
-                "claw-simon"
-                "zao"
+              callerNodeIds = [
+                nodes.claw-simon
+                nodes.zao
               ];
               mcpTools = [ "echo" ];
             };

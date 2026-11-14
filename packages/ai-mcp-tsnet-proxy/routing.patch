@@ -18,7 +18,7 @@
  	if (*mcpResources != "" || *mcpAllowedNodeIDs != "") && *mcpTools == "" {
  		log.Fatal("MCP resources require filtered tools")
  	}
-@@ -298,6 +302,27 @@
+@@ -298,6 +302,23 @@
  			handler = mcpResourceHandler(backendURL, strings.Split(*mcpTools, ","), strings.FieldsFunc(*mcpResources, func(r rune) bool { return r == ',' }), verifyPeer)
  		}
  	}
@@ -28,11 +28,7 @@
 +			log.Fatal("tailnet identity client unavailable")
 +		}
 +		router := newMCPRouter(handler, func(r *http.Request) (string, error) {
-+			peer, err := local.WhoIs(r.Context(), r.RemoteAddr)
-+			if err != nil || peer == nil || peer.Node == nil {
-+				return "", errors.New("tailnet identity unavailable")
-+			}
-+			return peer.Node.Name, nil
++			return whoIsStableNodeID(local.WhoIs(r.Context(), r.RemoteAddr))
 +		})
 +		if err := router.reload(*mcpTable, os.Getenv("CREDENTIALS_DIRECTORY")); err != nil {
 +			log.Fatal("invalid initial MCP route table")

@@ -14,31 +14,46 @@ import (
 	"regexp"
 	"strings"
 	"sync/atomic"
+
+	"tailscale.com/client/tailscale/apitype"
 )
 
 // Credential names refer only to files in systemd's CREDENTIALS_DIRECTORY.
 // No caller input or secret values belong in this table.
 type mcpRoute struct {
 	Backend          string   `json:"backend"`
-	Callers          []string `json:"callers"`
+	CallerNodeIDs    []string `json:"callerNodeIds"`
 	Tools            []string `json:"mcpTools"`
 	BearerCredential string   `json:"bearerCredential,omitempty"`
 }
 
 type mcpRouter struct {
 	fallback http.Handler
-	whoIs    func(*http.Request) (string, error)
-	routes   atomic.Value // immutable map[string]http.Handler; one snapshot per request
+	// Returns the caller's stable Tailscale node ID from WhoIs.
+	stableNodeID func(*http.Request) (string, error)
+	routes       atomic.Value // immutable map[string]http.Handler; one snapshot per request
 }
 
-func newMCPRouter(fallback http.Handler, whoIs func(*http.Request) (string, error)) *mcpRouter {
-	router := &mcpRouter{fallback: fallback, whoIs: whoIs}
+func newMCPRouter(fallback http.Handler, stableNodeID func(*http.Request) (string, error)) *mcpRouter {
+	router := &mcpRouter{fallback: fallback, stableNodeID: stableNodeID}
 	router.routes.Store(map[string]http.Handler{})
 	return router
 }
 
+// A node name can be registered again by another node after the original is
+// removed, and a rename changes it. The stable node ID does neither.
+func whoIsStableNodeID(peer *apitype.WhoIsResponse, err error) (string, error) {
+	if err != nil || peer == nil || peer.Node == nil || peer.Node.StableID == "" {
+		return "", errors.New("tailnet identity unavailable")
+	}
+	return string(peer.Node.StableID), nil
+}
+
 var routeName = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
-var callerName = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
+
+// The shape of Tailscale's stable node IDs, e.g. nbQJZMcewG11CNTRL. A node
+// name such as "zao" or "flakey" never passes as an ID.
+var stableNodeIDPattern = regexp.MustCompile(`^n[a-zA-Z0-9]+CNTRL$`)
 
 func (router *mcpRouter) reload(path, credentialsDirectory string) error {
 	file, err := os.Open(path)
@@ -62,20 +77,20 @@ func (router *mcpRouter) reload(path, credentialsDirectory string) error {
 	}
 	routes := make(map[string]http.Handler, len(table))
 	for name, row := range table {
-		if !routeName.MatchString(name) || len(row.Callers) == 0 || len(row.Tools) == 0 {
-			return errors.New("MCP row requires a name, callers and tools")
+		if !routeName.MatchString(name) || len(row.CallerNodeIDs) == 0 || len(row.Tools) == 0 {
+			return errors.New("MCP row requires a name, caller node IDs and tools")
 		}
 		backend, err := url.Parse(row.Backend)
 		// Step one keeps credentials and harmless test traffic on loopback.
 		if err != nil || backend.Scheme != "http" || backend.Hostname() != "127.0.0.1" || backend.User != nil || backend.RawQuery != "" || backend.Fragment != "" || backend.Opaque != "" {
 			return errors.New("MCP backend must be fixed IPv4 loopback HTTP")
 		}
-		callers := make(map[string]bool, len(row.Callers))
-		for _, caller := range row.Callers {
-			if !callerName.MatchString(caller) {
-				return errors.New("MCP caller must be an exact short node name")
+		callers := make(map[string]bool, len(row.CallerNodeIDs))
+		for _, id := range row.CallerNodeIDs {
+			if !stableNodeIDPattern.MatchString(id) {
+				return errors.New("MCP caller must be a stable Tailscale node ID")
 			}
-			callers[caller] = true
+			callers[id] = true
 		}
 		for _, tool := range row.Tools {
 			if !routeName.MatchString(tool) {
@@ -94,10 +109,10 @@ func (router *mcpRouter) reload(path, credentialsDirectory string) error {
 			}
 		}
 		routes["/mcp/"+name] = mcpAuthenticatedResourceHandler(backend, row.Tools, nil, bearer, func(r *http.Request) bool {
-			node, err := router.whoIs(r)
-			// WhoIs, not Host, forwarded headers or user profile, owns identity.
-			shortName := strings.Split(strings.TrimSuffix(node, "."), ".")[0]
-			return err == nil && callers[shortName]
+			// WhoIs's stable node ID, not a node name, Host, forwarded headers
+			// or user profile, owns identity. Exact, case-sensitive match only.
+			id, err := router.stableNodeID(r)
+			return err == nil && id != "" && callers[id]
 		})
 	}
 	// Invalid reloads never partially publish. In-flight requests own old handlers.

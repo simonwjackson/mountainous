@@ -76,7 +76,7 @@
             lib.mapAttrs (
               tool: row:
               {
-                inherit (row) backend callers mcpTools;
+                inherit (row) backend callerNodeIds mcpTools;
               }
               // lib.optionalAttrs (row.bearerCredentialFile != null) {
                 bearerCredential = "mcp-${tool}";
@@ -163,9 +163,11 @@
                         type = lib.types.strMatching "http://127\\.0\\.0\\.1:[0-9]+(/[^?#]*)?";
                         description = "Fixed loopback MCP URL. An empty path means /mcp.";
                       };
-                      callers = lib.mkOption {
-                        type = lib.types.nonEmptyListOf (lib.types.strMatching "[a-z0-9]([a-z0-9-]*[a-z0-9])?");
-                        description = "Exact short Tailscale node names from WhoIs. No default grant.";
+                      callerNodeIds = lib.mkOption {
+                        # Tailscale's stable IDs have this shape. A node name
+                        # such as "zao" or "flakey" fails here, not at runtime.
+                        type = lib.types.nonEmptyListOf (lib.types.strMatching "n[a-zA-Z0-9]+CNTRL");
+                        description = "Stable Tailscale node IDs from WhoIs (lib/tailnet-nodes.nix). Not node names: a removed node's name can be registered again. No default grant; an empty list fails evaluation.";
                       };
                       mcpTools = lib.mkOption {
                         type = lib.types.nonEmptyListOf (lib.types.strMatching "[a-zA-Z0-9_-]+");

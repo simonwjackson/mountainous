@@ -30,7 +30,7 @@
       "family_calendar_add"
       "family_calendar_remove"
     ];
-    allowedNodeIds = [ "nbQJZMcewG11CNTRL" ];
+    allowedNodeIds = [ (import ./tailnet-nodes.nix).claw-simon ];
   };
   claw-maps = {
     app = "maps";

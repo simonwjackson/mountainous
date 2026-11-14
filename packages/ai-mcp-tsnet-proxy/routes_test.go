@@ -14,6 +14,16 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"tailscale.com/client/tailscale/apitype"
+	"tailscale.com/tailcfg"
+)
+
+// Real stable IDs from the tailnet: claw-simon (flakey), Laure's claw, and Zao.
+const (
+	simonNode = "nbQJZMcewG11CNTRL"
+	laureNode = "nkT3Yhzyy121CNTRL"
+	zaoNode   = "nto5J2nGb311CNTRL"
 )
 
 func tableFile(t *testing.T, table map[string]mcpRoute) string {
@@ -71,7 +81,7 @@ func TestMCPRoutesIdentityCredentialsAndFiltering(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(credentials, "echo-key"), []byte("server-secret\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	node, identityErr := "claw-simon.hummingbird-lake.ts.net.", error(nil)
+	node, identityErr := simonNode, error(nil)
 	router := newMCPRouter(http.NotFoundHandler(), func(r *http.Request) (string, error) {
 		if r.RemoteAddr != "192.0.2.1:1234" {
 			t.Error("WhoIs must receive original remote address")
@@ -79,8 +89,8 @@ func TestMCPRoutesIdentityCredentialsAndFiltering(t *testing.T) {
 		return node, identityErr
 	})
 	path := tableFile(t, map[string]mcpRoute{
-		"echo":  {Backend: backend.URL + "/fixed-mcp", Callers: []string{"claw-simon"}, Tools: []string{"echo"}, BearerCredential: "echo-key"},
-		"other": {Backend: backend.URL + "/fixed-mcp", Callers: []string{"claw-simon"}, Tools: []string{"other"}, BearerCredential: "echo-key"},
+		"echo":  {Backend: backend.URL + "/fixed-mcp", CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}, BearerCredential: "echo-key"},
+		"other": {Backend: backend.URL + "/fixed-mcp", CallerNodeIDs: []string{simonNode}, Tools: []string{"other"}, BearerCredential: "echo-key"},
 	})
 	if err := router.reload(path, credentials); err != nil {
 		t.Fatal(err)
@@ -99,13 +109,13 @@ func TestMCPRoutesIdentityCredentialsAndFiltering(t *testing.T) {
 	if !strings.Contains(w.Body.String(), "tool not allowed") || requests != before {
 		t.Fatal("disallowed tool reached upstream")
 	}
-	for _, denied := range []string{"zao.hummingbird-lake.ts.net.", "", "claw-simon-2.hummingbird-lake.ts.net."} {
+	for _, denied := range []string{laureNode, zaoNode, "", "claw-simon", "claw-simon.hummingbird-lake.ts.net."} {
 		node = denied
 		if w := routeRequest(router, "/mcp/echo", listRequest); w.Code != 403 {
 			t.Fatalf("node %q got %d", denied, w.Code)
 		}
 	}
-	node, identityErr = "claw-simon.hummingbird-lake.ts.net.", errors.New("WhoIs unavailable")
+	node, identityErr = simonNode, errors.New("WhoIs unavailable")
 	if w := routeRequest(router, "/mcp/echo", listRequest); w.Code != 403 {
 		t.Fatal("WhoIs failure must deny")
 	}
@@ -209,15 +219,15 @@ func TestMCPRoutesReloadRetainsInflightAndRejectsInvalidTable(t *testing.T) {
 		io.WriteString(w, `{"result":{"tools":[{"name":"new"}]}}`)
 	}))
 	defer newBackend.Close()
-	router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return "claw-simon.tailnet.ts.net.", nil })
-	path := tableFile(t, map[string]mcpRoute{"echo": {Backend: old.URL, Callers: []string{"claw-simon"}, Tools: []string{"old"}}})
+	router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return simonNode, nil })
+	path := tableFile(t, map[string]mcpRoute{"echo": {Backend: old.URL, CallerNodeIDs: []string{simonNode}, Tools: []string{"old"}}})
 	if err := router.reload(path, ""); err != nil {
 		t.Fatal(err)
 	}
 	done := make(chan *httptest.ResponseRecorder, 1)
 	go func() { done <- routeRequest(router, "/mcp/echo", listRequest) }()
 	<-started
-	writeTable(t, path, map[string]mcpRoute{"new": {Backend: newBackend.URL, Callers: []string{"claw-simon"}, Tools: []string{"new"}}})
+	writeTable(t, path, map[string]mcpRoute{"new": {Backend: newBackend.URL, CallerNodeIDs: []string{simonNode}, Tools: []string{"new"}}})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	reloads := make(chan os.Signal, 1)
@@ -258,15 +268,24 @@ func TestMCPRoutesReloadRetainsInflightAndRejectsInvalidTable(t *testing.T) {
 func TestMCPRoutesRejectInvalidCredentialsAndRows(t *testing.T) {
 	for name, row := range map[string]mcpRoute{
 		"no-callers":         {Backend: "http://127.0.0.1:8422", Tools: []string{"echo"}},
-		"no-tools":           {Backend: "http://127.0.0.1:8422", Callers: []string{"claw-simon"}},
-		"non-loopback":       {Backend: "https://example.com/mcp", Callers: []string{"claw-simon"}, Tools: []string{"echo"}},
-		"query":              {Backend: "http://127.0.0.1:8422/mcp?secret=x", Callers: []string{"claw-simon"}, Tools: []string{"echo"}},
-		"caller":             {Backend: "http://127.0.0.1:8422", Callers: []string{"*"}, Tools: []string{"echo"}},
-		"credential-path":    {Backend: "http://127.0.0.1:8422", Callers: []string{"claw-simon"}, Tools: []string{"echo"}, BearerCredential: "/tmp/key"},
-		"missing-credential": {Backend: "http://127.0.0.1:8422", Callers: []string{"claw-simon"}, Tools: []string{"echo"}, BearerCredential: "missing"},
+		"empty-callers":      {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{}, Tools: []string{"echo"}},
+		"no-tools":           {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{simonNode}},
+		"non-loopback":       {Backend: "https://example.com/mcp", CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}},
+		"query":              {Backend: "http://127.0.0.1:8422/mcp?secret=x", CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}},
+		"caller-wildcard":    {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{"*"}, Tools: []string{"echo"}},
+		"caller-empty-id":    {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{""}, Tools: []string{"echo"}},
+		"caller-node-name":   {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{"claw-simon"}, Tools: []string{"echo"}},
+		"caller-short-name":  {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{"zao"}, Tools: []string{"echo"}},
+		"caller-new-name":    {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{"flakey"}, Tools: []string{"echo"}},
+		"caller-not-an-id":   {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{"nbQJZMcewG11"}, Tools: []string{"echo"}},
+		"caller-dns-name":    {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{"claw-simon.hummingbird-lake.ts.net."}, Tools: []string{"echo"}},
+		"caller-joined-ids":  {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{simonNode + "," + zaoNode}, Tools: []string{"echo"}},
+		"caller-spaced-id":   {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{" " + simonNode}, Tools: []string{"echo"}},
+		"credential-path":    {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}, BearerCredential: "/tmp/key"},
+		"missing-credential": {Backend: "http://127.0.0.1:8422", CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}, BearerCredential: "missing"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return "claw-simon", nil })
+			router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return simonNode, nil })
 			if router.reload(tableFile(t, map[string]mcpRoute{"echo": row}), t.TempDir()) == nil {
 				t.Fatal("invalid row accepted")
 			}
@@ -288,8 +307,8 @@ func TestMCPRoutesWithoutCredentialNeverUseCallerAuth(t *testing.T) {
 		io.WriteString(w, `{"result":{"content":[{"type":"text","text":"ok"}]}}`)
 	}))
 	defer backend.Close()
-	router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return "claw-simon.tailnet.ts.net", nil })
-	path := tableFile(t, map[string]mcpRoute{"echo": {Backend: backend.URL, Callers: []string{"claw-simon"}, Tools: []string{"echo"}}})
+	router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return simonNode, nil })
+	path := tableFile(t, map[string]mcpRoute{"echo": {Backend: backend.URL, CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}}})
 	if err := router.reload(path, ""); err != nil {
 		t.Fatal(err)
 	}
@@ -309,7 +328,9 @@ func TestMCPRoutesWithoutCredentialNeverUseCallerAuth(t *testing.T) {
 
 func TestMCPRoutesRejectMalformedTables(t *testing.T) {
 	for name, data := range map[string]string{
-		"unknown-field":  `{"echo":{"backend":"http://127.0.0.1:8422","callers":["claw-simon"],"mcpTools":["echo"],"bearer":"inline-secret"}}`,
+		"unknown-field": `{"echo":{"backend":"http://127.0.0.1:8422","callerNodeIds":["nbQJZMcewG11CNTRL"],"mcpTools":["echo"],"bearer":"inline-secret"}}`,
+		// A stage-one table matched node names. The new binary must refuse it.
+		"name-callers":   `{"echo":{"backend":"http://127.0.0.1:8422","callers":["claw-simon"],"mcpTools":["echo"]}}`,
 		"trailing-value": `{} {}`,
 		"null":           `null`,
 		"large":          `{}` + strings.Repeat(" ", 1<<20),
@@ -324,5 +345,84 @@ func TestMCPRoutesRejectMalformedTables(t *testing.T) {
 				t.Fatal("malformed table accepted")
 			}
 		})
+	}
+}
+
+func TestMCPRoutesMatchCallersByStableNodeID(t *testing.T) {
+	calls := 0
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		io.WriteString(w, `{"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"echo"}]}}`)
+	}))
+	defer backend.Close()
+	caller := ""
+	router := newMCPRouter(http.NotFoundHandler(), func(*http.Request) (string, error) { return caller, nil })
+	if err := router.reload(tableFile(t, map[string]mcpRoute{
+		"sparkyfitness": {Backend: backend.URL + "/mcp", CallerNodeIDs: []string{simonNode}, Tools: []string{"echo"}},
+		"echo":          {Backend: backend.URL + "/mcp", CallerNodeIDs: []string{simonNode, zaoNode}, Tools: []string{"echo"}},
+	}), ""); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		path, caller string
+		want         int
+	}{
+		{"/mcp/sparkyfitness", simonNode, 200},
+		{"/mcp/sparkyfitness", laureNode, 403},
+		{"/mcp/sparkyfitness", zaoNode, 403},
+		{"/mcp/echo", simonNode, 200},
+		{"/mcp/echo", zaoNode, 200},
+		{"/mcp/echo", laureNode, 403},
+		// A node that takes over a removed node's name gets a new stable ID.
+		{"/mcp/sparkyfitness", "nNewNodeSameName1CNTRL", 403},
+		// The node name and DNS name no longer grant anything.
+		{"/mcp/sparkyfitness", "claw-simon", 403},
+		{"/mcp/sparkyfitness", "flakey", 403},
+		{"/mcp/sparkyfitness", "claw-simon.hummingbird-lake.ts.net.", 403},
+		// Exact and case-sensitive: no prefix, suffix, case or list match.
+		{"/mcp/sparkyfitness", "nbqjzmcewg11cntrl", 403},
+		{"/mcp/sparkyfitness", simonNode + "x", 403},
+		{"/mcp/sparkyfitness", simonNode[:len(simonNode)-1], 403},
+		{"/mcp/sparkyfitness", simonNode + "," + laureNode, 403},
+		{"/mcp/sparkyfitness", "", 403},
+	} {
+		caller = c.caller
+		before := calls
+		w := routeRequest(router, c.path, listRequest)
+		if w.Code != c.want {
+			t.Fatalf("%s from %q: got %d, want %d", c.path, c.caller, w.Code, c.want)
+		}
+		if forwarded := calls - before; (c.want == 200) != (forwarded == 1) {
+			t.Fatalf("%s from %q reached upstream %d times", c.path, c.caller, forwarded)
+		}
+	}
+}
+
+func TestWhoIsStableNodeIDUsesOnlyTheStableID(t *testing.T) {
+	named := func(name string, id tailcfg.StableNodeID) *apitype.WhoIsResponse {
+		return &apitype.WhoIsResponse{
+			Node:        &tailcfg.Node{Name: name, StableID: id},
+			UserProfile: &tailcfg.UserProfile{LoginName: "simon.jackson@gmail.com"},
+		}
+	}
+	if id, err := whoIsStableNodeID(named("claw-simon.hummingbird-lake.ts.net.", simonNode), nil); err != nil || id != simonNode {
+		t.Fatalf("got %q %v", id, err)
+	}
+	// After a rename the same node keeps its ID.
+	if id, err := whoIsStableNodeID(named("flakey.hummingbird-lake.ts.net.", simonNode), nil); err != nil || id != simonNode {
+		t.Fatalf("renamed node got %q %v", id, err)
+	}
+	for name, c := range map[string]struct {
+		peer *apitype.WhoIsResponse
+		err  error
+	}{
+		"lookup-error":    {named("claw-simon.hummingbird-lake.ts.net.", simonNode), errors.New("WhoIs unavailable")},
+		"no-peer":         {nil, nil},
+		"no-node":         {&apitype.WhoIsResponse{UserProfile: &tailcfg.UserProfile{LoginName: "simon.jackson@gmail.com"}}, nil},
+		"name-without-id": {named("claw-simon.hummingbird-lake.ts.net.", ""), nil},
+	} {
+		if id, err := whoIsStableNodeID(c.peer, c.err); err == nil || id != "" {
+			t.Errorf("%s: got %q %v, want an error", name, id, err)
+		}
 	}
 }

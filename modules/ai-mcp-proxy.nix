@@ -17,28 +17,48 @@
       });
       system = self.nixosConfigurations.rakku;
       c = system.config;
+      extend = modules: (system.extendModules { inherit modules; }).config;
       before = builtins.fromJSON (builtins.readFile ../tests/ai-mcp-proxy-units-before.json);
       services = lib.filterAttrs (name: _: lib.hasPrefix "tsnet-proxy-" name) c.systemd.services;
-      unchanged = lib.filter (name: name != "tsnet-proxy-ai-staging") (lib.attrNames before);
+      # Only the routed front door may differ from the before fixture.
+      unchanged = lib.subtractLists [ "tsnet-proxy-ai-staging" ] (lib.attrNames before);
       unit = c.systemd.services.tsnet-proxy-ai-staging;
       table = c.environment.etc."tsnet-proxy-ai-staging-mcp.json".source;
       # A tools/callers-only edit must alter the reload trigger, not ExecStart,
       # LoadCredential, restartTriggers, or any other rendered unit setting.
-      changed =
-        (system.extendModules {
-          modules = [
-            ({ lib, ... }: {
-              mountainous.tailnetNames.ai-staging.mcpRoutes.echo.callers = lib.mkForce [ "ai-mcp-check-caller" ];
-            })
-          ];
-        }).config;
+      changed = extend [
+        (
+          { lib, ... }:
+          {
+            mountainous.tailnetNames.ai-staging.mcpRoutes.echo.callerNodeIds = lib.mkForce [
+              "nAiMcpCheckCallerCNTRL"
+            ];
+          }
+        )
+      ];
       changedUnit = changed.systemd.services.tsnet-proxy-ai-staging;
+      # An empty caller list, or a node name instead of a stable ID, fails evaluation.
+      rejected =
+        callers:
+        !(builtins.tryEval
+          (extend [
+            (
+              { lib, ... }:
+              {
+                mountainous.tailnetNames.ai-staging.mcpRoutes.echo.callerNodeIds = lib.mkForce callers;
+              }
+            )
+          ]).environment.etc."tsnet-proxy-ai-staging-mcp.json".source.text
+        ).success;
       emptyConfig =
         (system.extendModules {
           modules = [
-            ({ lib, ... }: {
-              mountainous.tailnetNames.ai-staging.mcpRoutes = lib.mkForce { };
-            })
+            (
+              { lib, ... }:
+              {
+                mountainous.tailnetNames.ai-staging.mcpRoutes = lib.mkForce { };
+              }
+            )
           ];
         }).config;
       emptyUnit = emptyConfig.systemd.services.tsnet-proxy-ai-staging;
@@ -70,7 +90,7 @@
             let
               row = rows.${tool};
             in
-            row.callers != [ ]
+            row.callerNodeIds != [ ]
             && row.mcpTools != [ ]
             && (
               row.bearerCredentialFile == null
@@ -97,6 +117,11 @@
         ) unchanged;
         assert c.mountainous.tailnetNames.ai.mcpRoutes == { };
         assert lib.attrNames c.mountainous.tailnetNames.ai-staging.mcpRoutes == [ "echo" ];
+        assert rejected [ ];
+        assert rejected [ "claw-simon" ];
+        assert rejected [ "claw-simon.hummingbird-lake.ts.net" ];
+        assert rejected [ "flakey" ];
+        assert !(rejected [ "nkT3Yhzyy121CNTRL" ]);
         assert lib.hasInfix "ai-mcp-tsnet-proxy" unit.serviceConfig.ExecStart;
         assert lib.hasInfix "-mcp-table /etc/tsnet-proxy-ai-staging-mcp.json" unit.serviceConfig.ExecStart;
         assert lib.hasInfix "-HUP $MAINPID" unit.serviceConfig.ExecReload;
