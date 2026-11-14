@@ -8,7 +8,6 @@ let
     google = [
       "calendar"
       "gmail"
-      "family-calendar"
       "family-calendar-laure"
     ];
     maps = [ "maps" ];
@@ -17,7 +16,6 @@ let
   googleRows = [
     "calendar"
     "gmail"
-    "family-calendar"
   ];
 in
 {
@@ -56,7 +54,14 @@ in
     in
     {
       checks.claw-tools =
-        assert rows.calendar.tools == [ "calendar_busy" ];
+        assert
+          rows.calendar.tools == [
+            "calendar_busy"
+            "calendars_list"
+            "calendar_events"
+            "calendar_add"
+            "calendar_remove"
+          ];
         assert
           rows.gmail.tools == [
             "mail_list"
@@ -146,12 +151,13 @@ in
         assert rakku.systemd.services.assistant-app-simon-google.environment.GOOGLE_POLL_DISABLED == "1";
         assert lib.elem "mail_not_mine"
           rakku.mountainous.features.pi-assistant.people.simon.apps.google.readOnlyTools;
+        assert !(rows ? family-calendar);
         assert
-          rows.family-calendar.tools == [
-            "family_calendar_events"
-            "family_calendar_add"
-            "family_calendar_remove"
-          ];
+          !(
+            containers.claw-simon.config.services.openclaw-gateway.config.mcp.servers
+            ? claw-family-calendar-simon
+          );
+        assert !(lib.elem "calendar_add_event" rows.calendar.tools);
         assert
           !(
             containers.${laureContainer}.config.services.openclaw-gateway.config.mcp.servers
@@ -163,8 +169,8 @@ in
             !(lib.elem tool rakku.mountainous.features.pi-assistant.people.simon.apps.google.readOnlyTools)
           )
           [
-            "family_calendar_add"
-            "family_calendar_remove"
+            "calendar_add"
+            "calendar_remove"
           ];
         assert
           rakku.systemd.services.assistant-app-simon-google.environment.GOOGLE_FAMILY_CALENDAR_ID

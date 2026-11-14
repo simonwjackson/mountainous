@@ -29,7 +29,13 @@
   calendar = {
     callers = [ "flakey" ];
     server = "claw-calendar";
-    tools = [ "calendar_busy" ];
+    tools = [
+      "calendar_busy"
+      "calendars_list"
+      "calendar_events"
+      "calendar_add"
+      "calendar_remove"
+    ];
   };
   # Used by the Simon-only "mail" agent; flakey's main agent denies claw-gmail__*.
   # No mail_send: the row cannot send.
@@ -44,16 +50,6 @@
       "mail_archive"
       "mail_draft"
       "mail_discard_draft"
-    ];
-  };
-  # Reads and writes the Family calendar; the app fixes the calendar ID.
-  family-calendar = {
-    callers = [ "flakey" ];
-    server = "claw-family-calendar-simon";
-    tools = [
-      "family_calendar_events"
-      "family_calendar_add"
-      "family_calendar_remove"
     ];
   };
   ebay = {

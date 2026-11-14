@@ -234,17 +234,12 @@
             calendar = {
               backend = "http://127.0.0.1:${googlePort}/mcp";
               callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
-              mcpTools = [ "calendar_busy" ];
+              mcpTools = rows.calendar.tools;
             };
             gmail = {
               backend = "http://127.0.0.1:${googlePort}/mcp";
               callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
               mcpTools = rows.gmail.tools;
-            };
-            family-calendar = {
-              backend = "http://127.0.0.1:${googlePort}/mcp";
-              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
-              mcpTools = rows.family-calendar.tools;
             };
             ebay = {
               backend = "http://127.0.0.1:3191/mcp";
@@ -318,7 +313,7 @@
           == c.mountainous.tailnetNames.ai.mcpRoutes.${row}.callerNodeIds
         ) (lib.attrNames rows);
         assert !(lib.elem "mail_send" rows.gmail.tools);
-        assert lib.length rows.ebay.tools == 14 && lib.length rows.family-calendar.tools == 3;
+        assert lib.length rows.ebay.tools == 14 && lib.length rows.calendar.tools == 5;
         assert lib.length sparkyTools == 23 && lib.unique sparkyTools == sparkyTools;
         assert
           !(lib.any (tool: lib.elem tool sparkyTools) [
@@ -415,6 +410,14 @@
               "web_search"
               "web_fetch"
             ];
+          }
+        );
+        assert prodRejected (
+          { lib, ... }:
+          {
+            mountainous.tailnetNames.ai.mcpRoutes.calendar.mcpTools = lib.mkForce (
+              rows.calendar.tools ++ [ "calendar_add_event" ]
+            );
           }
         );
         assert !(prodRejected { });

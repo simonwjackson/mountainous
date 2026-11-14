@@ -2,19 +2,19 @@
 let
   simon = host.containers.claw-simon.config.services.openclaw-gateway.config;
   laure = host.containers.openclaw.config.services.openclaw-gateway.config;
-  skill = builtins.readFile ../lib/openclaw-skills/simon/family-calendar/SKILL.md;
+  skill = builtins.readFile ../lib/openclaw-skills/simon/calendar/SKILL.md;
   windDown = builtins.readFile ../lib/openclaw-skills/simon/wind-down/SKILL.md;
 in
 # Text contracts guard the model-facing protocol; live Control UI tests prove
 # the rendered buttons and real add/read/Undo behaviour.
 assert lib.all (text: lib.hasInfix text skill) [
   "clear intent"
-  "Add to Family calendar?"
-  "Family calendar: add <draftId>"
-  "Family calendar: change <draftId>"
-  "Family calendar: skip <draftId>"
-  "Family calendar: all-day <draftId>"
-  "Family calendar: set-time <draftId>"
+  "Add to calendar?"
+  "Calendar: add <draftId> to <calendar short ref>"
+  "Calendar: change <draftId> to <calendar short ref>"
+  "Calendar: skip <draftId> to <calendar short ref>"
+  "Calendar: all-day <draftId> to <calendar short ref>"
+  "Calendar: set-time <draftId> to <calendar short ref>"
   "All day"
   "Set a time…"
   "Don't add"
@@ -26,6 +26,10 @@ assert lib.all (text: lib.hasInfix text skill) [
   "ask_user"
   "neutral"
   "sendPrompt"
+  "calendars_list"
+  "aria-pressed"
+  "local JavaScript state"
+  "at most one short line"
   "outcome_unknown"
 ];
 assert lib.all (text: lib.hasInfix text windDown) [
@@ -34,8 +38,11 @@ assert lib.all (text: lib.hasInfix text windDown) [
   "Never save calendar drafts"
 ];
 assert lib.elem "show_widget" simon.tools.allow;
-assert simon.mcp.servers ? claw-family-calendar-simon;
+assert
+  simon.mcp.servers.claw-calendar.toolFilter.include == (import ../lib/ai-mcp-rows.nix)
+  .calendar.tools;
+assert !(simon.mcp.servers ? claw-family-calendar-simon);
 assert !(laure.mcp.servers ? claw-family-calendar-simon);
-assert lib.pathExists "${builtins.elemAt simon.skills.load.extraDirs 1}/family-calendar/SKILL.md";
-assert lib.all (dir: !lib.pathExists "${dir}/family-calendar/SKILL.md") laure.skills.load.extraDirs;
+assert lib.pathExists "${builtins.elemAt simon.skills.load.extraDirs 1}/calendar/SKILL.md";
+assert lib.all (dir: !lib.pathExists "${dir}/calendar/SKILL.md") laure.skills.load.extraDirs;
 true

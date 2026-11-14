@@ -42,10 +42,6 @@ in
       claw-calendar = {
         row = "calendar";
         inherit (rows.calendar) tools;
-      };
-      claw-family-calendar-simon = {
-        row = "family-calendar";
-        inherit (rows.family-calendar) tools;
         codex.defaultToolsApprovalMode = "approve";
       };
       claw-scryer-simon = {
@@ -58,7 +54,7 @@ in
     ]
     ++ (map (tool: "claw-ebay-simon__${tool}") rows.ebay.tools)
     ++ mailPermissions
-    ++ (map (tool: "claw-family-calendar-simon__${tool}") rows.family-calendar.tools)
+    ++ (map (tool: "claw-calendar__${tool}") rows.calendar.tools)
     ++ (map (tool: "sparkyfitness__${tool}") sparkyfitnessTools);
     agentTools = {
       deny = [ "claw-gmail__*" ];

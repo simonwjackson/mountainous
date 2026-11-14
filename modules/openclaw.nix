@@ -297,7 +297,7 @@
           };
           pkgs.runCommand "openclaw-in-place-drift" { } "touch $out";
         openclaw =
-          assert import ../tests/openclaw-family-calendar.nix {
+          assert import ../tests/openclaw-calendar.nix {
             inherit lib;
             host = productionHost;
           };
@@ -448,9 +448,11 @@
               "claw-gmail__mail_archive"
               "claw-gmail__mail_draft"
               "claw-gmail__mail_discard_draft"
-              "claw-family-calendar-simon__family_calendar_events"
-              "claw-family-calendar-simon__family_calendar_add"
-              "claw-family-calendar-simon__family_calendar_remove"
+              "claw-calendar__calendar_busy"
+              "claw-calendar__calendars_list"
+              "claw-calendar__calendar_events"
+              "claw-calendar__calendar_add"
+              "claw-calendar__calendar_remove"
             ]
             ++ map (tool: "sparkyfitness__${tool}") (import ../lib/openclaw-sparkyfitness-tools.nix);
           # No key, header or environment: the front door's caller lock and its
@@ -469,12 +471,10 @@
           assert
             !(lib.pathExists "${builtins.elemAt laure.skills.load.extraDirs 1}/nutrition-fitness/SKILL.md");
           assert
-            gateway.config.mcp.servers.claw-family-calendar-simon.toolFilter.include
-            == (import ../lib/ai-mcp-rows.nix).family-calendar.tools;
-          assert
-            gateway.config.mcp.servers.claw-family-calendar-simon.codex.defaultToolsApprovalMode == "approve";
-          assert lib.pathExists
-            "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/family-calendar/SKILL.md";
+            gateway.config.mcp.servers.claw-calendar.toolFilter.include == (import ../lib/ai-mcp-rows.nix)
+            .calendar.tools;
+          assert gateway.config.mcp.servers.claw-calendar.codex.defaultToolsApprovalMode == "approve";
+          assert lib.pathExists "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/calendar/SKILL.md";
           assert !(gateway.config.mcp.servers ? claw-scryer);
           assert
             gateway.config.mcp.servers.claw-scryer-simon.toolFilter.include == [
