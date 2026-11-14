@@ -3152,6 +3152,66 @@ nix-env -p /nix/var/nix/profiles/system --set <REVERT system>
 systemd-run --wait --collect --unit snowy-manual-rollback <REVERT system>/bin/switch-to-configuration switch
 ```
 
+### Deployment evidence — 2026-11-14 UTC
+
+Simon approved deploying right after stage 7. Landed on cairn as `52f99605`
+(flakey's container switches in place), `b9bb5926` (rename) and `5c0e2faa`
+(runbook), fast-forward from `638f252e`. Built from `b9bb5926`; Yari natively,
+builders off, both gateways idle. Rakku: evaluated only; its derivation
+`qz7rpi40npbqcm2sz0cx2q88dlzc5zaj` equals the running generation 163, so Rakku
+was not built or switched.
+
+| Host | Before | After |
+| --- | --- | --- |
+| Yari | 55 `/nix/store/1qj23dd6k82kp8q9r6fwnbxaygkyrk8z-nixos-system-yari-26.11.20260923.4975466` | 56 `/nix/store/v3xwp1w0sgjp0548ll9bmazz865pjb84-nixos-system-yari-26.11.20260923.4975466` |
+| Rakku | 163 `/nix/store/kisiwq6lw147f80kl7bb5k88j5bq4zn9-nixos-system-rakku-26.11.20260923.4975466` | unchanged |
+| REVERT (not active; GC root `/nix/var/nix/gcroots/snowy-rename-revert`) | | `/nix/store/sl73h25rfh4f4j7m0wjxsc75f67zihwd-nixos-system-yari-26.11.20260923.4975466` |
+
+- Built unit files, generation 55 → 56: on the host only `container@openclaw`
+  and `container@claw-simon` (restart triggers, and `X-ReloadIfChanged=true`
+  for flakey's), of 393. In Laure's container `openclaw-gateway`,
+  `claw-tailnet`, `dnsmasq` and `nftables`, of 333; in flakey's only
+  `openclaw-session-share`, of 345; flakey's `openclaw.json` SHA256
+  `57cb2a6d…` is the same. Checks on both commits: x86 `openclaw`,
+  `openclaw-people`, `openclaw-in-place`, `ai-mcp-proxy`, `tailnet-names`,
+  `ai-gateway`, `claw-tools`, `claw-scryer`, `claw-websearch`, `claw-ebay`;
+  native ARM `openclaw-config` and `openclaw-in-place-config`. Five wrong
+  configurations fail (`/tmp/claw/snowy-negative.py`). `snowy` was free in
+  the tailnet.
+- Switch at 17:22:55 UTC under `snowy-yari-switch`: the rename converged in
+  1.5 s (`claw` → `snowy`, ID `nkT3Yhzyy121CNTRL`, tag `tag:claw`), Serve
+  reset, switch rc 0 6.6 s after the rename; the host reloaded both
+  containers in place. **Laure's gateway restarted once**: stopped
+  17:23:02.019, started 17:23:04.427, unhealthy 14.3 s; InvocationID
+  `5487dfcd79464e2cbb182e4db83a4abe` → `1465f2ab24f54689911a95135dd709d1`,
+  NRestarts 0; her container `16c35f6d…` kept; her 8 sessions, 4 paired
+  devices and 2 jobs unchanged. **flakey did not restart**: gateway
+  `2852859cdae944449f2993d2273f3336` (PID 657) and container `090c096c…` kept,
+  unhealthy 0 s; only its Session Share source restarted (17:23:02.016–02.646,
+  `165f43f6…` → `917dfb92…`) and now uses `--host snowy.hummingbird-lake.ts.net`.
+  No rollback.
+- Finding: an in-place switch writes `/etc/hostname` but leaves the running
+  kernel hostname. Acceptance found Laure's OS hostname still `claw` (her
+  node name, prefs and DNS were already snowy). It was set with
+  `nixos-container run openclaw -- hostname snowy`; `snowy-yari-switch.py`
+  now sets it after the switch and sets it back on a rollback.
+- Acceptance 21/21 on Yari and 6/6 plus the rows 23/23 on Zao: node ID, IPs
+  and tag unchanged; DNS name, hostname preference, OS hostname and Serve
+  (`snowy:443`, `snowy:8443`) all snowy; her origins name snowy; her four
+  tools answer through their rows with one read each (12/12) and OpenClaw's
+  CLI probe is clean on both gateways; Session Share both ways (each side's
+  source connected, one `sessions.list` each); keyed `/v1/models` 200 from
+  both containers; no failed units; snowy resolves and claw does not in both
+  containers. From Zao: `https://snowy.hummingbird-lake.ts.net/` is the
+  OpenClaw Control page (HTTP 200, TLS verified), the Let's Encrypt
+  certificate names `snowy.hummingbird-lake.ts.net`, `:8443` answers,
+  `/control-ui-config.json` refuses Simon's login (401, as at claw before),
+  Zao sees `nkT3Yhzyy121CNTRL` as snowy, and `claw.hummingbird-lake.ts.net`
+  resolves nowhere. `check-rollback-yari` passes.
+- Laure's devices have not paired again yet; no request was approved and no
+  setup code was made. Scripts, logs and evidence: `/tmp/claw/snowy-*` on Zao;
+  copies on Yari.
+
 ### Re-pair Laure's devices after the rename
 
 Her old pairings point at the old origin. Browser identities are kept per
