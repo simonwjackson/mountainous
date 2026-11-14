@@ -23,7 +23,8 @@ row. The deployment record below describes stage 1 as it ran.
   front-door authorization, headers, streaming and server timeouts stay intact.
   `/mcp` itself is outside `/mcp/` and still goes to the front door.
 - The one row is `/mcp/echo`, backend `http://127.0.0.1:8422/mcp`, tool `echo`,
-  allowed callers `claw-simon` (`nbQJZMcewG11CNTRL`) and `zao`
+  allowed callers `claw-simon` (`nbQJZMcewG11CNTRL`; renamed `flakey` on
+  2026-11-14, same ID) and `zao`
   (`nto5J2nGb311CNTRL`). The backend always returns `ok`; it does not echo
   input, read files or call services. No credential is needed for this row.
   `zao` stays on this harmless staging row permanently. The Tailscale policy

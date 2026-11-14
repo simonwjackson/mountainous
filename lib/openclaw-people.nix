@@ -22,7 +22,9 @@ in
 {
   simon = {
     name = "simon";
-    nodeName = "claw-simon";
+    # The tailnet node was claw-simon until 2026-11-14 and was renamed in
+    # place (same node ID). The container and its state keep the old name.
+    nodeName = "flakey";
     containerName = "claw-simon";
     workspacePath = "/var/lib/openclaw/workspace";
     roleName = "person";

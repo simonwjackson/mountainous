@@ -13,7 +13,7 @@ SparkyFitness stays on Rakku; this is a new route, not a controlled move.
 | Front door | `ai` (`tsnet-proxy-ai`, backend `127.0.0.1:8430`) runs `packages.ai-mcp-tsnet-proxy` |
 | Table | `/etc/tsnet-proxy-ai-mcp.json`, one row |
 | Row | `/mcp/sparkyfitness` → `http://127.0.0.1:3010/mcp` (`services.sparkyfitness.port`) |
-| Callers | flakey only: stable node ID `nbQJZMcewG11CNTRL` (`lib/tailnet-nodes.nix`, `claw-simon`) |
+| Callers | flakey only: stable node ID `nbQJZMcewG11CNTRL` (`lib/tailnet-nodes.nix`, key `flakey`; the node was `claw-simon` until 2026-11-14) |
 | Tools | the 23 names in `lib/openclaw-sparkyfitness-tools.nix` |
 | Upstream credential | `LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key`, default `SetCredential=mcp-sparkyfitness:unavailable credential` |
 | Secret | sops `sparkyfitness-openclaw-api-key` in `secrets/hosts/rakku.yaml`, root `0400`, `restartUnits = [ "tsnet-proxy-ai.service" ]` |
@@ -69,12 +69,14 @@ SparkyFitness stays on Rakku; this is a new route, not a controlled move.
   idle gate covers only the two OpenClaw gateways, not Pi agents, assistant,
   Storia, Korri or voice.
 
-### Node rename (next stage)
+### Node rename (stage 3, 2026-11-14)
 
-The stable ID survives a rename of `claw-simon` to `flakey`: no row changes.
-Rename only the key in `lib/tailnet-nodes.nix`. If the node registers again
-instead, it gets a new ID: put the new ID in `lib/tailnet-nodes.nix` and in
-the literal in `checks.ai-mcp-proxy`. Until then the row returns 403 to it.
+The node was renamed in place from `claw-simon` to `flakey`
+(`openclaw-yari.md`, "Rename to flakey"). The stable ID survives a rename:
+no row changed, only the key in `lib/tailnet-nodes.nix`, and Rakku's system
+did not change. If the node ever registers again instead, it gets a new ID:
+put the new ID in `lib/tailnet-nodes.nix` and in the literal in
+`checks.ai-mcp-proxy`. Until then the row returns 403 to it.
 
 ## The key
 

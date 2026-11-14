@@ -156,7 +156,8 @@
           builtins.fromJSON prodTable.text == {
             sparkyfitness = {
               backend = "http://127.0.0.1:3010/mcp";
-              # claw-simon (flakey). Laure's claw and every other node get 403.
+              # flakey (named claw-simon until the in-place rename; same ID).
+              # Laure's claw and every other node get 403.
               callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
               mcpTools = sparkyTools;
               bearerCredential = "mcp-sparkyfitness";
@@ -200,6 +201,7 @@
         assert rejected [ "claw-simon" ];
         assert rejected [ "claw-simon.hummingbird-lake.ts.net" ];
         assert rejected [ "flakey" ];
+        assert rejected [ "flakey.hummingbird-lake.ts.net" ];
         assert !(rejected [ "nkT3Yhzyy121CNTRL" ]);
         assert lib.hasInfix "ai-mcp-tsnet-proxy" unit.serviceConfig.ExecStart;
         assert lib.hasInfix "-mcp-table /etc/tsnet-proxy-ai-staging-mcp.json" unit.serviceConfig.ExecStart;

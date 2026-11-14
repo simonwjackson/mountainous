@@ -3,7 +3,8 @@
 # node's name can be registered again by another node, and a rename keeps
 # the ID. A node that registers again gets a new ID; change it here only.
 {
-  # flakey, Simon's OpenClaw gateway (container claw-simon on Yari).
-  claw-simon = "nbQJZMcewG11CNTRL";
+  # Simon's OpenClaw gateway (container claw-simon on Yari). Named claw-simon
+  # until the in-place rename on 2026-11-14; the ID did not change.
+  flakey = "nbQJZMcewG11CNTRL";
   zao = "nto5J2nGb311CNTRL";
 }

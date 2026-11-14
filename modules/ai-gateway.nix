@@ -52,7 +52,7 @@ in
             tailnetMCPRoutes.sparkyfitness = {
               backend = "http://127.0.0.1:${toString config.services.sparkyfitness.port}/mcp";
               # flakey only. The front door holds the key; OpenClaw holds none.
-              callerNodeIds = [ (import ../lib/tailnet-nodes.nix).claw-simon ];
+              callerNodeIds = [ (import ../lib/tailnet-nodes.nix).flakey ];
               mcpTools = import ../lib/openclaw-sparkyfitness-tools.nix;
               bearerCredentialFile = config.sops.secrets.sparkyfitness-openclaw-api-key.path;
             };

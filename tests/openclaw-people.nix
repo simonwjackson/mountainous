@@ -136,6 +136,8 @@ let
     assert node.serviceConfig.User == "openclaw";
     assert node.environment.OPENCLAW_STATE_DIR == "/var/lib/openclaw";
     assert lib.hasInfix "--commands openclaw.sessions.list.v1,openclaw.sessions.read.v1" node.script;
+    assert lib.hasInfix "--host ${person.peerNodeName}.hummingbird-lake.ts.net " node.script;
+    assert c.gateway.publicOrigin == "https://${person.nodeName}.hummingbird-lake.ts.net";
     assert c.mcp.apps.sandboxOrigin == "https://${person.nodeName}.hummingbird-lake.ts.net:8443";
     assert unit.MemoryMax == "8G" && unit.KillMode == "mixed" && unit.TimeoutStopSec == 35;
     assert container.bindMounts."/nix/var/nix/profiles/apps".isReadOnly;
@@ -148,6 +150,9 @@ in
 assert (import ../lib/openclaw-people.nix).laure.login == "chancerellelaure@gmail.com";
 assert (import ../lib/openclaw-people.nix).laure.containerName == "openclaw";
 assert (import ../lib/openclaw-people.nix).laure.nodeName == "claw";
+# Renamed in place: a new tailnet name, the same container and state.
+assert (import ../lib/openclaw-people.nix).simon.nodeName == "flakey";
+assert (import ../lib/openclaw-people.nix).simon.containerName == "claw-simon";
 assert (import ../lib/openclaw-people.nix).laure.roleName == "laure";
 assert !(import ../lib/openclaw-people.nix).laure.enableMorningBrief;
 # Step 2: mail is confined to Simon's restricted reader, never his main agent.

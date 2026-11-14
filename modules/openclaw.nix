@@ -347,7 +347,16 @@
           assert gateway.config.agents.entries.main.heartbeat.every == "30m";
           assert (gateway.config.mcp.sessionIdleTtlMs or null) == 600000;
           assert gateway.config.mcp.apps.enabled;
-          assert gateway.config.mcp.apps.sandboxOrigin == "https://claw-simon.hummingbird-lake.ts.net:8443";
+          # The tailnet node is flakey; the container and its state stay claw-simon.
+          assert gateway.config.mcp.apps.sandboxOrigin == "https://flakey.hummingbird-lake.ts.net:8443";
+          assert gateway.config.gateway.publicOrigin == "https://flakey.hummingbird-lake.ts.net";
+          assert
+            gateway.config.gateway.controlUi.allowedOrigins == [ "https://flakey.hummingbird-lake.ts.net" ];
+          assert lib.hasInfix "--hostname=flakey " c.systemd.services.claw-tailnet.script;
+          assert c.networking.hostName == "flakey";
+          assert lib.hasInfix "--host flakey.hummingbird-lake.ts.net "
+            host.containers.openclaw.config.systemd.services.openclaw-session-share.script;
+          assert !(lib.hasInfix "claw-simon" (builtins.toJSON gateway.config));
           assert lib.hasInfix "--advertise-tags=tag:claw" c.systemd.services.claw-tailnet.script;
           assert c.systemd.services.claw-tailnet.serviceConfig.User == "tailscale";
           assert gateway.config.plugins.enabled;

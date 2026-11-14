@@ -690,6 +690,10 @@ in
       NoNewPrivileges = true;
       BindReadOnlyPaths = [ "${bootstrapDns}:/etc/resolv.conf" ];
     };
+    # --hostname applies only when the node first joins. A registered node keeps
+    # its name and ID across restarts; renaming one is a one-time, in-place
+    # `tailscale set --hostname=NEW` while it runs, then Serve again under the
+    # new DNS name (docs/operations/openclaw-yari.md, "Rename to flakey").
     claw-tailnet = {
       description = "Join the isolated Claw node and select only the home exit node";
       wantedBy = [ "multi-user.target" ];

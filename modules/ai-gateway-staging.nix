@@ -42,7 +42,7 @@ in
               # zao proves the allowed-caller path: the tag:claw policy reaches
               # only the production ai front door, not ai-staging.
               callerNodeIds = [
-                nodes.claw-simon
+                nodes.flakey
                 nodes.zao
               ];
               mcpTools = [ "echo" ];
