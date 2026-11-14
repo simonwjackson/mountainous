@@ -199,20 +199,28 @@ EXPECTED_SOURCE_SHA=<approved-full-commit-sha>
 - **Every switch and rollback runs on its host under `systemd-run --wait
   --collect`** (`sparky-prod-launch.sh`), with output in the journal. A
   dropped SSH session cannot stop a switch or its automatic rollback; read
-  `journalctl -u sparky-prod-<step>-<time> -o cat` afterwards.
+  `journalctl -u sparky-prod-<step> -o cat` afterwards. Unit names are fixed
+  per step (`sparky-prod-rakku-switch`, `sparky-prod-rakku-rollback`,
+  `sparky-prod-yari-switch`, `sparky-prod-yari-rollback`), so systemd-run
+  refuses a second run of a step while the first is active.
 - **Rakku** (`rakku`): preflight (the built unit files differ from the live
   ones in exactly `tsnet-proxy-ai` and `tsnet-proxy-ai-staging`; a keyed
   `/v1/models` baseline). Then it waits until Laure's and flakey's gateways
   have no unfinished run. The switch starts under systemd-run, takes every
-  service's identity, writes `ready` and waits for `go`. Zao checks idle
-  again and only then writes `go`; activation follows within a second (the
+  service's identity, writes `ready` with a random nonce and waits for a
+  `go` that holds the same nonce, so no other unit and no stale `go` can
+  trigger it. Zao checks idle again and only then writes `go`; activation
+  follows within a second (the
   rehearsal measured 2.4 s from `ready` to `go`, the idle check included). A
   busy gateway writes `abort`; no `go` in 120 s also changes nothing.
   Production ai restarts once. If `ai-gateway`, SparkyFitness, Home
   Assistant or Z-Wave changes identity or fails, a protected unit is not
   active, or `/v1` stops matching the baseline, the same unit switches back
-  at once. If only the MCP row fails (`/v1` healthy), it exits 5 without a
-  rollback: fix forward with one restart instead of two outages.
+  at once. The Rakku host is not a caller, so its probe of
+  `/mcp/sparkyfitness` must return 403. Any other status except 404,
+  including 200 (a broken caller lock), also rolls back at once. Only 404
+  (the row is not served: fail-closed, `/v1` healthy) exits 5 and stays
+  deployed: fix forward with one restart instead of two outages.
 - **Yari** (`yari`): refuses unless Laure's unit, container conf, container
   system and live config are byte-identical in the candidate, both gateways
   are healthy, and neither has an unfinished run, checked again immediately
@@ -244,6 +252,9 @@ goes into Simon's diary.
 3. From Zao: `/mcp/sparkyfitness` returns 403, also with forged headers;
    `/mcp/missing` 404; bare `/mcp` 404 from the front door; `/v1/models`
    without a key 401.
+
+   A non-403 for Laure or Zao in `accept-rakku` means run `rollback-rakku`
+   now.
 4. `/v1/models` with the gateways' own key returns 200 and the same five
    models from both containers (baseline before deployment: 200, five models).
 5. On Rakku (switch script): only the two proxies restarted; Home Assistant
