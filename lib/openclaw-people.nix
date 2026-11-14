@@ -17,6 +17,7 @@ let
     "mail_discard_draft"
   ];
   mailPermissions = map (tool: "claw-gmail__${tool}") mailTools;
+  sparkyfitnessTools = import ./openclaw-sparkyfitness-tools.nix;
 in
 {
   simon = {
@@ -51,7 +52,8 @@ in
     ++ mailPermissions
     ++ (map (tool: "claw-family-calendar-simon__${tool}")
       (import ./claw-tools.nix).claw-family-calendar-simon.tools
-    );
+    )
+    ++ (map (tool: "sparkyfitness__${tool}") sparkyfitnessTools);
     agentTools = {
       deny = [ "claw-gmail__*" ];
       agentToAgent.send = [ "mail" ];
@@ -79,6 +81,17 @@ in
     };
     extraAgentInstructions.mail = ./openclaw-mail;
     extraMcpServers = [
+      {
+        # Through the production front door's /mcp/sparkyfitness row. The row
+        # admits this node's stable ID only and holds the SparkyFitness key.
+        # This gateway holds no key and sends no credential.
+        name = "sparkyfitness";
+        value = {
+          transport = "streamable-http";
+          url = "https://ai.hummingbird-lake.ts.net/mcp/sparkyfitness";
+          toolFilter.include = sparkyfitnessTools;
+        };
+      }
       {
         name = "basic-react";
         bundledDemoTool = "get-time";

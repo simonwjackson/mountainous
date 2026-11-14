@@ -263,6 +263,7 @@
       container = host.containers.claw-simon;
       c = container.config;
       gateway = c.services.openclaw-gateway;
+      laure = host.containers.openclaw.config.services.openclaw-gateway.config;
       unit = c.systemd.services.openclaw-gateway.serviceConfig;
       firewall = c.networking.nftables.tables.openclaw-egress.content;
       key = lib.findFirst (
@@ -412,7 +413,23 @@
               "claw-family-calendar-simon__family_calendar_events"
               "claw-family-calendar-simon__family_calendar_add"
               "claw-family-calendar-simon__family_calendar_remove"
-            ];
+            ]
+            ++ map (tool: "sparkyfitness__${tool}") (import ../lib/openclaw-sparkyfitness-tools.nix);
+          # No key, header or environment: the front door's caller lock and its
+          # server-held key are the only authentication.
+          assert
+            gateway.config.mcp.servers.sparkyfitness == {
+              transport = "streamable-http";
+              url = "https://ai.hummingbird-lake.ts.net/mcp/sparkyfitness";
+              toolFilter.include = import ../lib/openclaw-sparkyfitness-tools.nix;
+            };
+          assert !(lib.hasInfix "sparkyfitness-openclaw-api-key" (builtins.toJSON gateway.config));
+          assert lib.pathExists
+            "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/nutrition-fitness/SKILL.md";
+          assert !(laure.mcp.servers ? sparkyfitness);
+          assert !(lib.any (tool: lib.hasPrefix "sparkyfitness__" tool) laure.tools.allow);
+          assert
+            !(lib.pathExists "${builtins.elemAt laure.skills.load.extraDirs 1}/nutrition-fitness/SKILL.md");
           assert
             gateway.config.mcp.servers.claw-family-calendar-simon.toolFilter.include
             == (import ../lib/claw-tools.nix).claw-family-calendar-simon.tools;
