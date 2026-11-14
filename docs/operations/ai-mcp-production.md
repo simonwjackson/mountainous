@@ -383,7 +383,10 @@ change. Only the URLs move. OpenClaw holds no key.
 | `/mcp/websearch` | `flakey` and `claw` | `claw-websearch` (both) | native: `http://127.0.0.1:8430/v1/responses`, model `gpt-6.1-sol` | `web_search` | sops `ai-gateway-key-openclaw-yari` (the gateways' own `openclaw@yari` key) as `mcp-websearch` | `claw-websearch` `nut8ipE3di11CNTRL` |
 
 Afterwards `tailscale status` shows `ai`, `ai-staging`, `flakey` and `claw`
-for this feature, and no `claw-*` tool node. No node changes its tags; the
+for this feature, and no `claw-*` tool node. (Laure's node was later renamed
+in place to `snowy`, same ID: `lib/tailnet-nodes.nix` and the row callers use
+the key `snowy`; the table did not change. See `openclaw-yari.md`, "Rename
+Laure's gateway to snowy".) No node changes its tags; the
 tailnet policy does not change (both gateways already reach `ai`, and every
 row's backend is on Rakku's loopback or leaves Rakku's host network exactly as
 the old node's request did).

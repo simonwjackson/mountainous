@@ -3022,3 +3022,193 @@ device instead of reusing it. Check `devices list` first.
 | Pi assistants, Forgerie, Home Assistant | Rakku, Unzen, Zao configuration and state | none found |
 | `/var/lib/openclaw-pairing/join-claw-simon.json` on Yari | the used single-use join code from the handoff | none; it cannot be used again |
 | Notes in other repositories (assistant ADR 0021 and handoffs, pace-service plan, ebay `CONTEXT.md`) | documentation | none; they name the container |
+
+## Rename Laure's gateway to snowy
+
+Simon approved renaming Laure's gateway node from `claw` to `snowy`:
+**https://snowy.hummingbird-lake.ts.net**, matching her agent's name. It is
+the same node: node ID `nkT3Yhzyy121CNTRL`, IP `100.91.251.28`, tag
+`tag:claw`, keys and container state. Only the name changes. Laure pairs her
+devices again afterwards (below); Simon handles that with her. No tag and no
+tailnet policy changes.
+
+### What changes, what stays
+
+`lib/openclaw-people.nix` sets Laure's `nodeName = "snowy"`; her
+`containerName` stays `openclaw`. As in the flakey rename, everything that
+names the tailnet host derives from `nodeName`:
+
+| Names the tailnet host: now `snowy` | Names the container or a unit: stays `openclaw` |
+| --- | --- |
+| her `gateway.publicOrigin`, `gateway.controlUi.allowedOrigins` | container `openclaw`, `container@openclaw.service`, `ve-openclaw` |
+| her `mcp.apps.sandboxOrigin` (`https://snowy.hummingbird-lake.ts.net:8443`) | state `/var/lib/nixos-containers/openclaw` (sessions, pairings, memory, workspace) |
+| `tailscale up --hostname` (first join only) and the OS hostname | `openclaw-wait-idle openclaw`, the switch scripts' container arguments |
+| flakey's `peerNodeName`, so flakey's Session Share source's `--host` | the checks' `host.containers.openclaw` lookups |
+| the key in `lib/tailnet-nodes.nix` and the row callers in `lib/ai-mcp-rows.nix` (`snowy`, same ID) | the `"claw"` negative input in `packages/ai-mcp-tsnet-proxy/routes_test.go` |
+| the HTTPS certificate: Serve gets one for the new DNS name on the first TLS request | the historical evidence in these documents |
+
+The trusted-proxy settings name no host (`trustedProxies` is loopback;
+Serve sets the login header). The `/mcp` caller locks match the stable ID,
+so the production table and Rakku evaluate byte-identical.
+
+The first commit makes flakey's container switch in place too
+(`reloadContainerInPlace` for `simon`): otherwise flakey's new Session Share
+`--host` would restart flakey's whole container. Cost: nspawn settings in
+flakey's container conf now wait for a deliberate restart, as Laure's do.
+
+Built units that change (evaluated against the stage-7 system, Yari 55): on
+the host `container@openclaw` and `container@claw-simon`, both with
+`X-ReloadIfChanged=true` (reload, no container restart). In Laure's container
+`openclaw-gateway` (new config: restarts once), `claw-tailnet` (restarts:
+sets Serve again under the new name), `dnsmasq` (restarts) and `nftables`
+(reloads); the hostname reaches `/etc/hosts`, which their triggers include.
+In flakey's container only `openclaw-session-share` (restarts); flakey's
+gateway, config and `claw-tailnet` do not change.
+
+### How the rename takes effect
+
+As for flakey (above, "How a rename takes effect"): one `tailscale set
+--hostname=snowy` in her running container, then `tailscale serve reset`,
+then the switch. A tagged node does not authenticate again and keeps its tags
+and ID. If the name were taken, the control plane would give `snowy-1`: the
+script sets `claw` back and stops. `snowy` was free on 2026-11-14
+(`/tmp/claw/snowy-name-free.py` on Rakku, fleet OAuth client, read-only).
+flakey's Session Share source presents its stored node token to the new host;
+node tokens are not bound to an endpoint.
+
+### Deploy
+
+On Zao, from a clean checkout at the landed rename commit. Scripts in
+`/tmp/claw` on Zao, each with a Nix shebang.
+
+```sh
+EXPECTED_SOURCE_SHA=<landed rename commit>
+# Rakku: evaluated only; stops if Rakku's derivation would change. Yari: the
+# target, the REVERT system (the parent commit: both containers switch in
+# place, no rename) and the ARM checks, built natively, builders off.
+/tmp/claw/snowy-build.sh "$PWD" "$EXPECTED_SOURCE_SHA"
+/tmp/claw/snowy-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" check-yari
+/tmp/claw/snowy-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" yari
+/tmp/claw/snowy-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" accept
+/tmp/claw/snowy-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" check-rollback-yari
+```
+
+`yari` records the before state, waits until neither gateway has an
+unfinished run, then runs `snowy-yari-switch.py forward` under `systemd-run`
+(unit `snowy-yari-switch`). It refuses unless both target container units
+carry `X-ReloadIfChanged=true`, only the units above change in each
+container, Laure's config changes only in her three origins and flakey's not
+at all, both gateways are healthy and idle, and the node is `claw` with the
+expected ID. It checks idle again, renames, resets Serve and switches. It
+rolls back at once, in the same unit, if the switch exits other than 0 or 4,
+health does not return in 180 s, Laure's container restarted or her gateway
+did not restart exactly once, her container or live config is not the
+target's, the node ID changed, Serve is not exactly `snowy:443` and
+`snowy:8443`, or flakey's container or gateway restarted. The rollback sets
+the hostname back, resets Serve and switches to REVERT.
+
+### Acceptance (`accept`, read-only)
+
+1. Zao: `https://snowy.hummingbird-lake.ts.net/` serves the OpenClaw Control
+   login page over verified TLS; the certificate names snowy; `:8443`
+   answers; `/control-ui-config.json` refuses Simon's login (401): the
+   Laure-only sign-in runs at the new origin. Zao sees node
+   `nkT3Yhzyy121CNTRL` as snowy and no peer named claw;
+   `claw.hummingbird-lake.ts.net` no longer resolves.
+2. Yari: the node ID is unchanged; DNS name, hostname preference, OS hostname
+   and Serve all say snowy; tags unchanged; her origins name snowy; her
+   container kept its InvocationID; her gateway restarted once.
+3. Every Laure tool answers through its row (initialize, exact list, one read
+   each) and OpenClaw's CLI probe is clean on both gateways.
+4. Session Share both ways: each receiver invokes the other side's source once;
+   flakey's source restarted once and its `--host` is snowy.
+5. flakey's gateway and container did not restart; its config is unchanged.
+6. Keyed `/v1/models` 200 from both containers; no failed units on Yari or in
+   either container; snowy resolves and claw does not inside both containers.
+7. The production rows from Zao: every row 403 (the caller locks are
+   unchanged).
+
+### Rollback
+
+```sh
+/tmp/claw/snowy-deploy.sh "$PWD" "$EXPECTED_SOURCE_SHA" rollback-yari
+```
+
+It waits only for Laure to be idle, sets the hostname back to `claw`, resets
+Serve and switches to REVERT (the parent commit's system). Both containers
+reload in place: her gateway restarts once more onto the claw origins, and
+flakey's Session Share source points at claw again. Then revert the rename
+commit on cairn. The caller locks need nothing. Devices that already paired
+at snowy must pair again at claw.
+
+Without `/tmp/claw`: on Yari, as root, while Laure's gateway is idle, set the
+hostname back first, then switch to the pinned REVERT system from the
+deployment record:
+
+```sh
+nixos-container run openclaw -- tailscale set --hostname=claw
+nixos-container run openclaw -- tailscale serve reset
+nix-env -p /nix/var/nix/profiles/system --set <REVERT system>
+systemd-run --wait --collect --unit snowy-manual-rollback <REVERT system>/bin/switch-to-configuration switch
+```
+
+### Re-pair Laure's devices after the rename
+
+Her old pairings point at the old origin. Browser identities are kept per
+origin, so every browser is a new device at `https://snowy.hummingbird-lake.ts.net`.
+Simon handles this with Laure. A setup code is valid for 10 minutes: make it
+only when she is ready. Treat a QR code and a setup code as a password.
+
+Paired with her gateway before the rename (`snowy-deploy.sh … devices`):
+
+| Device ID | Client | Address | Whose |
+| --- | --- | --- | --- |
+| `da467e0e…` | Control UI (webchat), iPad | `100.121.89.74` | Laure's iPad browser |
+| `359b918a…` | Control UI (webchat), Linux armv8l | `100.84.218.93` | Laure's phone browser |
+| `c6a5517c…` | node-host, read-only Session Share source | `100.75.156.21` | flakey's source: keep |
+| `2ee6e6c1…` | CLI | local | `openclaw-admin`: keep |
+
+**Browser (iPad Safari, phone browser):**
+
+1. Laure opens `https://snowy.hummingbird-lake.ts.net` in her usual browser,
+   not a private window. Replace bookmarks; a home-screen web app from the old
+   address must be added again from the new one.
+2. Sign-in is through Tailscale (her login): no password. If the page says
+   pairing is required, she keeps it open. The operator lists the requests
+   and approves only the `openclaw-control-ui` request from that device's
+   address (iPad `100.121.89.74`, phone `100.84.218.93`):
+   `ssh -F /dev/null root@yari nixos-container run openclaw -- openclaw-admin devices list`
+   `ssh -F /dev/null root@yari nixos-container run openclaw -- openclaw-admin devices approve <requestId>`
+   The page connects by itself.
+3. She turns notifications on again in the page if they were on before.
+
+**OpenClaw app (iPad or phone), if she uses it:**
+
+1. The operator mints a limited setup code in her container and checks that
+   it names `wss://snowy.hummingbird-lake.ts.net`:
+   `ssh -F /dev/null -t root@yari nixos-container run openclaw -- openclaw-admin qr --limited`
+2. In the app: **Settings → Gateway → Add Gateway**, scan the QR code (or
+   paste the setup code), check that the confirmation names snowy, tap
+   **Connect**. If the app shows **Pending approval**, the operator approves
+   only that device's request with the two commands above.
+3. In **Settings → Gateway**, select snowy. If an old claw entry exists,
+   **Manage Gateways → claw → Forget** (it deletes that entry's tokens, TLS
+   pin and cached chats on the device only; her conversations stay on the
+   gateway and appear under snowy).
+
+After every device works, remove the stale browser rows, checking
+`devices list` first: `openclaw-admin devices remove da467e0e…` (old iPad
+browser) and `openclaw-admin devices remove 359b918a…` (old phone browser),
+with the full IDs from the list. Do not remove `c6a5517c…` (flakey's Session
+Share source) or `2ee6e6c1…` (the local CLI).
+
+### Clients of the old URL
+
+| Client | Where | Action |
+| --- | --- | --- |
+| flakey's Session Share source | `openclaw-session-share` in `claw-simon` | follows `peerNodeName`; restarts once |
+| Laure's own gateway origins | `openclaw.json` in `openclaw` | follow `nodeName` |
+| Laure's iPad and phone browsers | browser site data for the old origin | re-pair (above) |
+| Laure's OpenClaw app, if used | the app's saved gateway | re-pair (above) |
+| The production `/mcp` rows | caller locks by node ID | none |
+| Pi assistants, Forgerie, Home Assistant | Rakku, Unzen, Zao configuration | none found (`claw.hummingbird` appears only in this flake's docs and checks) |
