@@ -9,7 +9,13 @@ roll back its historical stages to add voice.
 - ai-gateway implementation `49d0275`, proof harness `f2d754e`, landed on main:
   **`f2d754ea588f72d768a27d8bc3fedc0367e011ef`**. Mountainous pins `ref=main`
   at that exact SHA, not a feature branch. The previous pin was `761f9de`.
-- Voice is rebased onto cairn **`e673d8219060322b26d2e0d740f09fdfbe4ed374`**.
+- Voice landed on cairn as `0e5d9c61211b7b785bc1b4374617344037aa56ff` and
+  `af42ac253cff66d803b508a709fd7db3a06ffc9b`. The actual host build used
+  isolated branch **`deploy/voice-rakku`**, exact source
+  **`0e6c441b8aa561e8481ffb25d2ac88a790031b73`**, from live-equivalent
+  `b247e23c14779fe533e83f29f5152c38a660763e` plus only the voice commits.
+  This excluded the unrelated Pi pause `f36aeeb7`; do not deploy current cairn
+  to reproduce this deployment without reviewing its additional changes.
 - Simon: **https://flakey.hummingbird-lake.ts.net**, container `claw-simon`,
   stable node ID **`nbQJZMcewG11CNTRL`**. Laure: **https://snowy.hummingbird-lake.ts.net**,
   container `openclaw`. Container names have not changed.
@@ -104,11 +110,11 @@ The source unit comparison against cairn found:
 | Yari | `container@claw-simon.service` | **Reload**, applying changed units inside the running container |
 
 Neither `tsnet-proxy-ai` nor `tsnet-proxy-ai-staging` changes. No `/mcp` outage
-or tsnet enrollment/certificate delay is expected. Estimate `/v1` interruption
-at **1–5 seconds if idle**; this is an estimate, not the old 23-second proxy
-restart measurement. Other clients' active streams can delay Rust shutdown up
-to its systemd stop timeout. Sample the real HTTPS `/v1/models` status throughout
-activation and report the bounded measured outage instead of the estimate.
+or tsnet enrollment/certificate delay occurred. **Correction:** the prepared
+1–5 second `/v1` estimate was wrong. The measured production outage upper bound
+was **23.251 seconds**, with both proxy identities unchanged. Other clients'
+active streams can delay Rust shutdown up to its systemd stop timeout. Always
+sample the real HTTPS `/v1/models` status throughout activation.
 
 ### Prove Yari's apply before activation
 
@@ -246,16 +252,16 @@ was first PCM **390.3 ms direct / 411.7 ms through front door + Squid**, complet
 STT **297.4 / 268.0 ms**. Noise/order do not support a speedup claim. These are not
 browser or production latency. Evidence: `/tmp/claw/voice-front-door-final/`.
 
-Live parents read on 2026-11-14 23:05Z (supersede historical 163/56):
+Verified live parents immediately before activation (supersede historical 167/64):
 
 | Host | Previous generation | Exact system |
 | --- | --- | --- |
-| Rakku | **167** | `/nix/store/qvj5n49az1dq7cjnac9j61fni4sxmdih-nixos-system-rakku-26.11.20260923.4975466` |
+| Rakku | **168** | `/nix/store/9709w007kxf4hixyhbhhl70rfv2cyxa6-nixos-system-rakku-26.11.20260923.4975466` |
 | Yari | **64** | `/nix/store/0vycq2lfzfvp9z99hkh2z8xf2qvrg2ns-nixos-system-yari-26.11.20260923.4975466` |
 
 Pin these parents against GC and check no intervening deployment before every
 switch. Rakku automatic failure rollback is `nixos-rebuild switch --rollback`
-while this deployment is still the latest generation; verify it returns 167.
+while this deployment is still the latest generation; verify it returns 168.
 For later/manual rollback, use the exact recorded system rather than guessing
 “previous”. Yari rollback runs the same snowy/in-place/timing/idle guard with
 source/target reversed, restoring **generation-64 content** without restoring
@@ -275,6 +281,86 @@ caps, so the nominal $5 cap is not a hard speech spend limit.
 
 ## Execution record
 
-Pending the approved deployment. Record the landed Mountainous SHA, built
-outputs, dry-activate evidence, actual unit changes, measured outage, HA/Z-Wave,
-node ID, catalog and browser/cleanup evidence here after each completed step.
+Deployment completed on 2026-11-15 UTC. No system rollback, reboot, container
+restart, mask, ACL edit, new node, plugin or Zao service change was performed.
+
+| Host | Generation | Running system |
+| --- | --- | --- |
+| Rakku | **169** | `/nix/store/z2dzizw71pai8c9zqxk1namwdamnk2ip-nixos-system-rakku-26.11.20260923.4975466` |
+| Yari | **65** | `/nix/store/59kr63kkl6930rsbhym65hi0hpbr356n-nixos-system-yari-26.11.20260923.4975466` |
+
+Rakku switched around 00:36:54Z. The three expected running services restarted.
+Both tsnet proxies, HA and Z-Wave identities stayed unchanged. HA returned 200;
+the Z-Wave handshake and existing MCP caller refusals passed. `/v1` outage upper
+bound was 23.251 seconds, not the prepared 1–5 second estimate.
+
+**Activation incident: five previously stopped services started.** Nix
+activation started wanted-but-imperatively-stopped `signal-responder`,
+`assistant-tsgo`, `pi-assistant-simon`, `pi-assistant-laure` and
+`pi-assistant-household`, although their unit files did not change. They were
+inactive/MainPID=0 again at 00:43:37–00:43:38Z; the later explicit plain stops
+were idempotent. Per instruction, no rollback or masks were applied. Generation
+169 still wants these units. **Another activation can start them again.**
+Before a later activation, inventory wanted-but-inactive units and resolve this
+with the pause owner; comparing changed unit files alone is not sufficient.
+
+The read-only audit covers 00:36:50–00:43:40Z. Signal logged one subscription
+start and no observed triage/send markers. Pi logged startup, shutdown, failed
+weather refreshes, one failed mail poll and one unreachable MCP server. File
+modification times changed in all three Pi state trees. These metadata and
+journal checks do **not** prove that no outbound action or state write occurred;
+they do not attribute each file write. Evidence: `side-effect-audit.json`.
+
+Yari waited until the ten-minute real-chat activity guard cleared. Both host
+and inner dry activation passed. The host reloaded `container@claw-simon`; only
+its gateway restarted. Flakey health was unavailable for 14 sampled seconds;
+Snowy had zero unhealthy samples. Flakey container InvocationID
+`090c096c50844218b7543fadd1a4b948` and tailnet InvocationID
+`e89923b738c645f1b65f145e777932ac` stayed unchanged. Node ID remains
+`nbQJZMcewG11CNTRL`. Snowy container still started 2026-11-12 04:38:11Z, and its
+gateway still started 2026-11-14 22:54:25Z, with unchanged InvocationIDs.
+
+As `openclaw` inside Flakey, production STT and Kokoro WAV returned 200;
+`voice` and `dictate` direct access timed out, `/v1/realtime` returned 404, and
+`/mcp/maps` tools/list returned only `travel_time`. `talk.catalog` reported
+transcription ready and speech configured. Chromium decoded and played the
+unknown-length RIFF WAV without a format workaround.
+
+### Browser results and remaining UI limitation
+
+New conversation: **TEST VOICE 2026-11-15**, key
+`agent:main:dashboard:96f59c2b-0deb-4889-b396-b51bb021fa88`.
+
+| Check | Observed result |
+| --- | --- |
+| Hold microphone | Dictation starts; **release does not stop it** in the pinned UI. Reproduced with one trusted native CDP pointer held 4.2 seconds and released on “Stop and keep text”. Explicitly clicking that button completes transcription into the composer. No UI patch was made. |
+| Tap microphone / split Talk | Transcription → `chat.send` → TEST answer in the same conversation → successful `tts.speak` → browser audio playback. No realtime route was used. |
+| Talk speech end → first audio | **8.817 s**, **8.316 s** for two completed turns; audio duration 2.05 s each. Includes silence detection, STT, model response and buffered TTS, not just gateway latency. |
+| Read aloud | Successful `tts.speak`; 2.05 s WAV played. Click → playback **2.143 s**. “Stop reading” appeared; cancellation was not separately exercised. |
+
+Holding/releasing alone therefore does **not** meet the requested complete
+interaction. The current workaround is explicit “Stop and keep text”. Long
+recordings produced repeated fixture words; the proof used a looping synthetic
+microphone, so this does not isolate natural-microphone repetition behavior.
+Playback is verified by browser events, not a human hearing a physical speaker.
+
+Screenshots and instrumentation: `/tmp/claw/voice-v1/`, including
+`02-read-aloud.png`, `03-talk-answer-audio.png`,
+`04-native-hold-explicit-stop.png`, and `browser-summary.json`. Host evidence:
+`/tmp/claw/voice-v2/` on Zao, `/var/tmp/voice-yari/` and
+`/var/tmp/voice-rakku/` on their hosts.
+
+### TEST cleanup
+
+Closed the browser, waited for Flakey idle, stopped only its gateway, and ran
+supported offline `memory forget` preview/apply/re-preview for that exact TEST
+session. No tracked entries or refusals remained. Deleted the session through
+the supported CLI/Gateway path. All three Markdown memory files match their
+pre-test SHA-256 hashes; no uppercase TEST additions existed. Removed both
+browser pairing records created during authentication. Existing reconciliation
+services were already active and remained active. Snowy stayed unchanged.
+Flakey's cleanup restart completed at **02:03:07Z**, before the 02:15Z cutoff.
+Both gateways were healthy afterward. The 04:00Z wind-down was not changed.
+
+The backend deployment is verified. Full hold/release UX acceptance remains
+blocked by the pinned OpenClaw UI behavior described above.
