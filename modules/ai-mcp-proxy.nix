@@ -209,15 +209,27 @@
             pace = {
               backend = "http://127.0.0.1:3195/mcp";
               callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
-              mcpTools = [ "pace_status" ];
-              mcpResources = [ "ui://pace/status" ];
+              mcpTools = [
+                "pace_status"
+                "pace_overview"
+              ];
+              mcpResources = [
+                "ui://pace/status"
+                "ui://pace/overview"
+              ];
               bearerCredential = "mcp-pace";
             };
             pace-laure = {
               backend = "http://127.0.0.1:3195/mcp";
               callerNodeIds = [ "nkT3Yhzyy121CNTRL" ];
-              mcpTools = [ "pace_status" ];
-              mcpResources = [ "ui://pace/status" ];
+              mcpTools = [
+                "pace_status"
+                "pace_overview"
+              ];
+              mcpResources = [
+                "ui://pace/status"
+                "ui://pace/overview"
+              ];
               bearerCredential = "mcp-pace-laure";
             };
             sparkyfitness = {

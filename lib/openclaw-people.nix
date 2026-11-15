@@ -40,6 +40,7 @@ in
       pace = {
         row = "pace";
         inherit (rows.pace) tools;
+        codex.defaultToolsApprovalMode = "auto";
       };
       claw-ebay-simon = {
         row = "ebay";
@@ -149,6 +150,7 @@ in
       pace = {
         row = "pace-laure";
         inherit (rows.pace-laure) tools;
+        codex.defaultToolsApprovalMode = "auto";
       };
       claw-family-calendar = {
         row = "family-calendar-laure";

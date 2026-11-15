@@ -31,8 +31,16 @@ assert lib.all
   (
     row:
     rows.${row}.backend == "http://127.0.0.1:3195/mcp"
-    && rows.${row}.mcpTools == [ "pace_status" ]
-    && rows.${row}.mcpResources == [ "ui://pace/status" ]
+    &&
+      rows.${row}.mcpTools == [
+        "pace_status"
+        "pace_overview"
+      ]
+    &&
+      rows.${row}.mcpResources == [
+        "ui://pace/status"
+        "ui://pace/overview"
+      ]
   )
   [
     "pace"
@@ -54,7 +62,12 @@ assert lib.all
     (gateway pair.container).mcp.servers.pace == {
       transport = "streamable-http";
       url = "https://ai.hummingbird-lake.ts.net/mcp/${pair.row}";
-      toolFilter.include = [ "pace_status" ];
+      toolFilter.include = [
+        "pace_status"
+        "pace_overview"
+      ];
+      # Read-only hints permit model and App calls without bypassing safety.
+      codex.defaultToolsApprovalMode = "auto";
     }
     && lib.pathExists "${lib.head (gateway pair.container).skills.load.extraDirs}/pace/SKILL.md"
   )
@@ -68,4 +81,7 @@ assert lib.all
       row = "pace-laure";
     }
   ];
+assert lib.hasInfix
+  "When asked to see the goals, the Budgets or the Overview, call `pace_overview`. Never draw your own widget, chart or table from Pace figures."
+  (builtins.readFile ../lib/openclaw-skills/shared/pace/SKILL.md);
 true

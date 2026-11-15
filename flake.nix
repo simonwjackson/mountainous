@@ -60,7 +60,7 @@
     meetings.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/meetings?ref=service-app-rakku";
     storia.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/no-evil?ref=service-app-rakku";
     synth.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/synth?ref=service-app-rakku";
-    pace-service.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/pace-service?ref=main&rev=535a46537c2af4dd448627091c2841ef0d23df7f";
+    pace-service.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/pace-service?ref=main&rev=deeac88f767aa5d19ac2aaa789a98c070dacaab6";
     pace.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/pace?ref=service-app-rakku";
 
     pi.url = "github:lukasl-dev/pi.nix";
