@@ -3,7 +3,7 @@ let
   simon = host.containers.claw-simon.config.services.openclaw-gateway.config;
   laure = host.containers.openclaw.config.services.openclaw-gateway.config;
   skill = builtins.readFile ../lib/openclaw-skills/simon/calendar/SKILL.md;
-  windDown = builtins.readFile ../lib/openclaw-skills/simon/wind-down/SKILL.md;
+  windDown = builtins.readFile ../lib/openclaw-skills/simon/wind-down/references/day.md;
 in
 # Text contracts guard the model-facing protocol; live Control UI tests prove
 # the rendered buttons and real add/read/Undo behaviour.

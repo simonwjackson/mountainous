@@ -36,6 +36,10 @@ assert lib.hasInfix
   job.payload.message;
 assert lib.hasInfix "relevant memory" job.payload.message;
 assert lib.hasInfix "wind_down_state" job.payload.message;
+assert lib.hasInfix "memory/wind-down/latest-zone.json" job.payload.message;
+assert lib.hasInfix "quietUntil" job.payload.message;
+assert lib.hasInfix "amber or red" job.payload.message;
+assert lib.hasInfix "lighter day" job.payload.message;
 assert lib.hasInfix "assuming an ordinary day" job.payload.message;
 assert lib.hasInfix "do not post a duplicate" job.payload.message;
 # SparkyFitness is the read-only source for food, training, sleep and body data.

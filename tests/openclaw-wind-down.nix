@@ -6,7 +6,9 @@ let
   inherit (simon.services.openclaw-gateway) config;
   other = laure.services.openclaw-gateway.config;
   unit = simon.systemd.services.openclaw-wind-down;
-  skill = builtins.readFile ../lib/openclaw-skills/simon/wind-down/SKILL.md;
+  root = ../lib/openclaw-skills/simon/wind-down;
+  skill = builtins.readFile (root + "/SKILL.md");
+  ref = name: builtins.readFile (root + "/references/${name}.md");
 in
 assert job.declarationKey == "mountainous:wind-down";
 assert job.enabled && job.agentId == "main";
@@ -32,14 +34,35 @@ assert unit.partOf == [ "openclaw-gateway.service" ];
 assert unit.wantedBy == [ "multi-user.target" ];
 assert unit.serviceConfig.Type == "oneshot" && unit.serviceConfig.RemainAfterExit;
 assert unit.serviceConfig.Restart == "on-failure";
-assert lib.hasInfix "Until Stop's write and read-back succeed" skill;
-assert lib.hasInfix "Always include lookBack when charge is 4 or 5" skill;
-assert lib.hasInfix "short mode: Rate, Capture, Stop" skill;
-assert lib.hasInfix "at most 3 must-dos" skill;
-# SparkyFitness is the read-only source for food, training, sleep and body data.
-assert lib.hasInfix "come only from `sparkyfitness`" skill;
-assert lib.hasInfix "read-only, so\nnever log, change or delete" skill;
-assert !(lib.hasInfix "Body data, food, training" skill);
+# Model-facing contracts; real Control UI acceptance also required.
+assert lib.all
+  (
+    name: lib.hasInfix "references/${name}.md" skill && lib.pathExists (root + "/references/${name}.md")
+  )
+  [
+    "day"
+    "week"
+    "scale"
+    "storage"
+    "cards"
+    "therapy"
+    "not-connected"
+  ];
+assert lib.hasInfix "at most three" (ref "day");
+assert lib.hasInfix "always include lookBack" (ref "day");
+assert lib.hasInfix "read-back" (ref "storage");
+assert lib.hasInfix "### Tomorrow — YYYY-MM-DD" (ref "storage");
+assert lib.hasInfix "latest-zone.json" (ref "storage");
+assert lib.hasInfix "energy_value" (ref "storage");
+assert lib.hasInfix "mood_value" (ref "storage");
+assert lib.hasInfix "population" (ref "scale");
+assert lib.hasInfix "14-day" (ref "scale");
+assert lib.hasInfix "not enough data yet" (ref "scale");
+assert lib.hasInfix "input | baseline | deviation | weight | pull" (ref "scale");
+assert lib.hasInfix "OFF" (ref "therapy");
+assert lib.hasInfix "five buttons" (ref "cards");
+assert lib.hasInfix "ChargeRead.weeks" (ref "week");
+assert lib.hasInfix "USER.md" skill && lib.hasInfix "MEMORY.md" skill;
 assert lib.elem "show_widget" config.tools.allow;
 assert !lib.elem "show_widget" other.tools.allow;
 assert lib.pathExists "${builtins.elemAt config.skills.load.extraDirs 1}/wind-down/SKILL.md";

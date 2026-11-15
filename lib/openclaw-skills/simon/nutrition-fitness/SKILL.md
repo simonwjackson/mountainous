@@ -38,5 +38,7 @@ For "how am I doing", brief or wind-down context, call
 not remembered totals. Never claim a failed write succeeded. If a write times
 out, check the diary/recent entries before retrying so it is not logged twice.
 Do not delete foods or diary entries unless Simon explicitly asks.
-In the wind-down and the morning brief, SparkyFitness is read-only: their
-ratings and answers stay where those skills keep them.
+In the morning brief SparkyFitness is read-only. In wind-down, delegate the
+single explicit charge/mood check-in to wind-down/references/storage.md;
+never log its ratings a second time here. All other wind-down reads stay
+read-only. Private notes and worries never go into SparkyFitness.
