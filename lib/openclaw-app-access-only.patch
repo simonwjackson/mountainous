@@ -1,0 +1,8 @@
+--- a/dist/mcp-app-CHXbi1_o.mjs
++++ b/dist/mcp-app-CHXbi1_o.mjs
+@@ -72 +72 @@
+-		const read = await retainSessionScopedRead(options, requireString(params, "sessionKey"), active.view.agentId);
++		const read = await retainSessionScopedRead(options, requireString(params, "sessionKey"), active.view.agentId, { allowMetadataChanges: true });
+@@ -116 +116 @@
+-		const read = await retainSessionScopedRead(options, sessionKey, agentId);
++		const read = await retainSessionScopedRead(options, sessionKey, agentId, { allowMetadataChanges: true });

@@ -1573,6 +1573,28 @@ chat adapter. `web_fetch` and managed-browser navigation remain available,
 but are not claimed as native `web_search`. The approved `claw-websearch` MCP bridge above now supplies this capability
 without patching OpenClaw or changing the working chat adapter.
 
+### MCP App pending-session read patch
+
+`lib/openclaw-package.nix` applies `lib/openclaw-app-access-only.patch` to
+both installed MCP App session reads. This is the access-only read already
+used by widgets, not a bypass of session identity or access checks. Remove
+the patch once upstream fixes openclaw/openclaw#199765.
+
+Every build, including the weekly updater's overridden-input build, verifies
+both original calls before applying any hunk. Patch preflight uses zero fuzz.
+The install check and the focused ARM `openclaw-app-access-only` check verify
+both patched calls in the installed dist. A changed or renamed upstream
+bundle fails the build; review it rather than skipping the patch.
+
+Deploy the signed app profile through deploy-rs with its health controller.
+This source change also changes the fallback package in each container's
+system packages. Switch Yari to the same source commit, under a strict
+package-only closure/unit guard and the idle gate, so plain `cairn` again
+matches the running system. Do not combine this with the Overview config
+change. Verify both gateways, the app profile and three fresh flakey chats
+before proceeding. Package and system rollback are independent; retain both
+previous generations and never roll back service state.
+
 ### Weekly package update: signed app profile
 
 OpenClaw's package now has the independent deploy-rs profile

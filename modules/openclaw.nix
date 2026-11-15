@@ -727,6 +727,10 @@
               ${gateway.package}/bin/openclaw config validate
               touch $out
             '';
+        openclaw-app-access-only = pkgs.runCommand "openclaw-app-access-only" { } ''
+          ${pkgs.python3}/bin/python3 ${../tests/openclaw-app-access-only.py} ${gateway.package}/lib/openclaw
+          touch $out
+        '';
         openclaw-config = pkgs.runCommand "openclaw-config" { } ''
           grep -F "/nix/var/nix/profiles/apps/openclaw/bin/openclaw gateway" ${gateway.execStart}
           export HOME=$TMPDIR

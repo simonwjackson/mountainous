@@ -46,6 +46,23 @@ let
   };
 in
 package.overrideAttrs (old: {
+  # openclaw/openclaw#199765: remove once upstream uses access-only app reads.
+  # Upstream's install script does not run postInstall. Preflight every hunk
+  # before changing the installed dist; a renamed/changed bundle must fail.
+  installPhase =
+    old.installPhase
+    + "\n"
+    + ''
+      ${pkgs.python3}/bin/python3 ${../tests/openclaw-app-access-only.py} "$out/lib/openclaw" --unpatched
+      ${pkgs.patch}/bin/patch --batch --forward --fuzz=0 --dry-run -p1 \
+        -d "$out/lib/openclaw" < ${./openclaw-app-access-only.patch}
+      ${pkgs.patch}/bin/patch --batch --forward --fuzz=0 -p1 \
+        -d "$out/lib/openclaw" < ${./openclaw-app-access-only.patch}
+    '';
+  doInstallCheck = true;
+  installCheckPhase = (old.installCheckPhase or "") + ''
+    ${pkgs.python3}/bin/python3 ${../tests/openclaw-app-access-only.py} "$out/lib/openclaw"
+  '';
   passthru = old.passthru // {
     runtimeNode = node;
   };
