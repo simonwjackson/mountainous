@@ -72,7 +72,7 @@ Template only; placeholders are not data:
 - Mode: normal / short
 - Steps: <ordered kinds, done/skipped/pending/current; private result per step>
 - Closed at: <actual ISO instant or not closed>
-- Check-in: <verified ID/date/values or not confirmed; never a fabricated receipt>
+- Check-in: <verified date/time/marker/values, ID only if exposed; or not confirmed>
 ### Weekly look-back
 <Sunday only: actual reflection, paired means/coverage, project decisions, next-week calendar shape, one intention; explicit missing data>
 ```
@@ -93,7 +93,7 @@ not the same mood scale. Use a stated, reversible encoding:
 **energy_value = charge; mood_value = 2 × wind-down mood**. Thus the five mood
 buttons map 1,2,3,4,5 → 2,4,6,8,10; stored mood scores 20,40,60,80,100.
 This is an encoding, not a judgement or a mood inferred from prose. Daily
-memory keeps the original 1–5 values and the check-in ID as a verified receipt.
+memory keeps the original 1–5 values and the verified check-in receipt (ID if exposed).
 Do not let nutrition-fitness log these a second time.
 
 Discover the live schema first; if it no longer has these fields, say why and
@@ -105,8 +105,13 @@ Only when a rating was actually supplied:
 2. Write **one** `log_mood` with entry_date = frozen day, energy_value and/or
    mood_value as above, `notes:"wind-down:<day>; mood5=<original or missing>"`.
    Use no private rating note, worries or reflection in upstream notes.
-3. Read list_checkin_diary for the same date; verify returned ID, date,
-   energy and mood including the service's stored scaling. Keep that receipt
+3. Read list_checkin_diary for the same date; verify date, energy and mood including the service's stored scaling, plus
+   the unique marker and returned local time. Keep an ID **only if returned**:
+   current log_mood/list_checkin_diary text exposes time/values/notes but no ID.
+   Do not invent one or claim ID-based reconciliation is available. The
+   timestamp + exact marker + values form the receipt when no ID is exposed.
+   The operator can resolve that receipt to an ID through SparkyFitness's
+   authenticated existing app/API for TEST cleanup. Keep that receipt
    in State. Only then call the check-in saved. It is separate from the note.
 
 Every log_mood appends a NEW check-in; it has **no idempotency key**, update or
