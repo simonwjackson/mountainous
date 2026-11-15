@@ -18,10 +18,7 @@
         backend = "http://127.0.0.1:3195/mcp";
         callerNodeIds = map (node: nodes.${node}) rows.${row}.callers;
         mcpTools = rows.${row}.tools;
-        mcpResources = [
-          "ui://pace/status"
-          "ui://pace/overview"
-        ];
+        mcpResources = [ "ui://pace/status" ];
         bearerCredentialFile = config.sops.secrets."pace-key-${person}".path;
       };
     in
