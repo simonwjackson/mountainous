@@ -135,6 +135,43 @@ Operational helpers/evidence are under `/tmp/claw/voice-v2/` on Zao and copied
 to `/tmp/claw/` on the target. All helpers use Nix shebangs. Build only from a
 clean checkout whose full SHA equals the recorded approved source SHA.
 
+### Pi Assistant pause included in cairn (2026-11-14)
+
+Cairn includes `f36aeeb7` and `d336e85e`. They set
+`mountainous.features.pi-assistant.instances.enable = false` on Rakku, while
+keeping the parent feature, apps, users, credentials, state and profiles.
+The four Pi runtimes are stopped manually on generation **168**
+(`/nix/store/9709w007kxf4hixyhbhhl70rfv2cyxa6-nixos-system-rakku-26.11.20260923.4975466`),
+but its unit files are still enabled. The declarative pause awaits this voice
+switch. Refresh the recorded running parents; do not use the old 167 baseline.
+A voice rollback to 168 can restart the four Pi runtimes; stop those four
+again and verify the retained apps if that rollback is needed.
+
+This supersedes the **three-unit-only** constraint in steps 3–4 below. In
+addition to the three voice gateway units, expect `pi-assistant-simon`,
+`pi-assistant-laure`, `pi-assistant-household`, `assistant-tsgo` and the old
+Pi-dependent `signal-responder` to become masked, with their boot-target links
+removed. Their secret restart hooks are removed too. Do not relax checks for
+any other units. `assistant-app-simon-google` and `assistant-app-simon-maps`
+must keep running with the same invocation IDs and application profile.
+
+After the Rakku switch, require:
+
+- All four Pi runtimes and `signal-responder` inactive and not enabled; merely
+  stopped but enabled is not acceptance.
+- Both apps active. From Flakey (`claw-simon`, Unix user `openclaw`), calendar
+  reads through `/mcp/calendar` and `travel_time` through `/mcp/maps` succeed.
+  Snowy's unchanged `openclaw` container must also call `travel_time` successfully.
+- No failed units; HA HTTP 200; the Z-Wave JS version handshake still works.
+- The assistant HTTPS endpoint does not answer. Keep its Tailscale machine
+  entry and `/var/lib/assistant-tsgo`; delete no state, credentials or profiles.
+
+Read-only helpers prepared under `/tmp/claw/`: run
+`pi-paused-health.py --require-declarative` on Rakku and `pi-paused-tools.py`
+on Yari. They are acceptance probes, not activation scripts. Before this
+switch, the non-strict health probe and both containers' tools passed; the
+assistant machine entry remained present and offline.
+
 1. Land ai-gateway on main, pin that exact commit with `ref=main`, rerun focused
    checks, then rebase and fast-forward Mountainous onto cairn. Never run an
    aggregate flake check. Record full SHAs, derivations and running parents.
