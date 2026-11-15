@@ -3467,3 +3467,11 @@ Simon's Family-only calendar skill/row is superseded by the owned-calendar picke
 See [calendar-cards.md](calendar-cards.md) for commits, Rakku 167 / Yari 63,
 ledger continuity (Lego retained), real desktop/phone acceptance, TEST cleanup
 and forward rollback. Snowy and her read-only Family row remain unchanged.
+
+
+## Full daily and Sunday wind-down — 2026-11-15
+
+See [wind-down-full.md](wind-down-full.md) for the original-feature map,
+SparkyFitness energy/mood encoding, sandbox-safe reference installation,
+Yari generation 70, desktop/phone acceptance, complete TEST cleanup, unchanged
+21:00 job and forward-only rollback. Snowy received nothing new.
