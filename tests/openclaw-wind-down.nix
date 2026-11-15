@@ -63,6 +63,12 @@ assert lib.hasInfix "OFF" (ref "therapy");
 assert lib.hasInfix "five buttons" (ref "cards");
 assert lib.hasInfix "ChargeRead.weeks" (ref "week");
 assert lib.hasInfix "USER.md" skill && lib.hasInfix "MEMORY.md" skill;
+assert simon.systemd.services ? openclaw-wind-down-references;
+assert !(laure.systemd.services ? openclaw-wind-down-references);
+assert lib.hasInfix ".wind-down-references"
+  simon.systemd.services.openclaw-wind-down-references.script;
+assert lib.hasInfix "install -m 0444" simon.systemd.services.openclaw-wind-down-references.script;
+assert lib.hasInfix ".wind-down-references/<name>.md" skill;
 assert lib.elem "show_widget" config.tools.allow;
 assert !lib.elem "show_widget" other.tools.allow;
 assert lib.pathExists "${builtins.elemAt config.skills.load.extraDirs 1}/wind-down/SKILL.md";

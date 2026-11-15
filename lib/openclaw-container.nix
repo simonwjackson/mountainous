@@ -550,6 +550,29 @@ in
     };
   };
   systemd.services = {
+    # Nix store optimization hardlinks reference files. OpenClaw's fs reader
+    # rejects hardlinks even inside a skill root. Materialize only these public
+    # instructions as real files; keep workspaceOnly and hardlink guards intact.
+    openclaw-wind-down-references = lib.mkIf (person.name == "simon") {
+      description = "Install readable declarative wind-down references";
+      requiredBy = [ "openclaw-gateway.service" ];
+      before = [ "openclaw-gateway.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script =
+        let
+          source = ./openclaw-skills/simon/wind-down/references;
+          destination = "${person.workspacePath}/.wind-down-references";
+        in
+        ''
+          ${pkgs.coreutils}/bin/install -d -m 0755 ${destination}
+        ''
+        + lib.concatMapStringsSep "\n" (file: ''
+          ${pkgs.coreutils}/bin/install -m 0444 ${source}/${file} ${destination}/${file}
+        '') (lib.attrNames (builtins.readDir source));
+    };
     # Bootstrap reads reject symlinks outside the workspace. Install real files,
     # not store symlinks. The reader has no file tools to change these documents.
     openclaw-agent-instructions = lib.mkIf (person ? extraAgentInstructions) {

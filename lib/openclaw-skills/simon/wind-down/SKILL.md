@@ -33,6 +33,13 @@ later request. The weekly and deeper-talk offers are separate, optional gates.
 
 ## Read the references at their boundary
 
+**Runtime read path:** Nix installs real, non-hardlinked copies of these
+versioned references at **`.wind-down-references/<name>.md` in your workspace**.
+Use `read` on that relative path, not the Nix-store link below: OpenClaw rejects
+optimized store hardlinks. These files are read-only deployment assets, not
+private notes or a second editable source. If absent, name the install failure;
+do not improvise missing instructions or ask Simon to repair the files.
+
 - Start and each daily step: [references/day.md](references/day.md).
 - First drawing and widget actions: [references/cards.md](references/cards.md).
 - Before any write, resume or read-back: [references/storage.md](references/storage.md).
