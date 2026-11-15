@@ -154,11 +154,13 @@ without starting OAuth or requesting Google data.
 
 ## Classifier and checks
 
-The app asks Jev through the existing front door and falls back to the configured
+The app asks the front door's `fast` route (Jev, then Solar) with a two-second
+timeout and accepts any returned model id. It falls back to the configured
 mechanical model through the same grant. The grant permits `chat_completions`.
-`providers.typesafe.prepaid=true` excludes Jev from monthly cap reservations;
-only its provider balance limits those decisions. `monthly_cap_usd` remains a
-mandatory schema field and protects future non-prepaid routes.
+Monthly spending caps, cap reservations and their HTTP 402 path have been removed;
+`monthly_cap_usd` is no longer a key field. Usage, prices and System One charges
+remain recorded. Provider balances can still reject requests, and rate limits
+still apply. Prepaid handling is accounting only, not a spending-cap exemption.
 
 Focused checks (never run `nix flake check`):
 
@@ -230,15 +232,16 @@ Unzen -> Rakku with `nix copy --no-check-sigs`.
 
 ## Gmail cards (prepared, not deployed)
 
-The gmail row now adds two model tools, mail_queue and mail_send_card, and seven
-app-only tools, including mail_card_undo. Its exact resources are
+The gmail row now adds three model tools, mail_queue, mail_triage and
+mail_send_card, and seven app-only tools, including mail_card_undo. Its exact
+resources are
 ui://gmail/queue.html, ui://gmail/send.html and ui://gmail/triage.html. Actual
 resource wiring belongs in modules/claw-tools.nix; modules/ai-mcp-proxy.nix checks
 the rendered table. The connector excludes legacy mail_send from registration.
 The row still refuses it. App-only visibility must survive proxy forwarding.
 Main's blanket Gmail deny is replaced by denies for the seven reader tools and
 legacy mail_send: a blanket deny also rejects card tool calls under MCP Apps'
-run policy. The row's closed allowlist and this deny leave exactly the two model
+run policy. The row's closed allowlist and this deny leave exactly the three model
 and seven app-only tools for main. The reader's seven tools stay unchanged.
 
 The app profile, not mountainous, supplies Google source and built HTML. The apps

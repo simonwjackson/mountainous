@@ -449,6 +449,7 @@
               "claw-gmail__mail_draft"
               "claw-gmail__mail_discard_draft"
               "claw-gmail__mail_queue"
+              "claw-gmail__mail_triage"
               "claw-gmail__mail_send_card"
               "claw-gmail__mail_card_items"
               "claw-gmail__mail_card_archive"

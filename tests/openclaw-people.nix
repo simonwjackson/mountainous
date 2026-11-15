@@ -208,12 +208,13 @@ assert
     "mail_discard_draft"
     "mail_send"
   ]);
-# The effective main Gmail surface is exactly the two model and seven app tools.
+# The effective main Gmail surface is exactly the three model and seven app tools.
 assert
   lib.filter (
     t: lib.hasPrefix "claw-gmail__" t && !(lib.elem t configs.simon.agents.entries.main.tools.deny)
   ) configs.simon.tools.allow == (map (t: "claw-gmail__${t}") [
     "mail_queue"
+    "mail_triage"
     "mail_send_card"
     "mail_card_items"
     "mail_card_archive"
@@ -246,6 +247,17 @@ assert configs.simon.agents.entries.mail.workspace == "/var/lib/openclaw/workspa
 assert configs.simon.agents.entries.mail.agentDir == "/var/lib/openclaw/agents/mail/agent";
 assert !(configs.simon.agents.entries.mail ? heartbeat);
 assert lib.pathExists "${builtins.elemAt configs.simon.skills.load.extraDirs 1}/mail/SKILL.md";
+assert lib.all
+  (
+    text:
+    lib.hasInfix text (
+      builtins.readFile "${builtins.elemAt configs.simon.skills.load.extraDirs 1}/mail/SKILL.md"
+    )
+  )
+  [
+    "claw-gmail__mail_triage {}"
+    "full-screen triage when Simon wants to clear many"
+  ];
 assert lib.all
   (
     file:

@@ -8,8 +8,9 @@ description: Show Simon's Gmail decision and send cards; delegate mail text and 
 When Simon asks about mail, call `claw-gmail__mail_queue {}` to show the inline
 card. Report only its needsYou, unsure and filedToday counts. The card loads its
 own sender, subject and snippet through app-only tools. Do not read mail text
-yourself or ask the reader to repeat card contents into chat. For full-screen
-triage use the card's full-screen action; inline fallback is acceptable.
+yourself or ask the reader to repeat card contents into chat. Call
+`claw-gmail__mail_triage {}` for full-screen triage when Simon wants to clear many.
+It returns the same ids and counts as mail_queue. Inline fallback is acceptable.
 
 For a specific reply or mail question, use `sessions_send` with `agentId: "mail"`
 and the exact message id and requested scope. The reader returns the reply to

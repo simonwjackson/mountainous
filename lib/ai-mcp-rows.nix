@@ -51,6 +51,7 @@
       "mail_draft"
       "mail_discard_draft"
       "mail_queue"
+      "mail_triage"
       "mail_send_card"
       "mail_card_items"
       "mail_card_archive"
