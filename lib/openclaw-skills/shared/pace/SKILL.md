@@ -7,6 +7,8 @@ description: Check household savings goals and Budgets. Use for “how are we do
 
 Call `dispatch_action` with `id: "mcp:pace:pace__pace_status"` and `args: {}`. Use `tool_search` or `tool_describe` if needed.
 
+When asked to see the goals, the Budgets or the Overview, call `pace_overview`. Never draw your own widget, chart or table from Pace figures.
+
 Answer in one or two sentences, from the tool's short text. The Status card shows itself under the answer. Do not repeat its rows or figures, or make a table of them.
 
 Never invent or recompute figures. If the call fails, say so. Do not substitute figures.

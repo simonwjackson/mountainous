@@ -14,12 +14,18 @@
   pace = {
     callers = [ "flakey" ];
     server = "pace";
-    tools = [ "pace_status" ];
+    tools = [
+      "pace_status"
+      "pace_overview"
+    ];
   };
   pace-laure = {
     callers = [ "snowy" ];
     server = "pace";
-    tools = [ "pace_status" ];
+    tools = [
+      "pace_status"
+      "pace_overview"
+    ];
   };
   sparkyfitness = {
     callers = [ "flakey" ];
