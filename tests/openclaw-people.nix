@@ -115,6 +115,20 @@ let
     assert lib.all (id: c.agents.entries.${id} == person.extraAgents.${id}) (
       lib.attrNames (person.extraAgents or { })
     );
+    # App policy currently projects names without MCP ownership metadata.
+    # Require exactly these Pace allowances in each rendered gateway config.
+    assert
+      lib.filter (tool: lib.hasPrefix "pace" tool) c.tools.allow == [
+        "pace__pace_status"
+        "pace__pace_overview"
+      ];
+    assert !(lib.elem "*" c.tools.allow);
+    assert c.mcp.servers.pace.codex.defaultToolsApprovalMode == "auto";
+    assert
+      c.mcp.servers.pace.toolFilter.include == [
+        "pace_status"
+        "pace_overview"
+      ];
     assert c.tools.agentToAgent == (person.agentToAgent or { enabled = false; });
     assert c.gateway.auth.trustedProxy.allowUsers == [ person.login ];
     assert c.gateway.roles.default == person.roleName;

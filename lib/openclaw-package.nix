@@ -58,10 +58,15 @@ package.overrideAttrs (old: {
         -d "$out/lib/openclaw" < ${./openclaw-app-access-only.patch}
       ${pkgs.patch}/bin/patch --batch --forward --fuzz=0 -p1 \
         -d "$out/lib/openclaw" < ${./openclaw-app-access-only.patch}
+      # openclaw/openclaw#199843: fullscreen must override inline display:block.
+      # Remove once a deployed release fixes it. Merged #197899 may change this
+      # area. Regenerate both encodings; an upstream asset change must fail.
+      ${node}/bin/node ${./openclaw-fullscreen.mjs} apply "$out/lib/openclaw"
     '';
   doInstallCheck = true;
   installCheckPhase = (old.installCheckPhase or "") + ''
     ${pkgs.python3}/bin/python3 ${../tests/openclaw-app-access-only.py} "$out/lib/openclaw"
+    ${node}/bin/node ${./openclaw-fullscreen.mjs} check "$out/lib/openclaw"
   '';
   passthru = old.passthru // {
     runtimeNode = node;

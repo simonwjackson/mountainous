@@ -281,6 +281,14 @@
     in
     {
       checks = {
+        openclaw-fullscreen-patch = pkgs.runCommand "openclaw-fullscreen-patch" { } ''
+          cp -r ${../lib/openclaw-fullscreen.mjs} openclaw-fullscreen.mjs
+          mkdir -p lib tests
+          mv openclaw-fullscreen.mjs lib/
+          cp ${../tests/openclaw-fullscreen.test.mjs} tests/openclaw-fullscreen.test.mjs
+          ${pkgs.nodejs_24}/bin/node --test tests/openclaw-fullscreen.test.mjs
+          touch $out
+        '';
         openclaw-people =
           assert import ../tests/openclaw-people.nix { inherit lib host; };
           pkgs.runCommand "openclaw-people-drift" { } "touch $out";
@@ -464,7 +472,11 @@
               "claw-calendar__calendar_add"
               "claw-calendar__calendar_remove"
             ]
-            ++ map (tool: "sparkyfitness__${tool}") (import ../lib/openclaw-sparkyfitness-tools.nix);
+            ++ (map (tool: "sparkyfitness__${tool}") (import ../lib/openclaw-sparkyfitness-tools.nix))
+            ++ [
+              "pace__pace_status"
+              "pace__pace_overview"
+            ];
           # No key, header or environment: the front door's caller lock and its
           # server-held key are the only authentication.
           assert
@@ -727,6 +739,10 @@
               ${gateway.package}/bin/openclaw config validate
               touch $out
             '';
+        openclaw-fullscreen = pkgs.runCommand "openclaw-fullscreen" { } ''
+          ${gateway.package.runtimeNode}/bin/node ${../lib/openclaw-fullscreen.mjs} check ${gateway.package}/lib/openclaw
+          touch $out
+        '';
         openclaw-app-access-only = pkgs.runCommand "openclaw-app-access-only" { } ''
           ${pkgs.python3}/bin/python3 ${../tests/openclaw-app-access-only.py} ${gateway.package}/lib/openclaw
           touch $out

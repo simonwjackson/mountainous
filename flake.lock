@@ -1511,17 +1511,17 @@
         "nixpkgs": "nixpkgs_12"
       },
       "locked": {
-        "lastModified": 1794777216,
-        "narHash": "sha256-nljUHPhEyYRmNC5GzL294tJwbhaZjymRTKuWE77XEeg=",
+        "lastModified": 1794783411,
+        "narHash": "sha256-Wtxd0mNMtIlGhSHSr6w0koJJtiwcspCSu2J2xG6Qzx8=",
         "ref": "main",
-        "rev": "deeac88f767aa5d19ac2aaa789a98c070dacaab6",
-        "revCount": 50,
+        "rev": "84dcb25f3282e0c3e12f460c87c1911cab2885f8",
+        "revCount": 57,
         "type": "git",
         "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/pace-service"
       },
       "original": {
         "ref": "main",
-        "rev": "deeac88f767aa5d19ac2aaa789a98c070dacaab6",
+        "rev": "84dcb25f3282e0c3e12f460c87c1911cab2885f8",
         "type": "git",
         "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/pace-service"
       }

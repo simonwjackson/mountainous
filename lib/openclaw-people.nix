@@ -17,6 +17,13 @@ let
   ];
   mailReaderPermissions = map (tool: "claw-gmail__${tool}") mailReaderTools;
   sparkyfitnessTools = import ./openclaw-sparkyfitness-tools.nix;
+  # openclaw/openclaw#186775 (model-created Apps), #186777 (standalone Apps):
+  # app tool-policy checks lose bundle MCP ownership. Remove these exact
+  # allowances once fix PR #186790 is in a deployed OpenClaw release.
+  paceAppPermissions = [
+    "pace__pace_status"
+    "pace__pace_overview"
+  ];
 in
 {
   simon = {
@@ -67,7 +74,8 @@ in
     ++ (map (tool: "claw-ebay-simon__${tool}") rows.ebay.tools)
     ++ mailPermissions
     ++ (map (tool: "claw-calendar__${tool}") rows.calendar.tools)
-    ++ (map (tool: "sparkyfitness__${tool}") sparkyfitnessTools);
+    ++ (map (tool: "sparkyfitness__${tool}") sparkyfitnessTools)
+    ++ paceAppPermissions;
     agentTools = {
       # A wildcard deny would also block app-only tools in the card lease.
       # The row rejects all other tools; main denies every reader-only tool.
@@ -161,6 +169,7 @@ in
         inherit (rows.scryer-laure) tools;
       };
     };
+    extraToolPermissions = paceAppPermissions;
     morningBriefPrompt = builtins.readFile ./openclaw-morning-brief-laure.md;
     # Prepared only. Keep disabled: an unsolicited new brief would break continuity.
     enableMorningBrief = false;
