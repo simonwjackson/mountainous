@@ -470,6 +470,9 @@
               "claw-gmail__mail_draft_get"
               "claw-gmail__mail_send_draft"
               "claw-gmail__mail_discard_card"
+            ]
+            ++ (map (tool: "mindwtr__${tool}") (import ../lib/ai-mcp-rows.nix).mindwtr.tools)
+            ++ [
               "claw-calendar__calendar_busy"
               "claw-calendar__calendars_list"
               "claw-calendar__calendar_events"
@@ -503,7 +506,9 @@
           assert lib.pathExists "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/calendar/SKILL.md";
           assert lib.pathExists "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/tasks/SKILL.md";
           assert !(lib.pathExists "${builtins.elemAt laure.skills.load.extraDirs 1}/tasks/SKILL.md");
-          assert gateway.config.mcp.servers.mindwtr.toolFilter.include == (import ../lib/ai-mcp-rows.nix).mindwtr.tools;
+          assert
+            gateway.config.mcp.servers.mindwtr.toolFilter.include == (import ../lib/ai-mcp-rows.nix)
+            .mindwtr.tools;
           assert !(laure.mcp.servers ? mindwtr);
           assert !(gateway.config.mcp.servers ? claw-scryer);
           assert
@@ -629,7 +634,7 @@
           assert
             !(
               lib.findFirst (m: m.id == "claude-opus-5-5") null gateway.config.models.providers.front-door.models
-              ? contextTokens
+                ? contextTokens
             );
           assert
             (lib.findFirst (m: m.id == "gpt-6.1-sol") null gateway.config.models.providers.front-door.models)

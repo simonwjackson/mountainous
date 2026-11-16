@@ -54,12 +54,12 @@ such as task restore and people writes; those are not forwarded either.
 
 1. Install **Mindwtr** from Google Play or F-Droid. Keep Tailscale connected to
    `hummingbird-lake.ts.net` on the phone.
-2. Open Mindwtr → **Settings → Sync → Self-Hosted**.
-3. Enter **Self-Hosted URL**: `https://tasks.hummingbird-lake.ts.net`.
+2. Open Mindwtr → **Settings → Sync → Self-hosted**.
+3. Enter **Self-hosted URL**: `https://tasks.hummingbird-lake.ts.net`.
    Do not append `/v1/data`, `/mcp` or a port. Leave insecure HTTP disabled.
 4. Read the Cloud token privately on Rakku. Run this yourself on your terminal:
    `ssh -F /dev/null simonwjackson@rakku sudo cat /run/secrets/mindwtr-cloud-token`.
-   Paste it into the app's token field. Do not paste it into agent chat. The
+   Paste it into the app's **Access token** field. Do not paste it into agent chat. The
    MCP token is different and must not be used here.
 5. Save the sync settings, then use **Sync now**. Capture a task and check that
    the same task appears in the web app. Enter the same Cloud URL and token
@@ -86,4 +86,81 @@ immediately before either activation. Keep the data directory and sops tokens;
 rollback removes service wiring, not captured tasks. Do not downgrade the Cloud
 schema once real data exists without reviewing upstream compatibility.
 
-Deploy and acceptance records follow below after activation.
+## Deployment and acceptance: 2026-11-16 UTC
+
+Flake `main`: `a5449cb40dd1d95df87d8161f71f3fa3958c0759`, followed by lint-only
+`c7b513cd49dd05b378353921674e41d261435eaf` (the consumed pin).
+Mountainous deployment source: `dd6129549851d5ccfbf0db11cf6ded7568a8d094`.
+Fetched/rebased cairn immediately before both activations. Both helpers refused
+concurrent switches and checked the running source system before activating.
+Rakku's system was built on Unzen; Yari's ARM system was built on Yari, one
+job / two cores. All Mindwtr components were built from source.
+
+| Host | Before | Deployed system |
+| --- | --- | --- |
+| Rakku | generation 174 | generation **175**, `/nix/store/z647abb03j56a0x9fd93knrwf0703dlc-nixos-system-rakku-26.11.20260923.4975466` |
+| Yari | generation 77 | generation **78**, `/nix/store/qv50r1l0if6n16dia2id06d53vws7l9p-nixos-system-yari-26.11.20260923.4975466` |
+
+Yari switched Flakey in place. Its container and tailnet invocation IDs stayed
+unchanged. Flakey's gateway was unhealthy for 13.2 seconds during the planned
+restart. Snowy's health stayed good throughout. Her host unit, container
+configuration, container system, gateway configuration and invocation IDs stayed
+unchanged. The rollback preconditions were checked afterwards without activating
+a rollback. The local guarded rollback launcher is
+`nix-shell /tmp/claw/mindwtr-rollback.sh` (Yari first, then Rakku).
+
+Previous systems, retained in their profiles:
+
+- Rakku 174: `/nix/store/va0ml3vs6wpi4k8rx3q0hylzf1a47hy0-nixos-system-rakku-26.11.20260923.4975466`.
+- Yari 77: `/nix/store/p41mjpwn1byqjq2j8c1wc42mq9cdkc2c-nixos-system-yari-26.11.20260923.4975466`.
+
+### Verified
+
+- The three packages build. The static web build ran its TypeScript checker.
+  The flake's module evaluation and real cloud/MCP create → available → delete
+  smoke check passed. Nix formatting, Statix, Deadnix and Ruff for the smoke
+  script passed. No full mountainous flake check was run.
+- Focused mountainous checks `mindwtr`, `claw-tools`, `openclaw-people` and
+  `openclaw` passed. The last check first exposed its old fixed 79-permission
+  expectation; the assertion now includes Mindwtr's 15 permissions from the row
+  source of truth (94 total). This assertion-only follow-up changes no runtime
+  configuration. Rakku and Yari toplevels evaluated and their systems built.
+- From Zao, the web URL returned HTTP 200 and Chromium rendered Mindwtr's
+  onboarding and navigation. `/ready` and authenticated `/v1/data` returned
+  HTTP 200. Without a token `/v1/data` returned HTTP 401. The new hostname briefly failed TLS while its first certificate
+  was provisioned; subsequent curl and browser requests succeeded.
+- Created one task `TEST – delete me` through the Cloud REST API, then read it
+  back. REST creation expects status inside `props`; the initial request's
+  top-level status was ignored and the capture landed in inbox. Patched that
+  same task to `next`, without creating another task.
+- As Flakey's UID, the real row initialized and exposed exactly the 15 tools.
+  `view: "available"` returned the TEST task. An unlisted people tool was
+  refused (-32601); a forged caller Authorization header was ignored. Zao and
+  Snowy each received HTTP 403 on the row. OpenClaw's live server had no key.
+- In a **new Control UI conversation** at Flakey's URL, asked for available
+  tasks. Flakey called `mindwtr__mindwtr_list_tasks` with the actual argument
+  `view: "available"` and displayed `TEST – delete me`, status `next`.
+  The audit contained only discovery/skill reads, dispatch and that read tool.
+- Deleted the TEST task through the API. It was absent from the default REST
+  task list and the MCP available view. This is upstream soft deletion: its
+  sync tombstone remains, as required for client convergence.
+- Deleted that exact test conversation, ran offline `openclaw memory forget`
+  for its exact session ID and checked all 14 artifact counters were zero.
+  The idle gate delayed cleanup for real agent runs. A run started between
+  conversation deletion and the second idle check, so forgetting resumed later
+  from the saved, exact deleted-session metadata. No running agent was stopped.
+  Removed only the temporary Zao pairing; pre-existing pairings stayed present.
+- Final host and gateway checks passed, with no failed units on Rakku, Yari or
+  either gateway. Rakku Home Assistant returned HTTP 200 and Z-Wave's WebSocket
+  returned HTTP 101. Atlas, SparkyFitness, Logbook and the paused Pi assistant
+  units retained their state and invocation IDs. No wind-down or coach file
+  or workflow configuration changed.
+
+### Limits
+
+Simon's Android setup/sync and a restore from an off-host Mindwtr backup were
+not performed. Project/area writes and deferred/blocked view behavior were not
+manually exercised. No Z-Wave device was operated. Only x86_64-linux Mindwtr packages
+are supported by this flake. Deletion confirmation remains an agent instruction,
+not server-enforced approval. Rotating the Cloud token can select a different
+upstream token namespace; preserve/migrate the library before rotating it.
