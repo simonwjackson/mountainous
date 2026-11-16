@@ -58,6 +58,10 @@ in
         row = "gmail";
         tools = mailTools;
       };
+      mindwtr = {
+        row = "mindwtr";
+        inherit (rows.mindwtr) tools;
+      };
       claw-calendar = {
         row = "calendar";
         inherit (rows.calendar) tools;
@@ -73,6 +77,7 @@ in
     ]
     ++ (map (tool: "claw-ebay-simon__${tool}") rows.ebay.tools)
     ++ mailPermissions
+    ++ (map (tool: "mindwtr__${tool}") rows.mindwtr.tools)
     ++ (map (tool: "claw-calendar__${tool}") rows.calendar.tools)
     ++ (map (tool: "sparkyfitness__${tool}") sparkyfitnessTools)
     ++ paceAppPermissions;

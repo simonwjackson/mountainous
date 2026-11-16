@@ -501,6 +501,10 @@
             .calendar.tools;
           assert gateway.config.mcp.servers.claw-calendar.codex.defaultToolsApprovalMode == "approve";
           assert lib.pathExists "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/calendar/SKILL.md";
+          assert lib.pathExists "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/tasks/SKILL.md";
+          assert !(lib.pathExists "${builtins.elemAt laure.skills.load.extraDirs 1}/tasks/SKILL.md");
+          assert gateway.config.mcp.servers.mindwtr.toolFilter.include == (import ../lib/ai-mcp-rows.nix).mindwtr.tools;
+          assert !(laure.mcp.servers ? mindwtr);
           assert !(gateway.config.mcp.servers ? claw-scryer);
           assert
             gateway.config.mcp.servers.claw-scryer-simon.toolFilter.include == [

@@ -20,6 +20,7 @@ in
       "cliproxyapi"
       "logbook"
       "sparkyfitness"
+      "mindwtr"
       "tailnet-names"
       "claw-tools"
       "claw-scryer"

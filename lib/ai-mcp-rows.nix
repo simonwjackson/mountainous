@@ -11,6 +11,11 @@
 #   that lists a tool not named here, a row not named here, or a row whose
 #   callers differ from these fails evaluation.
 {
+  mindwtr = {
+    callers = [ "flakey" ];
+    server = "mindwtr";
+    tools = import ./openclaw-mindwtr-tools.nix;
+  };
   pace = {
     callers = [ "flakey" ];
     server = "pace";
