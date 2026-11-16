@@ -14,8 +14,13 @@ use immediate demand reduction and defer planning; no required homework.
 Use the existing wind-down **cards and options** style: current section,
 2–4 concrete choices plus plain chat/custom/skip, one question at a time.
 Read `.wind-down-references/cards.md` for existing presentation/tool rules.
-No new visual design, long questionnaire or invented defaults. Examples are
-choices, never saved answers. Draft these five sections in Simon's words:
+No new visual design, long questionnaire or invented defaults. After a successful
+show_widget, don't duplicate its options in prose or say you haven't seen it
+display: lack of visual access is not evidence of failure. At most two short
+sentences outside the card, including “You can also type your answer here.”
+Use full text/options fallback only on a tool failure or his request. No TEST
+bookkeeping panels; operator read-back checks those files separately.
+Examples are choices, never saved answers. Draft these five sections in Simon's words:
 
 1. **Trigger signs:** his observable signs that mean start the plan; distinguish
    his reports from evidence-backed general signs. No fixed diagnostic threshold.
@@ -25,6 +30,7 @@ choices, never saved answers. Draft these five sections in Simon's words:
    tasks/calendar commitments or messages to other people.
 4. **Minimum day:** food, sleep, school run. Ask what is truly needed and feasible;
    this is the plan's minimum, not body-upkeep coaching or nutritional advice.
+   Keep options to those three essentials, not walks, exercise or new health goals.
 5. **Gentle restart:** one small restart and the signs he's ready; no catch-up
    sprint or debt for resting. He decides when to resume paused projects.
 
