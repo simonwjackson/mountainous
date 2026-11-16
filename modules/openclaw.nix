@@ -483,6 +483,16 @@
             ++ [
               "pace__pace_status"
               "pace__pace_overview"
+              "pace__pace_goal_set"
+              "pace__pace_goal_add"
+              "pace__pace_goal_remove"
+              "pace__pace_goal_paid"
+              "pace__pace_budget_set"
+              "pace__pace_budget_remove"
+              "pace__pace_category_correct"
+              "pace__pace_category_one_off"
+              "pace__pace_changes"
+              "pace__pace_undo"
             ];
           # No key, header or environment: the front door's caller lock and its
           # server-held key are the only authentication.
@@ -634,7 +644,7 @@
           assert
             !(
               lib.findFirst (m: m.id == "claude-opus-5-5") null gateway.config.models.providers.front-door.models
-                ? contextTokens
+              ? contextTokens
             );
           assert
             (lib.findFirst (m: m.id == "gpt-6.1-sol") null gateway.config.models.providers.front-door.models)

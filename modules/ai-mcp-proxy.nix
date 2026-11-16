@@ -193,7 +193,11 @@
       checks.ai-mcp-proxy =
         assert rowsValid;
         assert lib.all (name: before ? ${name}) retired;
-        assert lib.attrNames services == lib.subtractLists retired (lib.attrNames before);
+        # Mindwtr added the tasks front door after the migration fixture was frozen.
+        assert
+          lib.attrNames services == lib.sort builtins.lessThan (
+            (lib.subtractLists retired (lib.attrNames before)) ++ [ "tsnet-proxy-tasks" ]
+          );
         assert lib.length unchanged == 7;
         assert lib.all (
           name:
@@ -206,16 +210,33 @@
         assert nodes.snowy == "nkT3Yhzyy121CNTRL";
         assert
           builtins.fromJSON prodTable.text == {
+            mindwtr = {
+              backend = "http://127.0.0.1:8723/mcp";
+              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+              mcpTools = rows.mindwtr.tools;
+              bearerCredential = "mcp-mindwtr";
+            };
             pace = {
               backend = "http://127.0.0.1:3195/mcp";
               callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
               mcpTools = [
                 "pace_status"
                 "pace_overview"
+                "pace_goal_set"
+                "pace_goal_add"
+                "pace_goal_remove"
+                "pace_goal_paid"
+                "pace_budget_set"
+                "pace_budget_remove"
+                "pace_category_correct"
+                "pace_category_one_off"
+                "pace_changes"
+                "pace_undo"
               ];
               mcpResources = [
                 "ui://pace/status"
                 "ui://pace/overview"
+                "ui://pace/change"
               ];
               bearerCredential = "mcp-pace";
             };
@@ -225,10 +246,21 @@
               mcpTools = [
                 "pace_status"
                 "pace_overview"
+                "pace_goal_set"
+                "pace_goal_add"
+                "pace_goal_remove"
+                "pace_goal_paid"
+                "pace_budget_set"
+                "pace_budget_remove"
+                "pace_category_correct"
+                "pace_category_one_off"
+                "pace_changes"
+                "pace_undo"
               ];
               mcpResources = [
                 "ui://pace/status"
                 "ui://pace/overview"
+                "ui://pace/change"
               ];
               bearerCredential = "mcp-pace-laure";
             };
@@ -347,6 +379,7 @@
         assert
           lib.sort builtins.lessThan prodAdded == [
             "ExecStart=${prodExecStart}"
+            "LoadCredential=mcp-mindwtr:/run/secrets/mindwtr-mcp-token"
             "LoadCredential=mcp-pace-laure:/run/secrets/pace-key-laure"
             "LoadCredential=mcp-pace:/run/secrets/pace-key-simon"
             "LoadCredential=mcp-scryer-laure:/run/secrets/scryer-password-laure"
@@ -354,6 +387,7 @@
             "LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key"
             "LoadCredential=mcp-websearch:/run/secrets/ai-gateway-key-openclaw-yari"
             # The defaults keep the unit starting if a sops file is absent.
+            "SetCredential=mcp-mindwtr:unavailable credential"
             "SetCredential=mcp-pace-laure:unavailable credential"
             "SetCredential=mcp-pace:unavailable credential"
             "SetCredential=mcp-scryer-laure:unavailable credential"

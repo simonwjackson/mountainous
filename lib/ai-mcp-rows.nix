@@ -22,6 +22,16 @@
     tools = [
       "pace_status"
       "pace_overview"
+      "pace_goal_set"
+      "pace_goal_add"
+      "pace_goal_remove"
+      "pace_goal_paid"
+      "pace_budget_set"
+      "pace_budget_remove"
+      "pace_category_correct"
+      "pace_category_one_off"
+      "pace_changes"
+      "pace_undo"
     ];
   };
   pace-laure = {
@@ -30,6 +40,16 @@
     tools = [
       "pace_status"
       "pace_overview"
+      "pace_goal_set"
+      "pace_goal_add"
+      "pace_goal_remove"
+      "pace_goal_paid"
+      "pace_budget_set"
+      "pace_budget_remove"
+      "pace_category_correct"
+      "pace_category_one_off"
+      "pace_changes"
+      "pace_undo"
     ];
   };
   sparkyfitness = {

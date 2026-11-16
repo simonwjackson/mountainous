@@ -121,6 +121,16 @@ let
       lib.filter (tool: lib.hasPrefix "pace" tool) c.tools.allow == [
         "pace__pace_status"
         "pace__pace_overview"
+        "pace__pace_goal_set"
+        "pace__pace_goal_add"
+        "pace__pace_goal_remove"
+        "pace__pace_goal_paid"
+        "pace__pace_budget_set"
+        "pace__pace_budget_remove"
+        "pace__pace_category_correct"
+        "pace__pace_category_one_off"
+        "pace__pace_changes"
+        "pace__pace_undo"
       ];
     assert !(lib.elem "*" c.tools.allow);
     assert c.mcp.servers.pace.codex.defaultToolsApprovalMode == "auto";
@@ -128,6 +138,16 @@ let
       c.mcp.servers.pace.toolFilter.include == [
         "pace_status"
         "pace_overview"
+        "pace_goal_set"
+        "pace_goal_add"
+        "pace_goal_remove"
+        "pace_goal_paid"
+        "pace_budget_set"
+        "pace_budget_remove"
+        "pace_category_correct"
+        "pace_category_one_off"
+        "pace_changes"
+        "pace_undo"
       ];
     assert c.tools.agentToAgent == (person.agentToAgent or { enabled = false; });
     assert c.gateway.auth.trustedProxy.allowUsers == [ person.login ];

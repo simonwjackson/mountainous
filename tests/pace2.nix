@@ -35,11 +35,22 @@ assert lib.all
       rows.${row}.mcpTools == [
         "pace_status"
         "pace_overview"
+        "pace_goal_set"
+        "pace_goal_add"
+        "pace_goal_remove"
+        "pace_goal_paid"
+        "pace_budget_set"
+        "pace_budget_remove"
+        "pace_category_correct"
+        "pace_category_one_off"
+        "pace_changes"
+        "pace_undo"
       ]
     &&
       rows.${row}.mcpResources == [
         "ui://pace/status"
         "ui://pace/overview"
+        "ui://pace/change"
       ]
   )
   [
@@ -65,8 +76,18 @@ assert lib.all
       toolFilter.include = [
         "pace_status"
         "pace_overview"
+        "pace_goal_set"
+        "pace_goal_add"
+        "pace_goal_remove"
+        "pace_goal_paid"
+        "pace_budget_set"
+        "pace_budget_remove"
+        "pace_category_correct"
+        "pace_category_one_off"
+        "pace_changes"
+        "pace_undo"
       ];
-      # Read-only hints permit model and App calls without bypassing safety.
+      # Reversible closed-world writes and read-only calls need no prompt in auto mode.
       codex.defaultToolsApprovalMode = "auto";
     }
     && lib.pathExists "${lib.head (gateway pair.container).skills.load.extraDirs}/pace/SKILL.md"
@@ -82,6 +103,26 @@ assert lib.all
     }
   ];
 assert lib.hasInfix
-  "When asked to see the goals, the Budgets or the Overview, call `pace_overview`. Never draw your own widget, chart or table from Pace figures."
+  "When asked to see the goals, Budgets or Overview, call `pace_overview`. Never draw your own widget, chart or table from Pace figures."
   (builtins.readFile ../lib/openclaw-skills/shared/pace/SKILL.md);
+assert lib.all
+  (tool: lib.hasInfix "`${tool}`" (builtins.readFile ../lib/openclaw-skills/shared/pace/SKILL.md))
+  [
+    "pace_goal_set"
+    "pace_goal_add"
+    "pace_goal_remove"
+    "pace_goal_paid"
+    "pace_budget_set"
+    "pace_budget_remove"
+    "pace_category_correct"
+    "pace_category_one_off"
+    "pace_changes"
+    "pace_undo"
+  ];
+assert lib.hasInfix "Never invent or recompute figures" (
+  builtins.readFile ../lib/openclaw-skills/shared/pace/SKILL.md
+);
+assert lib.hasInfix "even after the card is gone" (
+  builtins.readFile ../lib/openclaw-skills/shared/pace/SKILL.md
+);
 true

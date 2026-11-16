@@ -1,4 +1,4 @@
-# Pace 2's read-only first slice. Do not reuse the quarantined Pace 1 profile.
+# Pace 2's reversible writes slice. Do not reuse the quarantined Pace 1 profile.
 { inputs, self, ... }:
 {
   nixos.modules.pace2 =
@@ -21,6 +21,7 @@
         mcpResources = [
           "ui://pace/status"
           "ui://pace/overview"
+          "ui://pace/change"
         ];
         bearerCredentialFile = config.sops.secrets."pace-key-${person}".path;
       };

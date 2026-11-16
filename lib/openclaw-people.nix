@@ -20,9 +20,21 @@ let
   # openclaw/openclaw#186775 (model-created Apps), #186777 (standalone Apps):
   # app tool-policy checks lose bundle MCP ownership. Remove these exact
   # allowances once fix PR #186790 is in a deployed OpenClaw release.
+  # Auto permits reversible, closed-world Pace writes from their annotations.
+  # Keep destructive/open-world approval gates; do not bypass server policy.
   paceAppPermissions = [
     "pace__pace_status"
     "pace__pace_overview"
+    "pace__pace_goal_set"
+    "pace__pace_goal_add"
+    "pace__pace_goal_remove"
+    "pace__pace_goal_paid"
+    "pace__pace_budget_set"
+    "pace__pace_budget_remove"
+    "pace__pace_category_correct"
+    "pace__pace_category_one_off"
+    "pace__pace_changes"
+    "pace__pace_undo"
   ];
 in
 {
