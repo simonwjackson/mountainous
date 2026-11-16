@@ -165,18 +165,17 @@ content is permitted even if a linked paper covers it.
 
 The following popular concepts frequently appear on internet forums, social media, and commercial coaching blogs, but **cannot be claimed as established scientific facts** based on peer-reviewed guidelines and meta-analyses:
 
-1. **"ADHD Burnout is a formal medical or psychiatric diagnosis":**  
+1. **"ADHD Burnout is a formal medical or psychiatric diagnosis":**
    *Correction:* Neither the DSM-5-TR nor the ICD-11 recognizes "ADHD burnout." Empirical clinical burnout research is restricted to autistic burnout (Raymaker et al. 2020) and occupational burnout (Maslach et al. 2001).
-2. **"Rejection Sensitive Dysphoria (RSD) has documented prevalence figures (e.g., 98% or 99%) in ADHD":**  
+2. **"Rejection Sensitive Dysphoria (RSD) has documented prevalence figures (e.g., 98% or 99%) in ADHD":**
    *Correction:* RSD is not an approved diagnostic entity or subtype in DSM-5-TR or ICD-11. Cited 98%–99% figures originate from informal online polls and magazine articles by William Dodson, with zero peer-reviewed epidemiological validation. Rejection sensitivity exists as a general psychological construct (Downey & Feldman 1996), and emotional dysregulation is common in ADHD (Beheshti et al. 2020), but "RSD" as a distinct genetic syndrome lacks empirical validity.
-3. **"ADHD individuals have an 'Interest-Based Nervous System' (IBNS) with a unique non-dopaminergic biology":**  
+3. **"ADHD individuals have an 'Interest-Based Nervous System' (IBNS) with a unique non-dopaminergic biology":**
    *Correction:* IBNS is an informal descriptive clinical metaphor created by William Dodson. There are zero peer-reviewed neurobiological or imaging studies validating IBNS as a distinct physiological nervous system.
-4. **"Behavioral Parent Training (BPT) cures or reduces core childhood ADHD symptoms on blinded evaluations":**  
+4. **"Behavioral Parent Training (BPT) cures or reduces core childhood ADHD symptoms on blinded evaluations":**
    *Correction:* Blinded meta-analyses (Daley et al. 2014) demonstrate that while BPT significantly improves parenting skills and decreases child conduct problems, its blinded effect on core ADHD symptoms (inattention and hyperactivity) is non-significant (SMD 0.02).
-5. **"Sleep hygiene education alone is sufficient to resolve chronic insomnia in ADHD":**  
+5. **"Sleep hygiene education alone is sufficient to resolve chronic insomnia in ADHD":**
    *Correction:* Both the AASM (Edinger et al. 2021) and ACP (Qaseem et al. 2016) clinical guidelines explicitly recommend against standalone sleep hygiene, establishing that multi-component CBT-I is required.
-6. **"Activity pacing has been proven to treat or prevent ADHD burnout in clinical trials":**  
+6. **"Activity pacing has been proven to treat or prevent ADHD burnout in clinical trials":**
    *Correction:* Pacing is an energy-management strategy adopted from ME/CFS (NICE NG206) and autistic lived experience. There are zero published RCTs evaluating activity pacing in adult ADHD.
-7. **"Coaches, apps, or AI systems can assess or diagnose ADHD":**  
+7. **"Coaches, apps, or AI systems can assess or diagnose ADHD":**
    *Correction:* The World Federation of ADHD (Faraone et al. 2021) and DSM-5-TR explicitly mandate that ADHD can only be diagnosed by a licensed clinician through comprehensive clinical evaluation ruling out competing somatic and psychiatric conditions.
-
