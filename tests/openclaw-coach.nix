@@ -47,6 +47,7 @@ assert lib.hasInfix "Correct / Delete" (ref "patterns");
 assert lib.hasInfix "school run" (ref "crash-plan");
 assert lib.hasInfix "Sunday 2026-11-15" (ref "crash-plan");
 assert lib.hasInfix "TEST-crash-plan.md" (ref "crash-plan");
+assert lib.hasInfix "using this TEST plan for a real crash" (ref "crash-plan");
 assert lib.hasInfix "lack of visual access is not evidence of failure" (ref "crash-plan");
 assert lib.hasInfix "don't duplicate its options" (ref "crash-plan");
 assert lib.hasInfix "not walks, exercise or new health goals" (ref "crash-plan");

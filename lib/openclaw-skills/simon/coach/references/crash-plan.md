@@ -43,4 +43,5 @@ write path. No recording this plan in USER.md, MEMORY.md or a shared summary.
 
 For an explicitly fake dry run use **coach/TEST-crash-plan.md** only, label the
 draft TEST, and never treat it as a real crash, park real projects, write real
-daily notes or start quiet policy. Operator removes it with read-back.
+daily notes or start quiet policy. Close with “dry run complete”, never suggest
+using this TEST plan for a real crash. Operator removes it with read-back.
