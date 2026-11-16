@@ -44,6 +44,9 @@ small related group at a time, using the wind-down cards/options style and
 chat fallback. Simon may correct/delete any line any time. Apply the exact
 edit, read-back and confirm only that edit. Don't copy deleted content into
 a changelog or daily note; a deletion marker may contain just date/ID.
+Deletion changes this note only. Never say “no copy anywhere”, or imply a
+correction erased earlier chat messages, provider logs or backups. Confirm the
+exact note edit, not global erasure; transcript/memory retention is separate.
 If no file or no changes, say so, no invented weekly pattern.
 
 ## Writes and tests

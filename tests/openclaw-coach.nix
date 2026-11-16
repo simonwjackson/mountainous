@@ -44,6 +44,7 @@ assert lib.hasInfix "about a week" (ref "safety");
 assert lib.hasInfix "two or more confirmed" (ref "safety");
 assert lib.hasInfix "decisionRule" (ref "patterns");
 assert lib.hasInfix "Correct / Delete" (ref "patterns");
+assert lib.hasInfix "Deletion changes this note only" (ref "patterns");
 assert lib.hasInfix "school run" (ref "crash-plan");
 assert lib.hasInfix "Sunday 2026-11-15" (ref "crash-plan");
 assert lib.hasInfix "TEST-crash-plan.md" (ref "crash-plan");
