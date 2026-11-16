@@ -1,5 +1,9 @@
 # Full wind-down skill — 2026-11-15
 
+**Current coaching method:** [coach.md](coach.md). The live coach supersedes
+this deployment record's historical therapy-OFF approval gate. Ratings, daily
+storage, quiet policy and the 21:00 job stay unchanged.
+
 Simon-only. Replaces v1 in place. The paused Pi assistant, Logbook, Atlas and
 Laure's tools are not called or changed. OpenClaw gets no new key, exec tool,
 ClawHub package, job or data service.
