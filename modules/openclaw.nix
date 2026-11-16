@@ -309,6 +309,10 @@
             inherit lib;
             host = productionHost;
           };
+          assert import ../tests/openclaw-pace-alerts.nix {
+            inherit lib;
+            host = productionHost;
+          };
           assert import ../tests/openclaw-mail-filing.nix { inherit lib host; };
           assert import ../tests/openclaw-coach.nix {
             inherit lib;
@@ -493,6 +497,8 @@
               "pace__pace_category_one_off"
               "pace__pace_changes"
               "pace__pace_undo"
+              "pace__pace_events"
+              "pace__pace_goal_paid_answer"
             ];
           # No key, header or environment: the front door's caller lock and its
           # server-held key are the only authentication.

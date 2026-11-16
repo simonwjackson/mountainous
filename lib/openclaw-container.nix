@@ -163,6 +163,35 @@ let
       jq -e --arg id "$id" '(.job // .).id == $id' <<< "$result" >/dev/null
     '';
   };
+  paceAlerts = pkgs.writeText "openclaw-pace-alerts.json" (
+    builtins.toJSON (import ./openclaw-pace-alerts.nix)
+  );
+  ensurePaceAlerts = pkgs.writeShellApplication {
+    name = "openclaw-ensure-pace-alerts";
+    runtimeInputs = [
+      admin
+      pkgs.jq
+    ];
+    text = ''
+      call_gateway() {
+        local result
+        if ! result=$(openclaw-admin gateway call "$1" --json --timeout 30000 --params "$2"); then
+          printf '%s\n' "$result" >&2
+          return 1
+        fi
+        printf '%s\n' "$result"
+      }
+      # declarationKey atomically retains the job ID and history across retries.
+      result=$(call_gateway cron.add "$(cat ${paceAlerts})")
+      id=$(jq -er '(.job // .).id' <<< "$result")
+      # 2026.11.3 declarations only converge schedule/payload/delivery/enablement.
+      # Patch the other authored fields too, rather than preserving UI drift.
+      patch=$(jq -n --arg id "$id" --slurpfile job ${paceAlerts} \
+        '{id: $id, patch: ($job[0] | del(.declarationKey))}')
+      result=$(call_gateway cron.update "$patch")
+      jq -e --arg id "$id" '(.job // .).id == $id' <<< "$result" >/dev/null
+    '';
+  };
   mailFiling = pkgs.writeText "openclaw-mail-filing.json" (builtins.toJSON person.mailFilingJob);
   ensureMailFiling = pkgs.writeShellApplication {
     name = "openclaw-ensure-mail-filing";
@@ -699,6 +728,21 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = lib.getExe ensureEbaySelling;
+        Restart = "on-failure";
+        RestartSec = 15;
+      };
+      unitConfig.StartLimitIntervalSec = 0;
+    };
+    openclaw-pace-alerts = lib.mkIf (person.enablePaceAlerts or false) {
+      description = "Reconcile the declarative six-hour Denver Pace alerts";
+      wantedBy = [ "multi-user.target" ];
+      requires = [ "openclaw-gateway.service" ];
+      after = [ "openclaw-gateway.service" ];
+      partOf = [ "openclaw-gateway.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = lib.getExe ensurePaceAlerts;
         Restart = "on-failure";
         RestartSec = 15;
       };

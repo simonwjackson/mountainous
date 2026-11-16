@@ -32,6 +32,8 @@
       "pace_category_one_off"
       "pace_changes"
       "pace_undo"
+      "pace_events"
+      "pace_goal_paid_answer"
     ];
   };
   pace-laure = {
@@ -50,6 +52,8 @@
       "pace_category_one_off"
       "pace_changes"
       "pace_undo"
+      "pace_events"
+      "pace_goal_paid_answer"
     ];
   };
   sparkyfitness = {

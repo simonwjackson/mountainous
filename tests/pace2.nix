@@ -45,12 +45,15 @@ assert lib.all
         "pace_category_one_off"
         "pace_changes"
         "pace_undo"
+        "pace_events"
+        "pace_goal_paid_answer"
       ]
     &&
       rows.${row}.mcpResources == [
         "ui://pace/status"
         "ui://pace/overview"
         "ui://pace/change"
+        "ui://pace/alerts"
       ]
   )
   [
@@ -86,6 +89,8 @@ assert lib.all
         "pace_category_one_off"
         "pace_changes"
         "pace_undo"
+        "pace_events"
+        "pace_goal_paid_answer"
       ];
       # Reversible closed-world writes and read-only calls need no prompt in auto mode.
       codex.defaultToolsApprovalMode = "auto";
@@ -118,6 +123,8 @@ assert lib.all
     "pace_category_one_off"
     "pace_changes"
     "pace_undo"
+    "pace_events"
+    "pace_goal_paid_answer"
   ];
 assert lib.hasInfix "Never invent or recompute figures" (
   builtins.readFile ../lib/openclaw-skills/shared/pace/SKILL.md

@@ -131,6 +131,8 @@ let
         "pace__pace_category_one_off"
         "pace__pace_changes"
         "pace__pace_undo"
+        "pace__pace_events"
+        "pace__pace_goal_paid_answer"
       ];
     assert !(lib.elem "*" c.tools.allow);
     assert c.mcp.servers.pace.codex.defaultToolsApprovalMode == "auto";
@@ -148,6 +150,8 @@ let
         "pace_category_one_off"
         "pace_changes"
         "pace_undo"
+        "pace_events"
+        "pace_goal_paid_answer"
       ];
     assert c.tools.agentToAgent == (person.agentToAgent or { enabled = false; });
     assert c.gateway.auth.trustedProxy.allowUsers == [ person.login ];

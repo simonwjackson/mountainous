@@ -35,6 +35,8 @@ let
     "pace__pace_category_one_off"
     "pace__pace_changes"
     "pace__pace_undo"
+    "pace__pace_events"
+    "pace__pace_goal_paid_answer"
   ];
 in
 {
@@ -148,6 +150,7 @@ in
     enableVoice = true;
     mailFilingJob = import ./openclaw-mail-filing.nix;
     enableEbaySelling = true;
+    enablePaceAlerts = true;
     # Like Laure's: a changed container switches in place, so only its changed
     # units restart. A new gateway config still restarts the gateway (its
     # restart trigger); a new Session Share peer restarts only that source.
