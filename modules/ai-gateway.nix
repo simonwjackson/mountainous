@@ -188,6 +188,16 @@ in
                   requests_per_minute = 120;
                 }
                 {
+                  name = "pace@rakku";
+                  secret = "ai-gateway-key-pace-rakku";
+                  credential = "pace-rakku";
+                  dialects = [ "chat_completions" ];
+                  models = [ "gemini-3.8-flash-high" ];
+                  # Non-interactive, one batch every six hours. No per-key spend
+                  # cap exists in this front door; prepaid balances remain the limit.
+                  requests_per_minute = 10;
+                }
+                {
                   name = "korri@zao";
                   secret = "ai-gateway-key-korri-zao";
                   credential = "korri-zao";

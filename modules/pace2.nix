@@ -34,7 +34,17 @@
         group = "pace2";
         home = "/var/lib/pace2";
       };
-      sops.secrets = lib.genAttrs [ "pace-key-simon" "pace-key-laure" "simplefin-access-url" ] secret;
+      sops.secrets =
+        (lib.genAttrs [ "pace-key-simon" "pace-key-laure" "simplefin-access-url" ] secret)
+        // {
+          # ai-gateway declares this same root-only host secret and its own restart.
+          ai-gateway-key-pace-rakku = lib.mkIf config.mountainous.features.ai-gateway.enable {
+            restartUnits = lib.mkAfter [
+              "pace2.service"
+              "tsnet-proxy-ai.service"
+            ];
+          };
+        };
       environment.persistence."/tundra/permafrost".directories = [
         {
           directory = "/var/lib/pace2";
@@ -55,6 +65,8 @@
           PORT = "3195";
           TZ = "America/Denver";
           PACE_SYNC = "on";
+          PACE_MODEL_URL = "https://ai.hummingbird-lake.ts.net/v1/chat/completions";
+          PACE_MODEL = "gemini-3.8-flash-high";
           # Admission logs name only the person and HTTP method, never financial content.
           RUST_LOG = "pace=info,pace::http=debug";
         };
@@ -65,11 +77,13 @@
           Group = "pace2";
           StateDirectory = "pace2";
           StateDirectoryMode = "0700";
-          LoadCredential = map (name: "${name}:${config.sops.secrets.${name}.path}") [
-            "pace-key-simon"
-            "pace-key-laure"
-            "simplefin-access-url"
-          ];
+          LoadCredential =
+            map (name: "${name}:${config.sops.secrets.${name}.path}") [
+              "pace-key-simon"
+              "pace-key-laure"
+              "simplefin-access-url"
+            ]
+            ++ lib.optional config.mountainous.features.ai-gateway.enable "pace-model-key:${config.sops.secrets.ai-gateway-key-pace-rakku.path}";
           Restart = "on-failure";
           RestartSec = "5s";
           UMask = "0077";

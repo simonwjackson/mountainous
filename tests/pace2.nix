@@ -14,6 +14,29 @@ assert unit.environment.HOST == "127.0.0.1";
 assert unit.environment.PORT == "3195";
 assert unit.environment.TZ == "America/Denver";
 assert unit.environment.PACE_SYNC == "on";
+assert unit.environment.PACE_MODEL_URL == "https://ai.hummingbird-lake.ts.net/v1/chat/completions";
+assert unit.environment.PACE_MODEL == "gemini-3.8-flash-high";
+assert
+  lib.findFirst (
+    key: key.name == "pace@rakku"
+  ) null rakku.mountainous.features.ai-gateway.settings.gateway_keys == {
+    name = "pace@rakku";
+    key_file = "/run/credentials/ai-gateway.service/pace-rakku";
+    dialects = [ "chat_completions" ];
+    models = [ "gemini-3.8-flash-high" ];
+    requests_per_minute = 10;
+  };
+assert lib.elem "pace-model-key:${rakku.sops.secrets.ai-gateway-key-pace-rakku.path}"
+  unit.serviceConfig.LoadCredential;
+assert
+  rakku.sops.secrets.ai-gateway-key-pace-rakku.restartUnits == [
+    "ai-gateway.service"
+    "pace2.service"
+    "tsnet-proxy-ai.service"
+  ];
+assert rakku.sops.secrets.ai-gateway-key-pace-rakku.mode == "0400";
+assert lib.elem "pace-rakku:${rakku.sops.secrets.ai-gateway-key-pace-rakku.path}"
+  rakku.systemd.services.ai-gateway.serviceConfig.LoadCredential;
 assert unit.serviceConfig.StateDirectory == "pace2";
 assert unit.serviceConfig.User == "pace2";
 assert
@@ -21,6 +44,7 @@ assert
     (credential "simon")
     (credential "laure")
     "simplefin-access-url:${rakku.sops.secrets.simplefin-access-url.path}"
+    "pace-model-key:${rakku.sops.secrets.ai-gateway-key-pace-rakku.path}"
   ];
 assert unit.serviceConfig.ProtectSystem == "strict";
 assert unit.serviceConfig.ReadWritePaths == [ "/var/lib/pace2" ];

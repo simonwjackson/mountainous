@@ -37,7 +37,7 @@ assert all(
 a = settings["gateway_keys"][0]
 if production:
     pi_hosts = json.loads(sys.argv[4])
-    assert len(settings["gateway_keys"]) == 6 + len(pi_hosts)
+    assert len(settings["gateway_keys"]) == 7 + len(pi_hosts)
     assert a["name"] == "assistant@rakku"
     assert a["models"] == [
         "claude-opus-5-5",
@@ -103,6 +103,13 @@ if production:
         "dialects": ["messages", "systemone"],
         "models": ["claude-opus-5-5", "jev"],
         "requests_per_minute": 120,
+    }
+    assert keys["pace@rakku"] == {
+        "name": "pace@rakku",
+        "key_file": f"{credential_dir}/pace-rakku",
+        "dialects": ["chat_completions"],
+        "models": ["gemini-3.8-flash-high"],
+        "requests_per_minute": 10,
     }
     assert keys["korri@zao"] == {
         "name": "korri@zao",
