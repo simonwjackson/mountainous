@@ -17,8 +17,7 @@ missing versus unavailable. Keep ratings/worries out of USER.md and MEMORY.md.
 Never create a separate tomorrow file or second capture inbox. Tomorrow lives
 in tonight's dated block, headed with the next civil date. The morning reads
 that same source. Interim projects replace only the missing Atlas status/list,
-not Forgerie's activity or running state. Mark the list “interim, Atlas not
-connected”. Use stable locally unique IDs (safe letters/digits/dash), preserve
+not Forgerie's activity or running state. Mark the list “interim, Atlas retired and offline”. Use stable locally unique IDs (safe letters/digits/dash), preserve
 IDs on park/resume and names on unrelated edits. Don't change pinned user
 fields without his request. Migration later must reconcile, not duplicate it.
 Crashes and policy are independent of the zone projection. No file starts

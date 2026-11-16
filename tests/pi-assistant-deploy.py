@@ -14,11 +14,13 @@ loader.exec_module(deploy)
 
 class RestartSelection(unittest.TestCase):
     def test_paused_only_restarts_live_apps_and_atlas(self):
-        self.assertEqual(deploy.restart_units(False), ["assistant-app-*", "atlas"])
+        self.assertEqual(
+            deploy.restart_units(False, True), ["assistant-app-*", "atlas"]
+        )
 
     def test_enabled_preserves_runtime_restart_selection(self):
         self.assertEqual(
-            deploy.restart_units(True),
+            deploy.restart_units(True, True),
             [
                 "assistant-app-*",
                 "pi-assistant-simon",
@@ -29,10 +31,19 @@ class RestartSelection(unittest.TestCase):
             ],
         )
 
+    def test_retired_atlas_only_restarts_live_apps_when_instances_paused(self):
+        self.assertEqual(deploy.restart_units(False, False), ["assistant-app-*"])
+
+    def test_retired_atlas_does_not_disable_enabled_pi_instances(self):
+        self.assertEqual(
+            deploy.restart_units(True, False), deploy.restart_units(True, True)[:-1]
+        )
+
     def test_invalid_configuration_fails_closed(self):
         for value in (None, "false", 0, {}):
-            with self.subTest(value=value), self.assertRaises(ValueError):
-                deploy.restart_units(value)
+            for flags in ((value, False), (False, value)):
+                with self.subTest(flags=flags), self.assertRaises(ValueError):
+                    deploy.restart_units(*flags)
 
 
 if __name__ == "__main__":

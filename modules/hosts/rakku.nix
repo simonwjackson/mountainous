@@ -429,7 +429,8 @@ in
           cliproxyapiKeyFile = config.sops.secrets.ai-gateway-key-assistant-rakku.path;
           braveApiKeyFile = config.sops.secrets.pi-assistant-brave-api-key.path;
           # Atlas, the shared planning module (sandbox/atlas), for every person.
-          atlas = { };
+          # Retired, not deleted: retain pi-atlas and its persistent bind mount.
+          atlas.enable = false;
           # The groceries service app on Rakku keeps its existing tailnet node.
           groceries = {
             url = "https://groceries.hummingbird-lake.ts.net";

@@ -237,6 +237,10 @@ in
         else
           throw "pi-assistant: instance resource contract failed";
       checks.pi-assistant =
+        assert import ../tests/pi-assistant-atlas.nix {
+          flake = self;
+          inherit lib;
+        };
         assert import ../tests/pi-assistant-runtime.nix {
           flake = self;
           inherit lib;
@@ -343,7 +347,7 @@ in
         # Atlas is a module: its manifest supplies tools, risks, capabilities
         # and the default view, so the entry names only where it is. The
         # Household instance has no person, and modules need one.
-        ++ lib.optional (cfg.atlas != null && instances.${name}.person != null) {
+        ++ lib.optional (cfg.atlas != null && cfg.atlas.enable && instances.${name}.person != null) {
           id = "atlas";
           title = "Atlas";
           url = "http://127.0.0.1:${toString cfg.atlas.port}/mcp";
@@ -701,6 +705,11 @@ in
         atlas = lib.mkOption {
           type = lib.types.nullOr (
             lib.types.submodule {
+              options.enable = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Run Atlas and advertise it to personal instances. Disabling retains its user, group and persistent state mount for a later explicit restore.";
+              };
               options.port = lib.mkOption {
                 type = lib.types.port;
                 default = 3180;
@@ -1044,8 +1053,9 @@ in
             # Its own user and state, loopback only. People are told apart by
             # the x-assistant-person label, a courtesy, not a security boundary.
             atlas = {
+              enable = cfg.atlas.enable;
               description = "Atlas, the shared planning module";
-              wantedBy = [ "multi-user.target" ];
+              wantedBy = lib.optional cfg.atlas.enable "multi-user.target";
               wants = [ "network-online.target" ];
               after = [ "network-online.target" ];
               environment = {

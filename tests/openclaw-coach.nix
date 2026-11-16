@@ -7,6 +7,7 @@ let
   ref = name: builtins.readFile (root + "/references/${name}.md");
   pointer = builtins.readFile ../lib/openclaw-skills/simon/wind-down/references/therapy.md;
 in
+assert lib.hasInfix "Atlas is retired and offline" skill;
 assert lib.pathExists (root + "/SKILL.md");
 assert lib.hasInfix "name: coach" skill;
 assert lib.hasInfix "Simon-only" skill;

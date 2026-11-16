@@ -10,6 +10,10 @@ let
   skill = builtins.readFile (root + "/SKILL.md");
   ref = name: builtins.readFile (root + "/references/${name}.md");
 in
+assert lib.hasInfix "Atlas is retired and offline" (ref "not-connected");
+assert lib.hasInfix "Atlas is retired and offline" (ref "day");
+assert lib.hasInfix "Atlas retired and offline" (ref "storage");
+assert !(lib.hasInfix "Owned Atlas MCP reads/writes" (ref "not-connected"));
 assert job.declarationKey == "mountainous:wind-down";
 assert job.enabled && job.agentId == "main";
 assert

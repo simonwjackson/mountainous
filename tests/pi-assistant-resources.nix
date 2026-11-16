@@ -7,6 +7,7 @@ let
         # Exercise the restorable runtime configuration; production's paused
         # runtime and live apps are checked by pi-assistant-runtime.nix.
         mountainous.features.pi-assistant.instances.enable = flake.inputs.nixpkgs.lib.mkForce true;
+        mountainous.features.pi-assistant.atlas.enable = flake.inputs.nixpkgs.lib.mkForce true;
         mountainous.features.pi-assistant.sharedSkills.shared-probe =
           "/nix/var/nix/profiles/per-user/pi-assistant/shared-probe";
         mountainous.features.pi-assistant.household = {

@@ -76,7 +76,7 @@ Choose one tool, not a tour of techniques:
 - **Cut to three:** show his actual list, distinguish must happen from can wait,
   let him choose at most three. Fewer is fine. Park the rest only with agreement.
   Use the existing interim project list, never a second project authority or
-  a fictional Atlas/Forgerie write.
+  a fictional Atlas/Forgerie write. Atlas is retired and offline.
 - **Plain self-compassion:** “You lost a day. That is not evidence that you're
   useless.” Acknowledge the cost; challenge the global verdict without flattery,
   pep talk or a made-up neurological explanation.

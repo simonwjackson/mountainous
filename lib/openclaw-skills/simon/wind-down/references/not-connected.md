@@ -1,15 +1,15 @@
 # Connection map and honest degradation
 
-Do not call the stopped Logbook, the paused Pi assistant, Atlas or Laure's
+Do not call the stopped Logbook, the paused Pi assistant, retired/offline Atlas or Laure's
 tools. Do not install ClawHub skills, add exec or place keys in OpenClaw.
 Connection/config changes go through Nix and their own tested boundaries.
 
 | Original feature | Flakey now: exact honest note | What would connect it later |
 |---|---|---|
-| Atlas plans/picks and done trail | “Atlas is not connected; planned picks come from last night's note, and done/slipped from what you tell me.” | Owned Atlas MCP reads/writes, stable project/action IDs, key-based idempotency and verified read-back |
-| Atlas ideas/actions/private flags/project filing | “Captured privately here, not filed in Atlas.” | add_idea/add_action/link/update adapters with fresh keys for new writes, same key only for retry, reversible filing guesses and pinned-field protection |
-| Atlas tomorrow note/Today | “Tomorrow's note stays in this private daily note; there is no Today view.” | One Atlas-owned tomorrow adapter and Today/day-line seam, reconcile existing notes instead of duplicating |
-| Project status/parking | “This changes only the interim project list, not Atlas or Forgerie.” | Atlas active/on_hold status and verified IDs; Forgerie never owned parked state in the final original |
+| Atlas plans/picks and done trail | “Atlas is retired and offline; planned picks come from last night's note, and done/slipped from what you tell me.” | Retired and offline; no Atlas connection is planned |
+| Atlas ideas/actions/private flags/project filing | “Captured privately here, not filed in Atlas.” | Retired and offline; no Atlas connection is planned |
+| Atlas tomorrow note/Today | “Tomorrow's note stays in this private daily note; there is no Today view.” | Retired and offline; no Atlas connection is planned |
+| Project status/parking | “This changes only the interim project list, not Atlas or Forgerie.” | Atlas is retired and offline; Forgerie never owned parked state in the final original |
 | Private Logbook journal | “Worries stay in this private workspace; the private journal is not connected.” | An approved owner-only journal tool with typed schema, confirmed receipts and no shared destination |
 | Laure's Household view | “Household is not connected; nothing is sent to Laure.” | A separately approved privacy-filtered summary channel; zone, zone-only trend, plain runway/reasons, what would help and tomorrow shape only; never ratings, body readings or raw journal |
 | Forgerie counts/work-personal activity | “Project hours and late-night counts are unavailable, not zero.” | Authenticated exporter of per-project/per-hour positive/explicit-zero counts; known IDs and work/personal classification, not open Forgerie API to other hosts |

@@ -15,7 +15,8 @@ is one closure under /nix/var/nix/profiles/per-user/pi-assistant/application:
   scripts/pi-assistant-deploy install    build, copy to Rakku, set the profile
   scripts/pi-assistant-deploy install --restart   ...and restart the units
 
-With instances.enable=false, --restart restarts apps/Atlas only, not Pi or tsgo.
+With instances.enable=false, --restart skips Pi and tsgo. Atlas restarts only
+when atlas.enable=true. Retiring either runtime never removes its profile.
 
 Each source is the committed tip of a branch (default main), never a dirty
 tree. The web app builds against the core of the same run.
@@ -35,10 +36,10 @@ ATLAS = Path.home() / "code/sandbox/atlas"
 PROFILE = "/nix/var/nix/profiles/per-user/pi-assistant/application"
 
 
-def restart_units(instances_enabled):
-    """A profile update must never revive declaratively paused Pi runtimes."""
-    if not isinstance(instances_enabled, bool):
-        raise ValueError("instances.enable must be a boolean")
+def restart_units(instances_enabled, atlas_enabled):
+    """A profile update must never revive declaratively retired runtimes."""
+    if not isinstance(instances_enabled, bool) or not isinstance(atlas_enabled, bool):
+        raise ValueError("instances.enable and atlas.enable must be booleans")
     return (
         ["assistant-app-*"]
         + (
@@ -51,7 +52,7 @@ def restart_units(instances_enabled):
             if instances_enabled
             else []
         )
-        + ["atlas"]
+        + (["atlas"] if atlas_enabled else [])
     )
 
 
@@ -147,7 +148,9 @@ def main():
                     "nix",
                     "eval",
                     "--json",
-                    f"{ROOT}#nixosConfigurations.rakku.config.mountainous.features.pi-assistant.instances.enable",
+                    f"{ROOT}#nixosConfigurations.rakku.config.mountainous.features.pi-assistant",
+                    "--apply",
+                    "cfg: { instances = cfg.instances.enable; atlas = cfg.atlas != null && cfg.atlas.enable; }",
                 ]
             )
         )
@@ -159,7 +162,7 @@ def main():
                 "-n",
                 "systemctl",
                 "restart",
-                *restart_units(enabled),
+                *restart_units(enabled["instances"], enabled["atlas"]),
             ]
         )
 
