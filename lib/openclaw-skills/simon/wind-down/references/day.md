@@ -103,6 +103,7 @@ Draw ScaleView's zone word, 28-day zone trend, runway and reasons. Include the
 checkable **working table** from scale.md even if ChargeRead already appeared.
 Name amber or red once, plainly, with reasons and uncertainty. List missing
 signals. Never diagnose, invent a runway or treat partial green as reassurance.
+At amber/red, load coach through therapy.md; name it once, not a second warning.
 Ask about a possible missed crash only as an optional confirmation, never
 require Simon to declare one. Respect the 14-day quiet period.
 
@@ -115,6 +116,7 @@ Ask Simon to seed it in his words if useful. Last touched is an explicit
 reported date, not this read's date. Hours and seven daily occupied-hour cells
 are missing until an activity route exists; do not draw zeros for them.
 
+Load coach through therapy.md for choosing what to park.
 Offer to park **at most three** active projects, each with a short contextual
 reason, never auto-park from a count. Park means on_hold, not deleted or stopped
 in Forgerie. On explicit agreement update that project's stable ID in the list,
@@ -146,6 +148,8 @@ Atlas add_idea/add_action and private journal entries are not connected. Save
 these bins in the private daily block instead, clearly labelled **not filed in
 Atlas / not in the private journal**. CaptureSorted.saved becomes true only
 after daily-note write/read-back, not after sorting. Before that say “noted”.
+For worries, load coach through therapy.md and offer one ACT unhooking move;
+no worksheet or longer emotional interview. A decline ends that move.
 Calendar drafts remain solely in conversation under the calendar skill.
 Never share worries, deeply private reasons or raw capture with Household.
 
@@ -153,12 +157,13 @@ Never share worries, deeply private reasons or raw capture with Household.
 
 One contextual free-text question. Route useful ideas, concrete to-dos and
 worries as Capture, not a second inbox. Deeper belief/religion topics wait
-until after the close. Therapy methods apply only if separately approved.
+until after the close as ordinary Flakey, never coaching.
 
 ### tomorrow
 
 This is a short note and **at most 3 must-dos**, not the complete morning plan.
 Simon picks them; never promote calendar events or every captured to-do.
+Load coach through therapy.md to cut the list to three.
 If he gives more than three, let him select three; retain the rest as To-dos.
 Read next civil date's calendar_busy and all owned calendar_events. Draw date,
 known headline if supported, local blocks and calendar-free windows ≥45 minutes

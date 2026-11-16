@@ -28,8 +28,9 @@ Connection/config changes go through Nix and their own tested boundaries.
   evidence. Its explicit energy/mood check-in is the sole wind-down write
   exception; storage documents scale encoding, receipts and failure handling.
 - Private fs/memory stores daily blocks, interim projects/crashes/policy and
-  latest-zone projection. Therapy is installed **off**, not automatically
-  approved. show_widget/ask_user/progress_card provide today's step UI.
+  latest-zone projection. Coach is live at its four daily boundaries and Sunday
+  patterns/crash-plan review. show_widget/ask_user/progress_card provide today's
+  step UI; no therapy approval switch remains.
 
 The cost: this is still agent-run arithmetic and conversational workflow, not
 a deterministic service or native workflow/card state machine. Partial inputs

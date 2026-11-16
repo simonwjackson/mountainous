@@ -9,7 +9,7 @@ missing versus unavailable. Keep ratings/worries out of USER.md and MEMORY.md.
 | Path | Authority and contents |
 |---|---|
 | `memory/YYYY-MM-DD.md` | One `## Wind-down` block for the frozen wind-down day: private answers, picks, captures, tomorrow note, weekly close and service receipts |
-| `memory/wind-down/policy.json` | version 2; firstFullRunAt, quietUntil; therapy approval; weekly offer gates, optional last daytime warning date if a future monitor is connected |
+| `memory/wind-down/policy.json` | version 2; firstFullRunAt, quietUntil; weekly offer gates, optional last daytime warning date if a future monitor is connected |
 | `memory/wind-down/latest-zone.json` | Disposable latest projection read by **07:00 brief**, not a second rating store |
 | `memory/wind-down/crashes.json` | version 1; crashes array `{id,start,end,status,source,note?}`; inclusive dates, confirmed decisions, stable IDs |
 | `memory/wind-down/projects.json` | version 1; interim projects array `{id,name,status,kind?,lastTouched?,restartNote?}`; status active/on_hold; explicit last-touched date or null, not inferred hours |
@@ -130,14 +130,13 @@ this failure never blocks closing. Never send the optional private note there.
 
 Initialize policy only after confirmed absence. On first real completed normal
 close set `{version:2,firstFullRunAt:<actual ISO>,quietUntil:<ISO +14 elapsed days>,
-therapy:{enabled:false},weeklyOffers:{}}`. Preserve existing fields on each edit.
+weeklyOffers:{}}`. Preserve existing fields on each edit.
 Do not reset quietUntil at deployment, restart, revision, short mode or tests.
-A missing/unreadable policy is conservative: no zone-driven lighter plan/warning,
-therapy off. Therapy enable requires Simon to read the full therapy reference
-and explicitly say **“I have read and approve the therapy reference; enable it”**.
-Then save `therapy:{enabled:true,approvedAt:<actual ISO>}` and read-back. “Disable
-therapy” sets false with read-back. No environment variable or Nix secret is
-needed for this per-user approval; installing a file does not enable it.
+A missing/unreadable policy is conservative: no zone-driven lighter plan/warning.
+Coach is live independently of this policy. Ignore legacy `therapy` fields;
+never require approval or set a new therapy switch. Coach owns only its private
+`coach/crash-plan.md`, `coach/patterns.md` and minimal `coach/state.json`; see
+its references. Do not copy their contents into daily notes or USER.md/MEMORY.md.
 
 At each full close or explicit scale refresh, after confirmed daily storage,
 write/read-back latest-zone.json:

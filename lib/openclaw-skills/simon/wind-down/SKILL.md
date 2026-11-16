@@ -49,9 +49,11 @@ do not improvise missing instructions or ask Simon to repair the files.
 - After Rate and for scale, crashes or runway: [references/scale.md](references/scale.md).
 - Sunday after Stop or a requested weekly review: [references/week.md](references/week.md).
 - Missing service or dashboard request: [references/not-connected.md](references/not-connected.md).
-- Therapy is **OFF**. Do not load or apply [references/therapy.md](references/therapy.md)
-  until Simon has read it and explicitly approved enabling it; storage defines
-  the approval switch. Ordinary support and crisis safety never depend on it.
+- Coach is **live**. Read [references/therapy.md](references/therapy.md), now a
+  compatibility pointer to coach, at amber/red Scale, Projects choosing what
+  to park, Capture worries (one ACT unhooking move), and Tomorrow (cut to three).
+  Sunday also reviews patterns-note changes and drafts a crash plan if absent.
+  All other steps stay unchanged. No approval switch; safety always applies.
 
 ## Privacy and truth
 

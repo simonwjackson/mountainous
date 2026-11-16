@@ -310,6 +310,10 @@
             host = productionHost;
           };
           assert import ../tests/openclaw-mail-filing.nix { inherit lib host; };
+          assert import ../tests/openclaw-coach.nix {
+            inherit lib;
+            host = productionHost;
+          };
           assert import ../tests/openclaw-wind-down.nix {
             inherit lib;
             host = productionHost;

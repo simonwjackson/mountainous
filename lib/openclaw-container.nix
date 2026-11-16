@@ -573,6 +573,26 @@ in
           ${pkgs.coreutils}/bin/install -m 0444 ${source}/${file} ${destination}/${file}
         '') (lib.attrNames (builtins.readDir source));
     };
+    openclaw-coach-references = lib.mkIf (person.name == "simon") {
+      description = "Install readable declarative coach references";
+      requiredBy = [ "openclaw-gateway.service" ];
+      before = [ "openclaw-gateway.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script =
+        let
+          source = ./openclaw-skills/simon/coach/references;
+          destination = "${person.workspacePath}/.coach-references";
+        in
+        ''
+          ${pkgs.coreutils}/bin/install -d -m 0755 ${destination}
+        ''
+        + lib.concatMapStringsSep "\n" (file: ''
+          ${pkgs.coreutils}/bin/install -m 0444 ${source}/${file} ${destination}/${file}
+        '') (lib.attrNames (builtins.readDir source));
+    };
     # Bootstrap reads reject symlinks outside the workspace. Install real files,
     # not store symlinks. The reader has no file tools to change these documents.
     openclaw-agent-instructions = lib.mkIf (person ? extraAgentInstructions) {

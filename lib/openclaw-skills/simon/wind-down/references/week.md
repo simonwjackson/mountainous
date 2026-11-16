@@ -43,14 +43,21 @@ legacy Charge/Mood 1–5 remain usable as legacy felt data. No mass migration.
    Repeated skips/bounces only support a planning preference with dated
    evidence and explicit feedback; a single skip is not a preference. Never
    silently drop/park an action. Keep this private, not USER.md/MEMORY.md.
-4. **Next week's calendar shape.** Read calendar_busy plus calendars_list and
+4. **Coach notes and crash plan.** Load the live coach through therapy.md. Read
+   `coach/patterns.md` and show this week's changed lines with Keep / Correct /
+   Delete options; no transcripts or copying deleted text into this daily note.
+   If `coach/crash-plan.md` is absent, offer its first draft tonight, Sunday
+   2026-11-15, while well enough, using cards/options one section at a time.
+   Follow coach's patterns and crash-plan references, not a second storage copy.
+   No plan means reduce demands on a crash; never require drafting while down.
+5. **Next week's calendar shape.** Read calendar_busy plus calendars_list and
    each owned calendar_events for **next Monday through Sunday**, actual
    America/Denver offsets. Show dates, named busy blocks, all-day obligations,
    and known open stretches; mark failed/partial dates unknown. Use day's
    interval/gap rules. Do not create seven day plans or infer work locations,
    meetings attended, journeys or consent to fill gaps. Existing calendar
    skill still owns any proposed event, picker, verified Added and Undo.
-5. **One intention.** Ask for one intention for the coming week, in Simon's
+6. **One intention.** Ask for one intention for the coming week, in Simon's
    words. If his reflection already contains one, don't ask again. This is
    not seven obligations, a project assignment or a new morning plan.
 
@@ -71,9 +78,6 @@ happened after another night's close, don't offer again Sunday. No 22:30
 fallback cron exists here; don't pretend it does. A clear topic on another
 night can earn this same once-a-week offer after Stop, not a second gate.
 
-Therapy remains **OFF** until Simon has read and explicitly approved the
-therapy reference and the policy switch is verified. Do **not load or use**
-therapy.md merely because he accepts a talk. With therapy off, offer an
-ordinary deeper conversation, no therapeutic method or automatic activation.
-If enabled, read therapy.md and apply it as Flakey, not a separate persona.
-A decline ends the offer immediately; no nagging or automatic new work.
+This is ordinary Flakey, **not coaching**, even when coach is live. Never
+apply a clinical method or reactivate the retired therapy reference. A decline
+ends the offer immediately; no nagging or automatic new work.
