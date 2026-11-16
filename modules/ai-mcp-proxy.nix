@@ -232,11 +232,14 @@
                 "pace_category_one_off"
                 "pace_changes"
                 "pace_undo"
+                "pace_events"
+                "pace_goal_paid_answer"
               ];
               mcpResources = [
                 "ui://pace/status"
                 "ui://pace/overview"
                 "ui://pace/change"
+                "ui://pace/alerts"
               ];
               bearerCredential = "mcp-pace";
             };
@@ -256,11 +259,14 @@
                 "pace_category_one_off"
                 "pace_changes"
                 "pace_undo"
+                "pace_events"
+                "pace_goal_paid_answer"
               ];
               mcpResources = [
                 "ui://pace/status"
                 "ui://pace/overview"
                 "ui://pace/change"
+                "ui://pace/alerts"
               ];
               bearerCredential = "mcp-pace-laure";
             };
