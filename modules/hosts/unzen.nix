@@ -197,7 +197,7 @@
           };
           # Chosen ahead; towada-convert formats the pool with it.
           uuid = "5b6c01f6-935b-4f22-9667-e16689d76dcb";
-          # Replaceable data (media, games, firmware, Takeout) keeps one copy.
+          # Replaceable data (media, most games, device firmware, Takeout) keeps one copy.
           # What cannot be downloaded again keeps two, on different disks.
           twoCopies = [
             "photos"
@@ -211,6 +211,12 @@
             "knowledge"
             "PLEASE-SORT-SOON"
             "gaming/devices"
+            # Game originals, native builds, and console keys/firmware. Some
+            # originals no longer have another copy outside this pool.
+            "gaming/games/nintendo-switch"
+            "gaming/games/linux-x86-64"
+            "gaming/games/linux-aarch64"
+            "gaming/system"
             "sdc_backup.img.gz"
             ".resession.json"
           ];
