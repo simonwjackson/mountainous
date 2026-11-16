@@ -214,6 +214,7 @@
             # Game originals, native builds, and console keys/firmware. Some
             # originals no longer have another copy outside this pool.
             "gaming/games/nintendo-switch"
+            "gaming/games/nintendo-switch-2"
             "gaming/games/linux-x86-64"
             "gaming/games/linux-aarch64"
             "gaming/system"
