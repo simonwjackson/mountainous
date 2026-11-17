@@ -151,6 +151,8 @@ in
     mailFilingJob = import ./openclaw-mail-filing.nix;
     enableEbaySelling = true;
     enablePaceAlerts = true;
+    # Canva's remote MCP server with each sender's own Canva sign-in (lib/openclaw-canva.nix).
+    enableCanva = true;
     # Like Laure's: a changed container switches in place, so only its changed
     # units restart. A new gateway config still restarts the gateway (its
     # restart trigger); a new Session Share peer restarts only that source.

@@ -465,6 +465,9 @@ in
             // {
               claw-image-kit = imageKitServer;
             }
+            // lib.optionalAttrs (person.enableCanva or false) {
+              canva = import ./openclaw-canva.nix;
+            }
             // lib.listToAttrs (
               map (
                 server:

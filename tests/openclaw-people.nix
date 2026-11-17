@@ -55,7 +55,9 @@ let
       mcp = c.mcp // {
         servers =
           builtins.removeAttrs c.mcp.servers (
-            (lib.attrNames person.mcpServers) ++ map (s: s.name) (person.extraMcpServers or [ ])
+            (lib.attrNames person.mcpServers)
+            ++ map (s: s.name) (person.extraMcpServers or [ ])
+            ++ lib.optional (person.enableCanva or false) "canva"
           )
           // {
             # The image kit reads each person's own workspace; nothing else differs.
@@ -188,7 +190,12 @@ let
         ]
         ++ lib.attrNames person.mcpServers
         ++ map (server: server.name) (person.extraMcpServers or [ ])
+        ++ lib.optional (person.enableCanva or false) "canva"
       );
+    # Canva is the one direct server: exactly lib/openclaw-canva.nix, per-sender OAuth, no key.
+    assert
+      (c.mcp.servers.canva or null)
+      == (if person.enableCanva or false then import ../lib/openclaw-canva.nix else null);
     # Every tool server is a row that admits this node (lib/ai-mcp-rows.nix):
     # the row's server name, its URL, exactly its tools, and no credential.
     # A server on a row that does not admit this node, or left on a per-tool
@@ -207,7 +214,7 @@ let
         }
     ) (lib.attrNames mine);
     assert
-      lib.attrNames (lib.filterAttrs (_: server: server ? url) c.mcp.servers)
+      lib.attrNames (lib.filterAttrs (name: server: server ? url && name != "canva") c.mcp.servers)
       == lib.sort builtins.lessThan (lib.mapAttrsToList (_: spec: spec.server) mine);
     assert c.plugins.entries.session-share.config.share.groups == [ "Shared" ];
     assert c.plugins.entries.session-share.enabled && lib.elem "session-share" c.plugins.allow;

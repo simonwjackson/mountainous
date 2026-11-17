@@ -603,9 +603,13 @@
               gateway.config.mcp.servers
               laure.mcp.servers
             ];
+          # Every remote server is a front-door row, except Canva (lib/openclaw-canva.nix).
           assert lib.all (s: !(s ? url) || lib.hasPrefix "https://ai.hummingbird-lake.ts.net/mcp/" s.url) (
-            lib.attrValues gateway.config.mcp.servers ++ lib.attrValues laure.mcp.servers
+            lib.attrValues (builtins.removeAttrs gateway.config.mcp.servers [ "canva" ])
+            ++ lib.attrValues (builtins.removeAttrs laure.mcp.servers [ "canva" ])
           );
+          assert gateway.config.mcp.servers.canva == import ../lib/openclaw-canva.nix;
+          assert !(laure.mcp.servers ? canva);
           assert !(lib.hasInfix "ai-gateway-key" (builtins.toJSON laure.mcp));
           assert !(lib.hasInfix "scryer-password" (builtins.toJSON laure.mcp));
           assert lib.all (a: !(lib.any (d: lib.hasPrefix "claw-websearch" d) (a.tools.deny or [ ]))) (
