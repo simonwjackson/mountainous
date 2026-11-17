@@ -3497,3 +3497,45 @@ See [wind-down-full.md](wind-down-full.md) for the original-feature map,
 SparkyFitness energy/mood encoding, sandbox-safe reference installation,
 Yari generation 70, desktop/phone acceptance, complete TEST cleanup, unchanged
 21:00 job and forward-only rollback. Snowy received nothing new.
+
+## Image kit on both gateways — 2026-11-17
+
+`claw-image-kit` (`packages/claw-image-kit`, `lib/claw-image-kit.nix`) is a
+local stdio MCP server in each container with ten fixed tools: `image_info`,
+`fit_page`, `crop`, `split`, `enlarge`, `make_transparent`, `vectorize`,
+`render_svg`, `compare`, `pdf`. It runs in the container, not on the front
+door, because its inputs are files only that container holds. It reads only
+the person's workspace and `/var/lib/openclaw/media`, writes only new files in
+`/var/lib/openclaw/media/image-kit`, and never overwrites. `group:runtime`
+stays denied. The shared skill `lib/openclaw-skills/shared/image-iteration`
+carries the iteration rules and explains look-only delivery turns.
+
+Changing it changes both gateways' `openclaw.json`, so both gateways restart
+once. Deploy with a guarded switch that waits until both are idle, requires
+both healthy within 180 s and both containers to switch in place, and rolls
+back to the previous system otherwise.
+
+### Deployment evidence
+
+- Landed on cairn as `e597629d` (with `5af70e9f`, which fixed the
+  `openclaw` check left expecting six dialects by `298e7ff5`).
+- Built natively on Yari, builders off, both gateways idle; ARM
+  `openclaw-config` (OpenClaw `config validate`) passed. Rakku's derivation
+  was unchanged and it was not built or switched.
+- Changed units: host `container@claw-simon`, `container@openclaw`; in each
+  container only `openclaw-gateway.service` and `openclaw.json`.
+- Yari `5a682a24…` → `p1f8li3y…` (generation 82) at 06:41 UTC. Switch rc 4:
+  flakey's `openclaw-wind-down` reconcile ran while its gateway restarted,
+  failed once and succeeded on its automatic retry (NRestarts 1). Both
+  gateways healthy after 20.6 s; neither container restarted; Laure's 11
+  sessions and 4 paired devices unchanged. No rollback.
+- Acceptance: each container's configured server answers initialize and
+  `tools/list` with exactly the ten tools, matching `tools.allow`. On flakey
+  only: `fit_page` on a synthetic picture gave 2550×3300 px at 300 dpi;
+  `/etc/passwd` was refused as `not_allowed`; one agent turn in the new
+  session `agent:main:imagekit-acceptance-20261117T064355Z` called
+  `claw-image-kit__fit_page` with no failures. Test files removed. Laure's
+  files were not read.
+
+Rollback: on Yari, `nixos-rebuild switch --rollback` (both gateways restart
+once), or revert `e597629d` and deploy the same way.
