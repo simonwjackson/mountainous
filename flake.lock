@@ -9,14 +9,14 @@
       "locked": {
         "lastModified": 1794890827,
         "narHash": "sha256-pxzEg+sKhpBnGXDAUf/gPTH7qtoL7sOf5qk5ezFuHOs=",
-        "ref": "feat/search-cascade",
+        "ref": "main",
         "rev": "027a106fd7329994ed110f3b42ca3319e842db39",
         "revCount": 31,
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
       },
       "original": {
-        "ref": "feat/search-cascade",
+        "ref": "main",
         "rev": "027a106fd7329994ed110f3b42ca3319e842db39",
         "type": "git",
         "url": "ssh://git@github.com/simonwjackson/ai-gateway"
