@@ -438,6 +438,20 @@
               "view_image"
               "image_generate"
               "bundle-mcp"
+            ]
+            ++ map (tool: "claw-image-kit__${tool}") [
+              "image_info"
+              "fit_page"
+              "crop"
+              "split"
+              "enlarge"
+              "make_transparent"
+              "vectorize"
+              "render_svg"
+              "compare"
+              "pdf"
+            ]
+            ++ [
               "claw-scryer-simon__scryer_search"
               "claw-scryer-simon__scryer_title"
               "claw-scryer-simon__scryer_add"
@@ -741,6 +755,7 @@
               "images"
               "transcription"
               "speech"
+              "search"
             ];
           assert key.requests_per_minute == 300;
           pkgs.runCommand "openclaw-isolation" {
@@ -764,7 +779,7 @@
               export HOME=$TMPDIR OPENCLAW_STATE_DIR=$TMPDIR/state
               export OPENCLAW_CONFIG_PATH="$system/etc/openclaw/openclaw.json"
               export FRONT_DOOR_API_KEY=test-only OPENCLAW_GATEWAY_PASSWORD=test-only
-              jq -e '.gateway.publicOrigin == "https://snowy.hummingbird-lake.ts.net" and .gateway.auth.trustedProxy.allowUsers == ["chancerellelaure@gmail.com"] and .gateway.roles.default == "laure" and (.gateway.roles.definitions | keys) == ["laure"] and (.agents.entries | keys) == ["laure"] and .agents.defaults.workspace == "/var/lib/openclaw/workspace-laure" and (.mcp.servers | keys) == ["claw-family-calendar","claw-maps","claw-scryer-laure","claw-websearch","pace"] and .plugins.entries["session-share"].enabled' "$OPENCLAW_CONFIG_PATH"
+              jq -e '.gateway.publicOrigin == "https://snowy.hummingbird-lake.ts.net" and .gateway.auth.trustedProxy.allowUsers == ["chancerellelaure@gmail.com"] and .gateway.roles.default == "laure" and (.gateway.roles.definitions | keys) == ["laure"] and (.agents.entries | keys) == ["laure"] and .agents.defaults.workspace == "/var/lib/openclaw/workspace-laure" and (.mcp.servers | keys) == ["claw-family-calendar","claw-image-kit","claw-maps","claw-scryer-laure","claw-websearch","pace"] and .plugins.entries["session-share"].enabled' "$OPENCLAW_CONFIG_PATH"
               ${gateway.package}/bin/openclaw config validate
               touch $out
             '';
