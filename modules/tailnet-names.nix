@@ -383,9 +383,7 @@
                 +
                   lib.optionalString (cfg.scryerPasswordFile != null)
                     " -scryer-password-file %d/scryer-password -scryer-username ${lib.escapeShellArg cfg.scryerUsername}"
-                + lib.optionalString (
-                  cfg.webSearchKeyFile != null
-                ) " -websearch-key-file %d/websearch-key";
+                + lib.optionalString (cfg.webSearchKeyFile != null) " -websearch-key-file %d/websearch-key";
               Restart = "always";
               RestartSec = "30s";
               NoNewPrivileges = true;
