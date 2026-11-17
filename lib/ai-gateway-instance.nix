@@ -33,6 +33,9 @@
   tailnetDescription,
   tailnetMCPRoutes ? { },
   tailnetMCPRouting ? false,
+  # The front door's /v1/search cascade, tried in order (ai-gateway ADR 0009).
+  # Empty: no search section, and /v1/search answers 503.
+  searchSources ? [ ],
 }:
 {
   config,
@@ -53,7 +56,11 @@ let
     "api.typesafe.ai"
     "api.upstage.ai"
     "generativelanguage.googleapis.com"
-  ];
+  ]
+  # Google Search grounding cites through redirect URLs. The front door reads
+  # each redirect's Location (HEAD, then GET, never followed) so clients get
+  # the page URL; no credential is sent.
+  ++ lib.optional (searchSources != [ ]) "vertexaisearch.cloud.google.com";
   # Reject private/reserved destinations even when an allowed name resolves
   # there. -n on dstdomain also prevents reverse-DNS approval of IP literals.
   nonPublic = [
@@ -282,6 +289,7 @@ let
       "${elevenlabsSpeech.model.id}" = elevenlabsSpeech.price;
     }
     // modelPrices;
+    ${if searchSources != [ ] then "search" else null}.sources = searchSources;
     gateway_keys = map (
       key:
       (lib.removeAttrs key [

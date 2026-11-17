@@ -406,7 +406,7 @@ change. Only the URLs move. OpenClaw holds no key.
 | `/mcp/family-calendar-laure` | Laure's `claw` `nkT3Yhzyy121CNTRL` | `claw-family-calendar` (Laure) | Google app `127.0.0.1:3171/mcp` | `family_calendar_events` | none (loopback) | `claw-family-calendar` `nw4DmtiXHN11CNTRL` |
 | `/mcp/scryer-laure` | `claw` | `claw-scryer-laure` (Laure) | native: `https://scryer.hummingbird-lake.ts.net/graphql` as `laure` | the 5 Scryer tools, plus `ui://scryer/media.html` | sops `scryer-password-laure` as `mcp-scryer-laure` | `claw-scryer-laure` `nn4JrFbREK11CNTRL` |
 | `/mcp/maps` | `flakey` `nbQJZMcewG11CNTRL` and `claw` | `claw-maps` (both) | Maps app `127.0.0.1:3172/mcp` | `travel_time` | none (loopback) | `claw-maps` `naQB5pjsTM11CNTRL` |
-| `/mcp/websearch` | `flakey` and `claw` | `claw-websearch` (both) | native: `http://127.0.0.1:8430/v1/responses`, model `gpt-6.1-sol` | `web_search` | sops `ai-gateway-key-openclaw-yari` (the gateways' own `openclaw@yari` key) as `mcp-websearch` | `claw-websearch` `nut8ipE3di11CNTRL` |
+| `/mcp/websearch` | `flakey` and `claw` | `claw-websearch` (both) | native: `http://127.0.0.1:8430/v1/search` (the front door picks the source; see "Web search source cascade" below) | `web_search` | sops `ai-gateway-key-openclaw-yari` (the gateways' own `openclaw@yari` key) as `mcp-websearch` | `claw-websearch` `nut8ipE3di11CNTRL` |
 
 Afterwards `tailscale status` shows `ai`, `ai-staging`, `flakey` and `claw`
 for this feature, and no `claw-*` tool node. (Laure's node was later renamed
@@ -425,9 +425,10 @@ the old node's request did).
   whose caller IDs differ from that list, as it refuses an unknown row or tool.
 - The router gains a native **web search** row kind beside loopback and
   Scryer rows. It runs the same `websearch.go` handler as the `claw-websearch`
-  endpoint: only `web_search`, only the fixed loopback front-door Responses URL
-  (checked by the table's type and by the router), a granted model, and the key
-  as the row's credential. The router refuses an empty, multi-line or default
+  endpoint: only `web_search`, only the fixed loopback front-door URL
+  (checked by the table's type and by the router), and the key as the row's
+  credential. (Since 2026-11-17 the URL is `/v1/search` and the row names no
+  model; see "Web search source cascade".) The router refuses an empty, multi-line or default
   key, as for the other credentials. A row has exactly one of a backend, a
   Scryer account or web search.
 - `tsnet-proxy-ai` loads two new credentials, `mcp-scryer-laure` and
@@ -462,6 +463,42 @@ the rows that admit its node, with the row's tools and no credential. The Go
 tests (49) cover the web search row: both callers served, others 403 without
 reaching the front door, only the row's key upstream, 19 invalid rows, and a
 default key that leaves `/v1` up with every row at 404.
+
+### Web search source cascade (2026-11-17)
+
+Until 2026-11-17 the row called the front door's `/v1/responses` with the
+fixed model `gpt-6.1-sol`. Every search failed while that Codex plan was in
+weekly cooldown (until 2026-11-21 01:12 UTC). Now:
+
+- The row calls `http://127.0.0.1:8430/v1/search` with the same
+  `openclaw@yari` key, which has the new `search` dialect. The row has no
+  `model`; `tailnet-names.nix`, the route table, `routes.go` and the endpoint
+  mode (`-websearch-key-file`, no `-websearch-model`) all dropped it.
+- The front door's `search.sources` (`modules/ai-gateway.nix`) are tried in
+  order: `antigravity-gemini` (free, Google Search grounding through the
+  Antigravity login), `claude` (`claude-sonnet-5-5`), `codex`
+  (`gpt-6.1-sol`), then `brave` (paid, configured off). The front door skips a
+  source in cooldown without a call and falls through silently on a rate
+  limit, an error, a timeout or an empty answer. See ai-gateway ADR 0009 and
+  its `docs/operations.md`, "Web search".
+- `web_search` keeps its name and input (`query`, optional `max_results`
+  1–10). It now returns only a result list, `{"results":[{title,url,snippet}]}`,
+  as JSON text and as `structuredContent`; there is no written answer. A front
+  door 429 (every source rate limited) becomes `kind: "rate_limited"` with
+  `retry_after` seconds. Other failures keep the generic message and disclose
+  no upstream body.
+- The front door's egress allowlist adds `vertexaisearch.cloud.google.com`, so
+  it can read Google grounding redirects' `Location` and return the page URL.
+  It sends no credential there. Brave's host is not added while Brave is off.
+- Enabling Brave later needs a `key_file` (the only Brave key today is Pi's
+  `pi-assistant-brave-api-key`), its `LoadCredential`, `api.search.brave.com`
+  on the egress allowlist, and a reviewed price.
+- Changing `websearch.go` and `main.go` changes the shared `media-tsnet-proxy`
+  store path. `tests/ai-mcp-proxy-units-before.json` was updated to the new
+  path only; no other unit setting changed.
+- The `flake.nix` `ai-gateway` input points at the front door's
+  `feat/search-cascade` head for testing. Landing re-pins it to the landed
+  revision.
 
 ### Verification before approval
 

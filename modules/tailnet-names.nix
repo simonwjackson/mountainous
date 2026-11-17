@@ -91,7 +91,7 @@
               }
               // lib.optionalAttrs (row.webSearch != null) {
                 webSearch = {
-                  inherit (row.webSearch) url model;
+                  inherit (row.webSearch) url;
                   keyCredential = "mcp-${tool}";
                 };
               }
@@ -171,12 +171,7 @@
               webSearchKeyFile = lib.mkOption {
                 type = lib.types.nullOr lib.types.str;
                 default = null;
-                description = "Enable native web search MCP with this gateway LoadCredential key. Backend is the loopback front-door Responses URL.";
-              };
-              webSearchModel = lib.mkOption {
-                type = lib.types.str;
-                default = "gpt-6.1-sol";
-                description = "Fixed granted model for native web search.";
+                description = "Enable native web search MCP with this gateway LoadCredential key. Backend is the loopback front-door search URL; the key needs the search dialect.";
               };
               mcpRouting.enable = lib.mkEnableOption "reloadable path-prefixed MCP routing";
               mcpRoutes = lib.mkOption {
@@ -211,17 +206,13 @@
                       };
                       webSearch = lib.mkOption {
                         default = null;
-                        description = "Serve model-native web search natively, as a webSearchKeyFile endpoint does: no loopback MCP server; the front door's Responses key is the row's credential (mcp-<row>). The only tool is web_search.";
+                        description = "Serve web search natively, as a webSearchKeyFile endpoint does: no loopback MCP server; the proxy calls the front door's /v1/search, which picks the search source. A gateway key with the search dialect is the row's credential (mcp-<row>). The only tool is web_search.";
                         type = lib.types.nullOr (
                           lib.types.submodule {
                             options = {
                               url = lib.mkOption {
-                                type = lib.types.strMatching "http://127\\.0\\.0\\.1:8430/v1/responses";
-                                description = "The fixed loopback front-door Responses URL.";
-                              };
-                              model = lib.mkOption {
-                                type = lib.types.strMatching "[a-zA-Z0-9._-]+";
-                                description = "Fixed granted model.";
+                                type = lib.types.strMatching "http://127\\.0\\.0\\.1:8430/v1/search";
+                                description = "The fixed loopback front-door search URL.";
                               };
                               keyFile = lib.mkOption {
                                 type = lib.types.strMatching "/run/[^:]+";
@@ -394,7 +385,7 @@
                     " -scryer-password-file %d/scryer-password -scryer-username ${lib.escapeShellArg cfg.scryerUsername}"
                 + lib.optionalString (
                   cfg.webSearchKeyFile != null
-                ) " -websearch-key-file %d/websearch-key -websearch-model ${lib.escapeShellArg cfg.webSearchModel}";
+                ) " -websearch-key-file %d/websearch-key";
               Restart = "always";
               RestartSec = "30s";
               NoNewPrivileges = true;

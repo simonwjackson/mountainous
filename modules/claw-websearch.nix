@@ -7,16 +7,16 @@ in
   nixos.modules.claw-websearch =
     { config, lib, ... }:
     lib.mkIf config.mountainous.features.ai-gateway.enable {
-      # Both gateways' web search, on the production front door (stage 7): the
-      # proxy runs the same search code with the same key, URL and model as the
-      # retired claw-websearch node. It reuses the gateways' granted Responses
-      # key; no new secret, grant, search vendor or store value is needed.
+      # Both gateways' web search, on the production front door (stage 7). The
+      # proxy calls the front door's /v1/search with the gateways' own
+      # openclaw@yari key (granted the search dialect in modules/ai-gateway.nix).
+      # The front door picks the source: free Google grounding first, then the
+      # Claude and Codex subscriptions. The row names no model or source.
       mountainous.tailnetNames.ai.mcpRoutes.websearch = {
         callerNodeIds = map (node: nodes.${node}) row.callers;
         mcpTools = row.tools;
         webSearch = {
-          url = "http://127.0.0.1:8430/v1/responses";
-          model = "gpt-6.1-sol";
+          url = "http://127.0.0.1:8430/v1/search";
           keyFile = config.sops.secrets.ai-gateway-key-openclaw-yari.path;
         };
       };
@@ -36,7 +36,7 @@ in
         assert !(cfg.mountainous.tailnetNames ? claw-websearch);
         assert !(cfg.systemd.services ? tsnet-proxy-claw-websearch);
         # /mcp/websearch on production ai, both gateways' stable IDs, the same
-        # key, Responses URL and model as the retired node.
+        # key as the retired node, and the front door's search URL; no model.
         assert
           builtins.removeAttrs route [ "_module" ] == {
             backend = null;
@@ -49,8 +49,7 @@ in
             bearerCredentialFile = null;
             scryer = null;
             webSearch = {
-              url = "http://127.0.0.1:8430/v1/responses";
-              model = "gpt-6.1-sol";
+              url = "http://127.0.0.1:8430/v1/search";
               keyFile = cfg.sops.secrets.ai-gateway-key-openclaw-yari.path;
             };
           };
@@ -72,12 +71,11 @@ in
             "claw-simon"
             "openclaw"
           ];
+        # The row's key may search; the front door has search sources.
         assert lib.any (
-          grant:
-          grant.name == "openclaw@yari"
-          && lib.elem "responses" grant.dialects
-          && lib.elem route.webSearch.model grant.models
+          grant: grant.name == "openclaw@yari" && lib.elem "search" grant.dialects
         ) cfg.mountainous.features.ai-gateway.settings.gateway_keys;
+        assert cfg.mountainous.features.ai-gateway.settings.search.sources != [ ];
         pkgs.runCommand "claw-websearch-boundary" { nativeBuildInputs = [ pkgs.go ]; } ''
           export HOME=$TMPDIR GOCACHE=$TMPDIR/go-cache CGO_ENABLED=0
           go test -v ${proxy}/mcp-filter.go ${proxy}/websearch.go ${proxy}/websearch_test.go

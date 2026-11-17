@@ -130,8 +130,9 @@
     server = "claw-maps";
     tools = [ "travel_time" ];
   };
-  # Model-native web search, served natively by the proxy with the gateways'
-  # own front-door key (modules/claw-websearch.nix).
+  # Web search through the front door's /v1/search source cascade, served
+  # natively by the proxy with the gateways' own front-door key
+  # (modules/claw-websearch.nix).
   websearch = {
     callers = [
       "flakey"

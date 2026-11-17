@@ -80,6 +80,41 @@ in
               # ElevenLabs API Flash/Turbo, $0.04 per 1K characters, every plan; https://elevenlabs.io/pricing/api, checked 2026-10-27
               price.audio_per_million_characters = 40.0;
             };
+            # Web search for /v1/search: free Google Search grounding through
+            # the Antigravity login first, then the Claude and Codex
+            # subscriptions. Clients never name a source; the front door falls
+            # through silently on cooldowns, rate limits, errors and empty
+            # answers. Codex is last: its plan is the one most often exhausted.
+            # Paid Brave is configured off. Enabling it needs a key_file (the
+            # only Brave key today is Pi's pi-assistant-brave-api-key), its
+            # LoadCredential, api.search.brave.com on the egress allowlist and
+            # a reviewed price; see ai-gateway docs/operations.md.
+            searchSources = [
+              {
+                id = "antigravity-gemini";
+                tier = "free";
+                kind = "login_keeper_responses";
+                model = "gemini-3.8-flash-high";
+              }
+              {
+                id = "claude";
+                tier = "subscription";
+                kind = "login_keeper_responses";
+                model = "claude-sonnet-5-5";
+              }
+              {
+                id = "codex";
+                tier = "subscription";
+                kind = "login_keeper_responses";
+                model = "gpt-6.1-sol";
+              }
+              {
+                id = "brave";
+                tier = "paid";
+                kind = "brave";
+                enabled = false;
+              }
+            ];
             systemoneCharges = {
               # Typesafe: $42/billion input tokens, output free; ~2,400 tokens/call ceiling.
               # https://typesafe.ai/, checked 2026-10-27.
@@ -153,6 +188,9 @@ in
                     "images"
                     "transcription"
                     "speech"
+                    # /mcp/websearch (modules/claw-websearch.nix). Search names
+                    # no model; the model list does not apply to it.
+                    "search"
                   ];
                   models = [
                     "claude-opus-5-5"

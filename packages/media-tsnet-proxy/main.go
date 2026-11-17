@@ -203,8 +203,7 @@ func main() {
 	mcpResources := flag.String("mcp-resources", "", "Exact comma-separated resource URIs for a filtered MCP endpoint")
 	scryerUsername := flag.String("scryer-username", "admin", "Scryer account username")
 	scryerPassword := flag.String("scryer-password-file", "", "Serve account-scoped Scryer MCP using this credential file and the backend GraphQL URL")
-	webSearchKey := flag.String("websearch-key-file", "", "Serve model-native web search MCP using this gateway credential and the backend Responses URL")
-	webSearchModel := flag.String("websearch-model", "gpt-6.1-sol", "Fixed model for native web search")
+	webSearchKey := flag.String("websearch-key-file", "", "Serve web search MCP using this gateway credential and the backend front-door search URL")
 	flag.Parse()
 	if (*mcpResources != "" || *mcpAllowedNodeIDs != "") && *mcpTools == "" {
 		log.Fatal("MCP resources require filtered tools")
@@ -277,14 +276,14 @@ func main() {
 			return err == nil && peer != nil && peer.Node != nil && mcpNodeAllowed(string(peer.Node.StableID), *mcpAllowedNodeIDs)
 		}
 		if *webSearchKey != "" {
-			if backendURL.Scheme != "http" || backendURL.Host != "127.0.0.1:8430" || backendURL.Path != "/v1/responses" || backendURL.RawQuery != "" || backendURL.Fragment != "" || *webSearchModel == "" {
-				log.Fatal("web search requires the fixed loopback front-door Responses URL and a model")
+			if backendURL.Scheme != "http" || backendURL.Host != "127.0.0.1:8430" || backendURL.Path != "/v1/search" || backendURL.RawQuery != "" || backendURL.Fragment != "" {
+				log.Fatal("web search requires the fixed loopback front-door search URL")
 			}
 			key, err := credential(*webSearchKey)
 			if err != nil || key == "" {
 				log.Fatal("web search credential unavailable")
 			}
-			handler = webSearchHandler(newWebSearchClient(backendURL.String(), key, *webSearchModel), verifyPeer)
+			handler = webSearchHandler(newWebSearchClient(backendURL.String(), key), verifyPeer)
 		} else if *scryerPassword != "" {
 			if backendURL.Scheme != "https" || backendURL.RawQuery != "" || backendURL.Fragment != "" {
 				log.Fatal("Scryer requires a fixed HTTPS URL")

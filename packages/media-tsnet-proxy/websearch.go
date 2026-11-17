@@ -5,26 +5,31 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
-	"unicode/utf16"
 	"unicode/utf8"
 )
 
-// The fixed destination and model are deployment policy, never caller input.
-// Requests follow pi-web-access/openai-search.ts's Responses provider shape.
+// The fixed destination is deployment policy, never caller input. The front
+// door's POST /v1/search (the LiteLLM/Perplexity search schema) chooses the
+// search source; this client names no model or source.
 type webSearchClient struct {
-	url, key, model string
-	client          *http.Client
+	url, key string
+	client   *http.Client
 }
 
-func newWebSearchClient(url, key, model string) *webSearchClient {
-	return &webSearchClient{url: url, key: key, model: model, client: &http.Client{
-		Timeout: 60 * time.Second, Transport: &http.Transport{},
+// Longer than the front door's 60-second search deadline, so its own 429 or
+// 503 reaches the agent instead of a local timeout. Below the 75-second write
+// timeout of the endpoint mode.
+const webSearchTimeout = 70 * time.Second
+
+func newWebSearchClient(url, key string) *webSearchClient {
+	return &webSearchClient{url: url, key: key, client: &http.Client{
+		Timeout: webSearchTimeout, Transport: &http.Transport{},
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}}
 }
@@ -35,26 +40,17 @@ type webSearchSource struct {
 	Snippet string `json:"snippet"`
 }
 type webSearchResult struct {
-	Answer  string            `json:"answer"`
 	Results []webSearchSource `json:"results"`
 }
-type responsesOutput struct {
-	Status string          `json:"status"`
-	Error  json.RawMessage `json:"error"`
-	Output []struct {
-		Type    string `json:"type"`
-		Content []struct {
-			Type        string `json:"type"`
-			Text        string `json:"text"`
-			Annotations []struct {
-				Type  string `json:"type"`
-				Title string `json:"title"`
-				URL   string `json:"url"`
-				Start int    `json:"start_index"`
-				End   int    `json:"end_index"`
-			} `json:"annotations"`
-		} `json:"content"`
-	} `json:"output"`
+
+// The front door's answer. Unknown fields (such as date) are ignored.
+type frontDoorSearch struct {
+	Object  string `json:"object"`
+	Results []struct {
+		Title   string `json:"title"`
+		URL     string `json:"url"`
+		Snippet string `json:"snippet"`
+	} `json:"results"`
 }
 
 func searchText(text string, limit int) string {
@@ -65,67 +61,30 @@ func searchText(text string, limit int) string {
 	return text
 }
 
-func parseSearchResponse(data []byte) (responsesOutput, error) {
-	var response responsesOutput
-	if bytes.HasPrefix(bytes.TrimSpace(data), []byte("{")) {
-		if json.Unmarshal(data, &response) != nil {
-			return response, errors.New("invalid response")
-		}
-	} else {
-		completed := false
-		for _, line := range strings.Split(string(data), "\n") {
-			if !strings.HasPrefix(line, "data:") {
-				continue
-			}
-			value := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
-			if value == "[DONE]" {
-				continue
-			}
-			var event struct {
-				Type     string          `json:"type"`
-				Response json.RawMessage `json:"response"`
-			}
-			if json.Unmarshal([]byte(value), &event) != nil {
-				return response, errors.New("invalid response")
-			}
-			switch event.Type {
-			case "error", "response.failed", "response.incomplete":
-				return response, errors.New("failed response")
-			case "response.completed":
-				if json.Unmarshal(event.Response, &response) != nil {
-					return response, errors.New("invalid response")
-				}
-				completed = true
-			}
-		}
-		if !completed {
-			return response, errors.New("incomplete stream")
-		}
+// Seconds until a rate-limited search may be retried, from Retry-After
+// (seconds or an HTTP date). Zero when unknown.
+func retryAfterSeconds(value string, now time.Time) int {
+	value = strings.TrimSpace(value)
+	if seconds, err := strconv.Atoi(value); err == nil && seconds > 0 {
+		return seconds
 	}
-	if response.Status != "completed" || (len(response.Error) > 0 && string(response.Error) != "null") {
-		return response, errors.New("failed response")
+	if at, err := http.ParseTime(value); err == nil && at.After(now) {
+		return int(at.Sub(now).Seconds() + 0.999)
 	}
-	return response, nil
+	return 0
 }
 
 func (s *webSearchClient) search(ctx context.Context, query string, maxResults int) (any, bool) {
 	failure := func(kind string, status int) (any, bool) {
 		return map[string]any{"kind": kind, "status": status, "message": "Front-door web search failed; no upstream body is disclosed"}, true
 	}
-	body, _ := json.Marshal(map[string]any{
-		"model":        s.model,
-		"instructions": fmt.Sprintf("Search the web and return a concise answer grounded only in the web results. Include clickable source citations in the response text when possible. Prefer around %d distinct sources. Keep the answer to three short paragraphs.", maxResults),
-		"input":        []any{map[string]any{"role": "user", "content": []any{map[string]string{"type": "input_text", "text": query}}}},
-		"tools":        []any{map[string]string{"type": "web_search"}}, "include": []string{"web_search_call.action.sources"},
-		"store": false, "stream": true, "tool_choice": "required", "parallel_tool_calls": true,
-	})
+	body, _ := json.Marshal(map[string]any{"query": query, "max_results": maxResults})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.url, bytes.NewReader(body))
 	if err != nil {
 		return failure("upstream_unavailable", 0)
 	}
 	req.Header.Set("Authorization", "Bearer "+s.key)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("OpenAI-Beta", "responses=experimental")
 	response, err := s.client.Do(req)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) || ctx.Err() != nil {
@@ -134,6 +93,10 @@ func (s *webSearchClient) search(ctx context.Context, query string, maxResults i
 		return failure("upstream_unavailable", 0)
 	}
 	defer response.Body.Close()
+	if response.StatusCode == http.StatusTooManyRequests {
+		// Every search source is rate limited. Tell the agent when to retry.
+		return map[string]any{"kind": "rate_limited", "status": response.StatusCode, "retry_after": retryAfterSeconds(response.Header.Get("Retry-After"), time.Now()), "message": "Front-door web search is rate limited; no upstream body is disclosed"}, true
+	}
 	if response.StatusCode != http.StatusOK {
 		return failure("upstream_http_error", response.StatusCode)
 	}
@@ -147,69 +110,30 @@ func (s *webSearchClient) search(ctx context.Context, query string, maxResults i
 	if len(data) > mcpMaxBody {
 		return failure("invalid_response", 0)
 	}
-	parsed, err := parseSearchResponse(data)
-	if err != nil {
+	var parsed frontDoorSearch
+	if json.Unmarshal(data, &parsed) != nil || parsed.Object != "search" {
 		return failure("invalid_response", 0)
 	}
 	result := webSearchResult{Results: []webSearchSource{}}
 	seen := map[string]bool{}
-	searched := false
-	for _, item := range parsed.Output {
-		if item.Type == "web_search_call" {
-			searched = true
+	for _, r := range parsed.Results {
+		// Check decoded strings, not raw JSON, so escaped credentials cannot pass.
+		if s.key != "" && (strings.Contains(r.Title, s.key) || strings.Contains(r.URL, s.key) || strings.Contains(r.Snippet, s.key)) {
+			return failure("credential_redacted", 0)
 		}
-		if item.Type != "message" {
+		if len(result.Results) >= maxResults {
 			continue
 		}
-		for _, part := range item.Content {
-			if part.Type != "output_text" {
-				continue
-			}
-			// Check decoded strings, not raw JSON, so escaped credentials cannot pass.
-			if s.key != "" && strings.Contains(part.Text, s.key) {
-				return failure("credential_redacted", 0)
-			}
-			if part.Text != "" {
-				result.Answer = searchText(strings.TrimSpace(result.Answer+"\n"+part.Text), 16000)
-			}
-			for _, a := range part.Annotations {
-				if s.key != "" && (strings.Contains(a.Title, s.key) || strings.Contains(a.URL, s.key)) {
-					return failure("credential_redacted", 0)
-				}
-				if a.Type != "url_citation" || len(result.Results) >= maxResults {
-					continue
-				}
-				u, err := url.Parse(a.URL)
-				if err != nil || u.Host == "" || u.User != nil || (u.Scheme != "https" && u.Scheme != "http") || len(a.URL) > 4096 {
-					continue
-				}
-				q := u.Query()
-				if q.Get("utm_source") == "openai" {
-					q.Del("utm_source")
-					u.RawQuery = q.Encode()
-				}
-				clean := u.String()
-				if seen[clean] {
-					continue
-				}
-				seen[clean] = true
-				// Responses annotation offsets use UTF-16 code units, like Pi/JavaScript.
-				text := utf16.Encode([]rune(part.Text))
-				start, end := max(0, a.Start-100), min(len(text), a.End+100)
-				snippet := ""
-				if start < end {
-					snippet = strings.TrimSpace(string(utf16.Decode(text[start:end])))
-				}
-				title := a.Title
-				if strings.TrimSpace(title) == "" {
-					title = clean
-				}
-				result.Results = append(result.Results, webSearchSource{Title: searchText(title, 512), URL: clean, Snippet: searchText(snippet, 300)})
-			}
+		u, err := url.Parse(r.URL)
+		if err != nil || u.Host == "" || u.User != nil || (u.Scheme != "https" && u.Scheme != "http") || len(r.URL) > 4096 || seen[r.URL] {
+			continue
 		}
-	}
-	if !searched || (result.Answer == "" && len(result.Results) == 0) {
-		return failure("invalid_response", 0)
+		seen[r.URL] = true
+		title := strings.TrimSpace(r.Title)
+		if title == "" {
+			title = r.URL
+		}
+		result.Results = append(result.Results, webSearchSource{Title: searchText(title, 512), URL: r.URL, Snippet: searchText(strings.TrimSpace(r.Snippet), 500)})
 	}
 	return result, false
 }
@@ -234,10 +158,10 @@ func webSearchHandler(s *webSearchClient, tailnetClient func(*http.Request) bool
 			if version != "2025-03-26" && version != "2025-11-25" {
 				version = "2025-03-26"
 			}
-			result = map[string]any{"protocolVersion": version, "serverInfo": map[string]string{"name": "claw-websearch", "version": "1"}, "capabilities": map[string]any{"tools": map[string]any{}}}
+			result = map[string]any{"protocolVersion": version, "serverInfo": map[string]string{"name": "claw-websearch", "version": "2"}, "capabilities": map[string]any{"tools": map[string]any{}}}
 		case "tools/list":
 			result = map[string]any{"tools": []any{map[string]any{
-				"name": "web_search", "description": "Search the current web through the front door's model-native search. Returns a cited answer and citation sources with title, url and snippet. Use web_fetch on a source URL for detail. No sources are invented when citations are absent.",
+				"name": "web_search", "description": "Search the current web. Returns a list of results, each with title, url and snippet, most relevant first; there is no written answer. Use web_fetch on a result URL for detail. An empty list means nothing usable was found. On kind rate_limited, retry after retry_after seconds.",
 				"inputSchema": json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","minLength":1,"maxLength":2000},"max_results":{"type":"integer","minimum":1,"maximum":10,"default":5}},"required":["query"],"additionalProperties":false}`),
 				"annotations": map[string]bool{"readOnlyHint": true, "openWorldHint": true},
 			}}}
@@ -269,7 +193,7 @@ func webSearchHandler(s *webSearchClient, tailnetClient func(*http.Request) bool
 			if args.MaxResults != nil {
 				limit = *args.MaxResults
 			}
-			ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+			ctx, cancel := context.WithTimeout(r.Context(), webSearchTimeout)
 			defer cancel()
 			reply, failed := s.search(ctx, args.Query, limit)
 			text, _ := json.Marshal(reply)

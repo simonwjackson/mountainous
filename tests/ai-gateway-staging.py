@@ -76,6 +76,7 @@ if production:
             "images",
             "transcription",
             "speech",
+            "search",
         ],
         "models": [
             "claude-opus-5-5",
@@ -154,7 +155,7 @@ if production:
         },
     ]
     assert all(
-        "transcription" not in k["dialects"]
+        "transcription" not in k["dialects"] and "search" not in k["dialects"]
         for k in keys.values()
         if k["name"] != "openclaw@yari"
     )
@@ -174,7 +175,32 @@ if production:
     assert settings["prices"]["eleven_flash_v2_5"] == {
         "audio_per_million_characters": 40.0,
     }
+    # Web search: free, then subscriptions; paid Brave is present but off.
+    assert settings["search"] == {
+        "sources": [
+            {
+                "id": "antigravity-gemini",
+                "tier": "free",
+                "kind": "login_keeper_responses",
+                "model": "gemini-3.8-flash-high",
+            },
+            {
+                "id": "claude",
+                "tier": "subscription",
+                "kind": "login_keeper_responses",
+                "model": "claude-sonnet-5-5",
+            },
+            {
+                "id": "codex",
+                "tier": "subscription",
+                "kind": "login_keeper_responses",
+                "model": "gpt-6.1-sol",
+            },
+            {"id": "brave", "tier": "paid", "kind": "brave", "enabled": False},
+        ]
+    }
 else:
+    assert "search" not in settings
     assert "local_backends" not in settings and "local_models" not in settings
     assert len(settings["gateway_keys"]) == 2
     b = settings["gateway_keys"][1]
@@ -251,7 +277,7 @@ assert set(provider_line.split()[4:]) == {
     "api.typesafe.ai",
     "api.upstage.ai",
     "generativelanguage.googleapis.com",
-}
+} | ({"vertexaisearch.cloud.google.com"} if production else set())
 assert f"http_port 127.0.0.1:{proxy_port}\n" in policy
 assert [line for line in policy.splitlines() if line.startswith("http_access ")] == [
     "http_access deny !loopback_client",

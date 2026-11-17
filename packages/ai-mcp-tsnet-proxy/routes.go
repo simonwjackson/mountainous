@@ -33,8 +33,9 @@ type mcpRoute struct {
 	// The proxy serves this account's Scryer MCP itself (scryer.go), the same
 	// code a claw-scryer-<user> endpoint runs. No loopback MCP server exists.
 	Scryer *scryerRoute `json:"scryer,omitempty"`
-	// The proxy serves model-native web search itself (websearch.go), the same
-	// code the claw-websearch endpoint runs. No loopback MCP server exists.
+	// The proxy serves web search itself (websearch.go), the same code the
+	// claw-websearch endpoint runs, against the front door's /v1/search. No
+	// loopback MCP server exists.
 	WebSearch *webSearchRoute `json:"webSearch,omitempty"`
 }
 
@@ -44,16 +45,14 @@ type scryerRoute struct {
 	PasswordCredential string `json:"passwordCredential"`
 }
 
+// The front door picks the search source; a row names no model or source.
 type webSearchRoute struct {
-	URL           string `json:"url"` // the fixed loopback front-door Responses URL
-	Model         string `json:"model"`
+	URL           string `json:"url"` // the fixed loopback front-door search URL
 	KeyCredential string `json:"keyCredential"`
 }
 
 // The endpoint mode's only destination (main.go): the front door on loopback.
-const webSearchResponsesURL = "http://127.0.0.1:8430/v1/responses"
-
-var modelName = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+const webSearchURL = "http://127.0.0.1:8430/v1/search"
 
 // systemd's SetCredential default (modules/tailnet-names.nix) when the sops
 // file is missing. It is never a key or a password.
@@ -220,8 +219,8 @@ func scryerRouteHandler(row mcpRoute, credentialsDirectory string, caller func(*
 	return scryerToolsHandler(newScryerRouteClient(row.Scryer.URL, row.Scryer.Username, password), allowed, caller), nil
 }
 
-// Model-native web search, as the claw-websearch endpoint serves it: one
-// tool, web_search, through the front door's Responses dialect on loopback.
+// Web search, as the claw-websearch endpoint serves it: one tool,
+// web_search, through the front door's search dialect on loopback.
 // The key is the server-held credential; callers never send or see it.
 func webSearchRouteHandler(row mcpRoute, credentialsDirectory string, caller func(*http.Request) bool) (http.Handler, error) {
 	if row.Backend != "" || row.BearerCredential != "" || len(row.Resources) != 0 {
@@ -230,11 +229,8 @@ func webSearchRouteHandler(row mcpRoute, credentialsDirectory string, caller fun
 	if len(row.Tools) != 1 || row.Tools[0] != "web_search" {
 		return nil, errors.New("a web search row serves exactly web_search")
 	}
-	if row.WebSearch.URL != webSearchResponsesURL {
-		return nil, errors.New("web search requires the fixed loopback front-door Responses URL")
-	}
-	if !modelName.MatchString(row.WebSearch.Model) {
-		return nil, errors.New("invalid web search model")
+	if row.WebSearch.URL != webSearchURL {
+		return nil, errors.New("web search requires the fixed loopback front-door search URL")
 	}
 	data, err := readRouteCredential(credentialsDirectory, row.WebSearch.KeyCredential)
 	// The endpoint mode trims the key; a key never holds whitespace, and the
@@ -243,7 +239,7 @@ func webSearchRouteHandler(row mcpRoute, credentialsDirectory string, caller fun
 	if err != nil || key == "" || strings.ContainsAny(key, " \t\r\n\x00") {
 		return nil, errors.New("web search credential unavailable or invalid")
 	}
-	return webSearchHandler(newWebSearchRouteClient(row.WebSearch.URL, key, row.WebSearch.Model), caller), nil
+	return webSearchHandler(newWebSearchRouteClient(row.WebSearch.URL, key), caller), nil
 }
 
 func readRouteCredential(credentialsDirectory, name string) (string, error) {

@@ -742,30 +742,30 @@ const webSearchRowKey = "row-held-search-key"
 
 func webSearchRow(callers ...string) mcpRoute {
 	return mcpRoute{CallerNodeIDs: callers, Tools: []string{"web_search"}, WebSearch: &webSearchRoute{
-		URL: webSearchResponsesURL, Model: "gpt-6.1-sol", KeyCredential: "mcp-websearch"}}
+		URL: webSearchURL, KeyCredential: "mcp-websearch"}}
 }
 
-// A real Responses server on loopback stands in for the front door; the row's
+// A real search server on loopback stands in for the front door; the row's
 // fixed URL is checked, then the client is pointed at this server.
 func webSearchRouteFixture(t *testing.T, row mcpRoute, key string) (*mcpRouter, *string, *[]string) {
 	t.Helper()
 	seen := &[]string{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		*seen = append(*seen, r.Header.Get("Authorization"))
-		if r.URL.Path != "/v1/responses" || r.Header.Get("Cookie") != "" || r.Header.Get("X-Api-Key") != "" {
+		if r.URL.Path != "/v1/search" || r.Header.Get("Cookie") != "" || r.Header.Get("X-Api-Key") != "" {
 			t.Error("caller headers or another path reached the front door")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		io.WriteString(w, searchPayload("Fresh answer", true))
+		io.WriteString(w, searchPayload(result("Fresh answer", "https://example.com/fresh", "Fresh snippet")))
 	}))
 	t.Cleanup(server.Close)
 	original := newWebSearchRouteClient
 	t.Cleanup(func() { newWebSearchRouteClient = original })
-	newWebSearchRouteClient = func(responses, key, model string) *webSearchClient {
-		if responses != webSearchResponsesURL || model != "gpt-6.1-sol" {
-			t.Errorf("web search client for %q %q, want the row's URL and model", responses, model)
+	newWebSearchRouteClient = func(search, key string) *webSearchClient {
+		if search != webSearchURL {
+			t.Errorf("web search client for %q, want the row's URL", search)
 		}
-		return newWebSearchClient(server.URL+"/v1/responses", key, model)
+		return newWebSearchClient(server.URL+"/v1/search", key)
 	}
 	credentials := t.TempDir()
 	if err := os.WriteFile(filepath.Join(credentials, "mcp-websearch"), []byte(key), 0600); err != nil {
@@ -824,7 +824,7 @@ func TestMCPRoutesWebSearchRowServesBothGatewaysOnly(t *testing.T) {
 func TestMCPRoutesRejectInvalidWebSearchRows(t *testing.T) {
 	search := func(edit func(*mcpRoute)) mcpRoute {
 		row := webSearchRow(simonNode)
-		row.WebSearch = &webSearchRoute{URL: row.WebSearch.URL, Model: row.WebSearch.Model, KeyCredential: row.WebSearch.KeyCredential}
+		row.WebSearch = &webSearchRoute{URL: row.WebSearch.URL, KeyCredential: row.WebSearch.KeyCredential}
 		edit(&row)
 		return row
 	}
@@ -838,13 +838,12 @@ func TestMCPRoutesRejectInvalidWebSearchRows(t *testing.T) {
 		"with-scryer":        {search(func(r *mcpRoute) { r.Scryer = scryerRow("scryer_graphql").Scryer }), "secret"},
 		"another-tool":       {search(func(r *mcpRoute) { r.Tools = []string{"web_fetch"} }), "secret"},
 		"two-tools":          {search(func(r *mcpRoute) { r.Tools = []string{"web_search", "web_fetch"} }), "secret"},
-		"another-port":       {search(func(r *mcpRoute) { r.WebSearch.URL = "http://127.0.0.1:8431/v1/responses" }), "secret"},
-		"https":              {search(func(r *mcpRoute) { r.WebSearch.URL = "https://127.0.0.1:8430/v1/responses" }), "secret"},
-		"remote":             {search(func(r *mcpRoute) { r.WebSearch.URL = "http://ai.hummingbird-lake.ts.net/v1/responses" }), "secret"},
+		"another-port":       {search(func(r *mcpRoute) { r.WebSearch.URL = "http://127.0.0.1:8431/v1/search" }), "secret"},
+		"https":              {search(func(r *mcpRoute) { r.WebSearch.URL = "https://127.0.0.1:8430/v1/search" }), "secret"},
+		"remote":             {search(func(r *mcpRoute) { r.WebSearch.URL = "http://ai.hummingbird-lake.ts.net/v1/search" }), "secret"},
 		"another-path":       {search(func(r *mcpRoute) { r.WebSearch.URL = "http://127.0.0.1:8430/v1/chat/completions" }), "secret"},
-		"query":              {search(func(r *mcpRoute) { r.WebSearch.URL = webSearchResponsesURL + "?x=1" }), "secret"},
-		"empty-model":        {search(func(r *mcpRoute) { r.WebSearch.Model = "" }), "secret"},
-		"bad-model":          {search(func(r *mcpRoute) { r.WebSearch.Model = "gpt 6" }), "secret"},
+		"responses":          {search(func(r *mcpRoute) { r.WebSearch.URL = "http://127.0.0.1:8430/v1/responses" }), "secret"},
+		"query":              {search(func(r *mcpRoute) { r.WebSearch.URL = webSearchURL + "?x=1" }), "secret"},
 		"credential-path":    {search(func(r *mcpRoute) { r.WebSearch.KeyCredential = "/run/secrets/x" }), "secret"},
 		"missing-credential": {search(func(r *mcpRoute) { r.WebSearch.KeyCredential = "missing" }), "secret"},
 		"empty-key":          {search(func(*mcpRoute) {}), ""},

@@ -8,9 +8,9 @@
  	mcpTools := flag.String("mcp-tools", "", "Enable restricted stateless MCP endpoint with these comma-separated tool names")
  	mcpAllowedNodeIDs := flag.String("mcp-allowed-node-ids", "", "Restrict filtered MCP to these stable Tailscale node IDs")
  	mcpResources := flag.String("mcp-resources", "", "Exact comma-separated resource URIs for a filtered MCP endpoint")
-@@ -206,6 +207,15 @@
- 	webSearchKey := flag.String("websearch-key-file", "", "Serve model-native web search MCP using this gateway credential and the backend Responses URL")
- 	webSearchModel := flag.String("websearch-model", "gpt-6.1-sol", "Fixed model for native web search")
+@@ -205,6 +206,15 @@
+ 	scryerPassword := flag.String("scryer-password-file", "", "Serve account-scoped Scryer MCP using this credential file and the backend GraphQL URL")
+ 	webSearchKey := flag.String("websearch-key-file", "", "Serve web search MCP using this gateway credential and the backend front-door search URL")
  	flag.Parse()
 +	if *mcpTable != "" && (*mcpTools != "" || *mcpAllowedNodeIDs != "" || *mcpResources != "" || *scryerPassword != "" || *webSearchKey != "") {
 +		log.Fatal("MCP table cannot be combined with endpoint modes")
@@ -24,7 +24,7 @@
  	if (*mcpResources != "" || *mcpAllowedNodeIDs != "") && *mcpTools == "" {
  		log.Fatal("MCP resources require filtered tools")
  	}
-@@ -298,6 +308,21 @@
+@@ -297,6 +307,21 @@
  			handler = mcpResourceHandler(backendURL, strings.Split(*mcpTools, ","), strings.FieldsFunc(*mcpResources, func(r rune) bool { return r == ',' }), verifyPeer)
  		}
  	}

@@ -351,8 +351,7 @@
               ];
               mcpTools = [ "web_search" ];
               webSearch = {
-                url = "http://127.0.0.1:8430/v1/responses";
-                model = "gpt-6.1-sol";
+                url = "http://127.0.0.1:8430/v1/search";
                 keyCredential = "mcp-websearch";
               };
             };
@@ -411,7 +410,7 @@
         # A new Scryer password restarts production ai once (credentials load at start).
         assert lib.elem "tsnet-proxy-ai.service" scryerSecret.restartUnits;
         assert scryerSecret.path == "/run/secrets/scryer-password-simon" && scryerSecret.mode == "0400";
-        # Stage 7: Laure's Scryer password and the gateways' Responses key, the
+        # Stage 7: Laure's Scryer password and the gateways' front-door key, the
         # same files their nodes load. A new value restarts production ai once.
         assert lib.elem "tsnet-proxy-ai.service" scryerLaureSecret.restartUnits;
         assert
