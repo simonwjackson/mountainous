@@ -12,6 +12,19 @@
 let
   package = import ./openclaw-package.nix { inherit pkgs inputs; };
   identityProxy = import ./claw-identity-proxy.nix { inherit pkgs; };
+  # Local, not a front-door row: it works on files only this container holds.
+  imageKit = import ./claw-image-kit.nix { inherit pkgs; };
+  imageKitServer = {
+    command = "${imageKit}/bin/claw-image-kit";
+    args = [
+      "--read-root"
+      person.workspacePath
+      "--read-root"
+      "/var/lib/openclaw/media"
+      "--out-dir"
+      "/var/lib/openclaw/media/image-kit"
+    ];
+  };
   # Native catalog limits, approved by Simon and probed through openclaw@yari.
   # contextTokens is an active-input budget, not the model's native window.
   chatModelLimits = {
@@ -449,6 +462,9 @@ in
               }
               // lib.optionalAttrs (endpoint ? codex) { inherit (endpoint) codex; }
             ) (sharedMcpServers // person.mcpServers)
+            // {
+              claw-image-kit = imageKitServer;
+            }
             // lib.listToAttrs (
               map (
                 server:
@@ -545,6 +561,7 @@ in
             "image_generate"
             "bundle-mcp"
           ]
+          ++ map (tool: "claw-image-kit__${tool}") imageKit.toolNames
           ++ lib.concatMap (name: map (tool: "${name}__${tool}") scryerAppTools) (
             lib.filter (name: lib.hasPrefix "claw-scryer-" name) (lib.attrNames person.mcpServers)
           )

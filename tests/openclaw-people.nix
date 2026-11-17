@@ -53,9 +53,18 @@ let
         };
       };
       mcp = c.mcp // {
-        servers = builtins.removeAttrs c.mcp.servers (
-          (lib.attrNames person.mcpServers) ++ map (s: s.name) (person.extraMcpServers or [ ])
-        );
+        servers =
+          builtins.removeAttrs c.mcp.servers (
+            (lib.attrNames person.mcpServers) ++ map (s: s.name) (person.extraMcpServers or [ ])
+          )
+          // {
+            # The image kit reads each person's own workspace; nothing else differs.
+            claw-image-kit = c.mcp.servers.claw-image-kit // {
+              args = map (
+                arg: if arg == person.workspacePath then "<workspace>" else arg
+              ) c.mcp.servers.claw-image-kit.args;
+            };
+          };
         apps = builtins.removeAttrs c.mcp.apps [ "sandboxOrigin" ];
       };
       skills = c.skills // {
@@ -173,6 +182,7 @@ let
     assert
       lib.attrNames c.mcp.servers == lib.sort builtins.lessThan (
         [
+          "claw-image-kit"
           "claw-maps"
           "claw-websearch"
         ]
