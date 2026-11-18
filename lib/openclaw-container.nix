@@ -363,6 +363,10 @@ in
               fallbacks = [ "openai/gpt-image-2" ];
             };
             model.primary = "front-door/claude-opus-5-5";
+            # The pdf tool registers only when a PDF model resolves. Automatic
+            # resolution does not count front-door's key as usable auth, so name
+            # it here; front-door is not native PDF, so pages are extracted.
+            pdfModel.primary = "front-door/claude-opus-5-5";
             workspace = person.workspacePath;
             systemAgent.agentId = person.agentId;
             sessionStore.agentId = person.agentId;

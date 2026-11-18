@@ -685,6 +685,7 @@
               ]
           ) gateway.config.models.providers.front-door.models;
           assert gateway.config.agents.defaults.mediaModels.image.primary == "openai/gemini-3.1-flash-image";
+          assert gateway.config.agents.defaults.pdfModel.primary == "front-door/claude-opus-5-5";
           assert
             gateway.config.tools.media == {
               audio.enabled = true;
