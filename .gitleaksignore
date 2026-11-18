@@ -6,3 +6,7 @@ hosts/sobo/default.nix:generic-api-key:98
 
 # Public SSH host key for the yari aarch64 remote builder, same reason as above.
 features/nix-builders/hosts.nix:generic-api-key:31
+
+# Public SSH host keys for the aka and unzen x86_64 remote builders, same reason as above.
+features/nix-builders/hosts.nix:generic-api-key:47
+features/nix-builders/hosts.nix:generic-api-key:56

@@ -89,7 +89,7 @@ nix eval .#nixosConfigurations.zao.config.nix.settings.max-jobs
 nix eval .#nixosConfigurations.zao.config.nix.distributedBuilds
 ```
 
-Without the override they must still be `"auto"` and `true`.
+Without the override they must still be `4` and `true`. Zao runs at most 4 local builds of 4 cores each; Aka and Unzen take the rest of its x86_64 builds.
 
 ## Nix-on-Droid
 

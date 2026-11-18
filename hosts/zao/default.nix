@@ -67,11 +67,13 @@
     };
 
     # Korri's aarch64 outputs must be built on aarch64 hardware: Fuji and Yari.
-    # Naming them once means a plain `nix build` reaches them without
-    # --builders, and Nix spreads one build's derivations across both.
+    # Aka and Unzen take x86_64 builds, so Zao's own CPU stays free for the
+    # desktop and for agent compiles. Naming them once means a plain
+    # `nix build` reaches them without --builders, and Nix spreads one
+    # build's derivations across them.
     features.nix-builders = {
       enable = true;
-      use = ["fuji" "yari"];
+      use = ["aka" "unzen" "fuji" "yari"];
     };
 
     # Zao builds Korri's x86_64 outputs. Reading them from Korri's cache is
@@ -166,7 +168,12 @@
   # nix.distributedBuilds keep these values without the override.
   nix.distributedBuilds = lib.mkOverride 49 true;
   nix.settings = {
-    max-jobs = lib.mkOverride 49 "auto";
+    # 4 builds of at most 4 cores each: 16 threads, Zao's thread count.
+    # "auto" with cores = 0 allowed 16 builds of 16 threads each; on
+    # 2026-11-17 the load average reached 35-130 and swap filled. More
+    # parallel work goes to Aka and Unzen instead.
+    max-jobs = lib.mkOverride 49 4;
+    cores = 4;
     # Nix's own default; NixOS leaves it unset while distributedBuilds is on.
     builders = lib.mkOverride 49 "@/etc/nix/machines";
   };

@@ -32,6 +32,30 @@
     publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUl2Y2ZQTUQ4aUF2eHdXQThFcGZrOTVDdnN6anpzUVNEcGV0a2pnZFBaUGggcm9vdEB5YXJpCg==";
   };
 
+  # Aka and Unzen run cairn's build federation (modules/build-federation.nix):
+  # user simon, and Zao's legacy root key may only run the builder gate, which
+  # then runs the Nix daemon at idle priority under a memory limit. maxJobs
+  # follows the federation's rule of one build per four threads; each build
+  # there uses at most four cores. Aka is also the Korri streaming source, so
+  # its own memory limit leaves room for a stream.
+  aka = {
+    system = "x86_64-linux";
+    sshUser = "simon";
+    maxJobs = 3;
+    speedFactor = 4;
+    supportedFeatures = ["big-parallel" "benchmark" "kvm" "nixos-test"];
+    publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUkzOS8waWJnalJyVHBBSGdEdTJvQkRVUHdFQy83bUJ3ZXkzS203Wk5SNXogcm9vdEBha2EK";
+  };
+
+  unzen = {
+    system = "x86_64-linux";
+    sshUser = "simon";
+    maxJobs = 2;
+    speedFactor = 4;
+    supportedFeatures = ["big-parallel" "benchmark" "kvm" "nixos-test"];
+    publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUVxLyt0TnFtSlduZlNrUGFmd0lnUVA4SldMaG1SRVJ2c1B1aUt6TVJUUFQgcm9vdEB1bnplbgo=";
+  };
+
   zao = {
     system = "x86_64-linux";
     sshUser = "simonwjackson";
