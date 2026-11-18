@@ -407,6 +407,7 @@
               "openai"
               "web-readability"
               "session-share"
+              "document-extract"
             ];
           assert gateway.config.tools.profile == "full";
           assert
@@ -436,6 +437,7 @@
               "agents_list"
               "browser"
               "view_image"
+              "pdf"
               "image_generate"
               "bundle-mcp"
             ]

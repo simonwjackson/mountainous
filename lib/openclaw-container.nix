@@ -518,6 +518,7 @@ in
             "openai"
             "web-readability"
             "session-share"
+            "document-extract"
           ]
           ++ (person.extraPlugins or [ ]);
           entries.session-share = {
@@ -561,6 +562,7 @@ in
             "agents_list"
             "browser"
             "view_image"
+            "pdf"
             "image_generate"
             "bundle-mcp"
           ]
