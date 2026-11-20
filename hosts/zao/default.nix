@@ -4,7 +4,10 @@
   lib,
   pkgs,
   ...
-}: {
+}: let
+  # Korri's product constants: relays, STUN servers and official publishers.
+  korriProduct = import "${inputs.korri-input-host}/nix/product/requirements.nix" {korri = inputs.korri-input-host;};
+in {
   imports = [
     ./avahi.nix
     ./commitments.nix
@@ -102,13 +105,20 @@
     runtimeGroup = "users";
     runtimeGid = 100;
     firewallInterfaces = ["tailscale0"];
-    relays = [
-      "wss://relay.nostr.band"
-      "wss://relay.primal.net"
-    ];
+    # Korri's product relays and STUN servers. The owner decides these on the
+    # Korri side; Zao follows them on every korri-input-host bump.
+    inherit (korriProduct.constants) relays stun;
     ownerBindingFile = ./korrid-owner-binding.json;
     compositor.renderDevice = "/dev/dri/by-path/pci-0000:01:00.0-render";
-    compositor.mode = "1920x1080@120Hz";
+    compositor.displays = [
+      {
+        name = "HEADLESS-1";
+        mode = "1920x1080@120Hz";
+        x = 0;
+        y = 0;
+        touch = null;
+      }
+    ];
     compositor.renderer = "pixman";
     # Korri's default local-signer GID (978) is already Podman's GID on Zao
     # (/var/lib/nixos/gid-map). 974 is unused there.
@@ -133,11 +143,7 @@
   # this repository keeps no second copy of the key.
   services.korri.pluginHost = {
     enable = true;
-    publishers."@korri" =
-      (import "${inputs.korri-input-host}/nix/product/requirements.nix" {korri = inputs.korri-input-host;})
-      .constants
-      .publishers
-      ."@korri";
+    publishers."@korri" = korriProduct.constants.publishers."@korri";
   };
 
   # TEMPORARY (Zao only; see docs/nix-commands.md "Zao temporary workarounds"):

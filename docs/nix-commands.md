@@ -49,8 +49,10 @@ KORRI=/path/to/korri \
 ## Zao published federation pin — build only
 
 Zao's `korri-input-host` URL and lock pin the Korri revision
-`231055efd2b1defd17102ec781476bdb538d794b` on `github:korri-os/korri` (its
-`main` branch). Any build machine can fetch it; the pin does not depend on a
+`591bd70ceb3e3118e6d46973bf49e445823e495b` on `github:korri-os/korri` (its
+`main` branch on 2026-11-20; the previous pin was `231055efd`, 2026-10-24).
+Zao's korrid relays and STUN servers come from Korri's product constants
+(`nix/product/requirements.nix`) at this pin, so a bump also moves them. Any build machine can fetch it; the pin does not depend on a
 local repository, a local tag or an absolute path. The input keeps Korri's own
 locked Nixpkgs. The stale fork `github:simonwjackson/korri` is no longer read
 for Zao. The separate `korri` input for Aka and Sobo remains unchanged.

@@ -95,7 +95,7 @@
     # without changing the Korri revision used by Aka and Sobo. It keeps Korri's
     # own locked Nixpkgs: Korri's packages are the ones its checks and cache
     # cover, and Zao's sway overlay reads that same Nixpkgs.
-    korri-input-host.url = "github:korri-os/korri/231055efd2b1defd17102ec781476bdb538d794b";
+    korri-input-host.url = "github:korri-os/korri/591bd70ceb3e3118e6d46973bf49e445823e495b";
     # mountainous.features.korri-cache reads Korri's cache address and the keys
     # allowed to sign for it, so this repository keeps no second copy to drift.
     # It is pinned apart from the inputs above so that trusting a new builder
@@ -528,13 +528,15 @@
         "korrid"
       ];
       retiredUserTargets = ["korri-session" "sway-session"];
-      korriPublishers = (import "${inputs.korri-input-host}/nix/product/requirements.nix" {korri = inputs.korri-input-host;}).constants.publishers;
+      korriProduct = (import "${inputs.korri-input-host}/nix/product/requirements.nix" {korri = inputs.korri-input-host;}).constants;
+      korriPublishers = korriProduct.publishers;
       pluginHost = zao.services.korri.pluginHost;
     in
       assert lib.assertMsg zao.services.korriLinuxHost.enable "Zao must consume Korri's isolated Linux host profile";
       assert lib.assertMsg (zao.services.korriLinuxHost.runtimeUser == "simonwjackson" && zao.services.korriLinuxHost.runtimeUid == 1000 && zao.services.korriLinuxHost.runtimeGroup == "users" && zao.services.korriLinuxHost.runtimeGid == 100) "Zao must preserve its existing Korri runtime identity";
       assert lib.assertMsg (zao.services.korridLinuxDevice.address == "[::]:39217" && zao.services.korridLinuxDevice.moonlightAddress == "zao:47989") "Zao must serve korrid on its peer port and announce its Moonlight address";
-      assert lib.assertMsg (zao.services.korridLinuxDevice.relays == ["wss://relay.nostr.band" "wss://relay.primal.net"]) "Zao must keep its Nostr relays";
+      assert lib.assertMsg (zao.services.korridLinuxDevice.relays == korriProduct.relays) "Zao must use exactly Korri's product Nostr relays";
+      assert lib.assertMsg (zao.services.korridLinuxDevice.stun == korriProduct.stun) "Zao must use exactly Korri's product STUN servers";
       assert lib.assertMsg (zao.services.korridLinuxDevice.ownerBindingFile != null) "Zao must import its owner binding";
       assert lib.assertMsg (!(zao.services ? korri) || builtins.attrNames zao.services.korri == ["pluginHost"]) "Zao must keep the legacy Korri source stack retired; only the plugin host may live under services.korri";
       assert lib.assertMsg pluginHost.enable "Zao must run Korri's plugin host, whose registry korrid reads";
