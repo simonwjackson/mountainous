@@ -55,6 +55,43 @@ in
             "subvol=${subvol}"
           ];
         };
+
+        # The RX 7900's GC 11.0.0 (Navi 31) command-processor and MES
+        # firmware from linux-firmware 20261019. Korri's nixpkgs ships
+        # 20260916, which carries the GC 11.0.0 update that upstream reverted
+        # two days later because it hangs the gfx ring in games
+        # (linux-firmware 0a5565a4 and 9a7c283f, drm/amd#5711). On aka that
+        # firmware hung the GPU under sunshine, shadPS4 and a GR2 port, and
+        # MES then failed the queue reset, so each hang became a MODE1 reset
+        # that lost VRAM for every session. 20261019 restores the 20260622
+        # blobs. Only these five files change; everything else stays 20260916.
+        gc11Firmware =
+          let
+            rev = "a4ce85e98a33fa1021c31d1887fc2dffed27e8dd"; # tag 20261019
+            blob =
+              name: hash:
+              pkgs.fetchurl {
+                url = "https://gitlab.com/kernel-firmware/linux-firmware/-/raw/${rev}/amdgpu/${name}";
+                inherit hash;
+              };
+            blobs = {
+              "gc_11_0_0_me.bin" = "sha256-8nTcRFKddJsan6BidrjzKilooWroAYlr0RxTsjTMjhs=";
+              "gc_11_0_0_mec.bin" = "sha256-2lkD0NEVZvTICKi56PerugqGlZYQ5fWY1Qjr0V0dPug=";
+              "gc_11_0_0_mes1.bin" = "sha256-h0DZo7zc0L4PBILsfbeQB6EaboNXqpV2cyhssT342sA=";
+              "gc_11_0_0_mes_2.bin" = "sha256-0p6vC5mvg3hfnYz+POeR8PsepCay9fCnVqUNPtsGyVc=";
+              "gc_11_0_0_pfp.bin" = "sha256-1Xs0or1FwclEg03xZlVhL1s+NPWWScqxOMwwlYkfYbM=";
+            };
+          in
+          pkgs.runCommand "amdgpu-gc-11.0.0-firmware-20261019" { } (
+            ''
+              mkdir -p $out/lib/firmware/amdgpu
+            ''
+            + lib.concatStrings (
+              lib.mapAttrsToList (name: hash: ''
+                cp ${blob name hash} $out/lib/firmware/amdgpu/${name}
+              '') blobs
+            )
+          );
       in
       {
         # The live layout, with the device names of the running fstab so a
@@ -96,6 +133,9 @@ in
         '';
 
         boot.initrd.kernelModules = [ "amdgpu" ];
+        # First in the list wins a name collision (hardware.firmware). The
+        # initrd copies its amdgpu firmware from the same list.
+        hardware.firmware = lib.mkBefore [ gc11Firmware ];
         boot.kernelModules = [ "kvm-amd" ];
         hardware.cpu.amd.updateMicrocode = true;
         # Korri product devices run the Linux 7.2 series.
@@ -192,6 +232,10 @@ in
         system.stateVersion = lib.mkForce "24.11";
 
         assertions = [
+          {
+            assertion = lib.versionOlder pkgs.linux-firmware.version "20261019";
+            message = "aka: nixpkgs now ships linux-firmware ${pkgs.linux-firmware.version}, which has the fixed GC 11.0.0 firmware. Remove gc11Firmware.";
+          }
           {
             assertion = !(options ? disko);
             message = "aka: disko must never manage these disks. Remove it.";
