@@ -331,7 +331,8 @@ in
               allowLoopback = true;
             };
           };
-          # One non-admin person; same-agent sub-agents need sessions.others=write.
+          # One person; same-agent sub-agents need sessions.others=write.
+          # operator.admin only where the person sets operatorAdmin.
           roles = {
             default = person.roleName;
             definitions.${person.roleName} = {
@@ -342,7 +343,8 @@ in
                 "operator.write"
                 "operator.approvals"
                 "operator.questions"
-              ];
+              ]
+              ++ lib.optional (person.operatorAdmin or false) "operator.admin";
             };
           };
           trustedProxies = [

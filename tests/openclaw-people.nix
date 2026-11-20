@@ -29,7 +29,10 @@ let
           ])
           // {
             definitions = (builtins.removeAttrs c.gateway.roles.definitions [ person.roleName ]) // {
-              person = builtins.removeAttrs c.gateway.roles.definitions.${person.roleName} [ "agents" ];
+              person = builtins.removeAttrs c.gateway.roles.definitions.${person.roleName} [
+                "agents"
+                "scopes"
+              ];
             };
           };
         controlUi = builtins.removeAttrs c.gateway.controlUi [ "allowedOrigins" ];
@@ -170,7 +173,15 @@ let
     assert lib.attrNames c.gateway.roles.definitions == [ person.roleName ];
     assert c.gateway.roles.definitions.${person.roleName}.sessions.others == "write";
     assert c.gateway.roles.definitions.${person.roleName}.agents == [ person.agentId ];
-    assert !(lib.elem "operator.admin" c.gateway.roles.definitions.${person.roleName}.scopes);
+    assert
+      c.gateway.roles.definitions.${person.roleName}.scopes
+      == [
+        "operator.read"
+        "operator.write"
+        "operator.approvals"
+        "operator.questions"
+      ]
+      ++ lib.optional (person.operatorAdmin or false) "operator.admin";
     assert c.agents.entries.${person.agentId}.identity == person.identity;
     assert c.agents.entries.${person.agentId}.workspace == person.workspacePath;
     assert c.agents.defaults.workspace == person.workspacePath;

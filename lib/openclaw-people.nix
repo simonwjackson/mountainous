@@ -48,6 +48,12 @@ in
     containerName = "claw-simon";
     workspacePath = "/var/lib/openclaw/workspace";
     roleName = "person";
+    # Simon decided on 2026-11-20 that his own sign-in is a Gateway
+    # administrator. OpenClaw lets the agent use the owner-only tools
+    # (automations, gateway, plugins, nodes, ...) only on turns whose browser
+    # connection holds operator.admin. Without it, the agent cannot create
+    # automations in chat. Tool policy still denies group:runtime.
+    operatorAdmin = true;
     agentId = "main"; # Preserve stored session keys during the controlled move.
     login = "simon.jackson@gmail.com";
     identity = {
