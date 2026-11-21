@@ -55,6 +55,13 @@ assert
 assert rakku.systemd.services.cliproxyapi-gemini-key.serviceConfig.User == "cliproxyapi";
 assert rakku.systemd.services.cliproxyapi-gemini-key.unitConfig.ConditionPathExists == ready;
 assert builtins.elem "cliproxyapi.service" rakku.systemd.services.cliproxyapi-gemini-key.after;
+# The quota router reads the ElevenLabs credit balance from a systemd
+# credential; the secret itself stays root-only.
+assert
+  rakku.systemd.services.cliproxyapi-quota-router.serviceConfig.LoadCredential == [
+    "elevenlabs:${rakku.sops.secrets.elevenlabs-api-key.path}"
+  ];
+assert rakku.sops.secrets.elevenlabs-api-key.mode == "0400";
 {
   status = "pass";
   applicationProfile = profile;
