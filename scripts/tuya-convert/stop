@@ -1,0 +1,12 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p tmux iptables podman
+# On myoko as root: stop tuya-convert and give wlo1 back to NetworkManager.
+IF=wlo1
+tmux kill-session -t tc 2>/dev/null
+podman ps -q | xargs -r podman stop -t 3
+pkill hostapd; pkill dnsmasq
+iptables -D nixos-fw -i $IF -j nixos-fw-accept 2>/dev/null
+ip addr flush dev $IF
+nmcli dev set $IF managed yes
+sleep 8
+nmcli -t -f DEVICE,STATE,CONNECTION dev | grep $IF

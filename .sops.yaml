@@ -154,6 +154,13 @@ creation_rules:
           - *master
           - *hiyori
 
+  # ESPHome device secrets (Wi-Fi, API key, OTA password). Only the operator
+  # builds firmware, so only the master key reads them.
+  - path_regex: secrets/esphome\.yaml$
+    key_groups:
+      - age:
+          - *master
+
   - path_regex: secrets/notify/fleet\.yaml$
     key_groups:
       - age:

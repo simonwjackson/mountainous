@@ -1,0 +1,7 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p tmux
+# On myoko as root: show the tuya-convert screen, optionally typing keys first.
+#   tc-ctl.sh              show the last 40 lines
+#   tc-ctl.sh keys "yes" Enter
+if [ "${1:-}" = keys ]; then shift; tmux send-keys -t tc "$@"; sleep "${WAIT:-3}"; fi
+tmux capture-pane -pt tc -S -200 | grep -v '^$' | tail -40

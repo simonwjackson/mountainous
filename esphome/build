@@ -1,0 +1,40 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i bash -p esphome sops ssh-to-age gzip coreutils
+# Build an ESPHome device from esphome/<device>.yaml.
+#
+#   esphome/build gincuky-jh-g01u            compile; print the image paths
+#   esphome/build gincuky-jh-g01u <ip>       compile, then OTA to a plug that
+#                                            already runs ESPHome
+#
+# Secrets come from secrets/esphome.yaml (master key only). They are decrypted
+# into a private temporary directory and removed on exit.
+#
+# Outputs, in esphome/.build/<device>/ (git-ignored):
+#   firmware.bin     full image; tuya-convert can flash it (must be <= 512 KB)
+#   firmware.bin.gz  upload this from Tasmota's "Firmware upgrade" page
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+device="$1"
+target="${2:-}"
+
+identity=$(ssh-to-age -private-key -i "${MOUNTAINOUS_MASTER_KEY:-$HOME/.ssh/id_ed25519}")
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+cp "esphome/$device.yaml" "$work/"
+SOPS_AGE_KEY="$identity" sops --decrypt secrets/esphome.yaml > "$work/secrets.yaml"
+chmod 600 "$work/secrets.yaml"
+
+
+esphome compile "$work/$device.yaml"
+mkdir -p "esphome/.build/$device"
+
+bin=$(find "$work/.esphome/build" -path "*/.pioenvs/*/firmware.bin" | head -1)
+cp "$bin" "esphome/.build/$device/firmware.bin"
+gzip -9 -c "$bin" > "esphome/.build/$device/firmware.bin.gz"
+ls -l "esphome/.build/$device/firmware.bin" "esphome/.build/$device/firmware.bin.gz"
+echo "image: esphome/.build/$device/firmware.bin"
+
+if [ -n "$target" ]; then
+  esphome upload --device "$target" "$work/$device.yaml"
+fi

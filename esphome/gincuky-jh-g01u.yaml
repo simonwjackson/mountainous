@@ -1,0 +1,68 @@
+# Gincuky / Jiuheng JH-G01U Wi-Fi plug (FCC ID 2AJTRG01U), ESP8266, 1 MB flash.
+# One image for every plug: the name gets the last 3 MAC bytes, so each plug
+# shows up in Home Assistant as its own device (rename it there).
+#
+# Pins (Tasmota template JH-G01U, checked on plug 5C:CF:7F:E0:E6:E2):
+#   GPIO4 relay, GPIO5 button (active low), GPIO12 LED (active low).
+#
+# Build and flash: esphome/build (see the comments there).
+substitutions:
+  name: gincuky-plug
+  friendly_name: Gincuky Plug
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: true
+
+esp8266:
+  board: esp01_1m
+  restore_from_flash: true
+
+logger:
+  level: INFO
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  # If the home network is gone, the plug opens its own network so it can
+  # still be reached for OTA.
+  ap:
+    password: !secret ota_password
+
+output:
+  - platform: gpio
+    id: led
+    pin:
+      number: GPIO12
+      inverted: true
+
+switch:
+  - platform: gpio
+    id: relay
+    name: None
+    pin: GPIO4
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - output.turn_on: led
+    on_turn_off:
+      - output.turn_off: led
+
+binary_sensor:
+  - platform: gpio
+    id: button
+    internal: true
+    pin:
+      number: GPIO5
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      - switch.toggle: relay

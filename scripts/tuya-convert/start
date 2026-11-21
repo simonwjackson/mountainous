@@ -1,0 +1,22 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p podman tmux iptables
+# On myoko as root: free wlo1 from NetworkManager, open the firewall on it,
+# and start tuya-convert in a detached tmux session named "tc".
+set -eu
+IF=wlo1
+POL=/etc/containers/policy.json; [ -f $POL ] || POL=/root/tc-policy.json
+mkdir -p /root/tuya-backups
+
+nmcli dev set $IF managed no
+sleep 2
+iptables -C nixos-fw -i $IF -j nixos-fw-accept 2>/dev/null || iptables -I nixos-fw 1 -i $IF -j nixos-fw-accept
+
+tmux kill-session -t tc 2>/dev/null || true
+tmux new-session -d -s tc -x 200 -y 50 \
+  "podman run --rm -it --signature-policy $POL --privileged --network host \
+     -e WLAN=$IF -e AP=vtrust-flash -e GATEWAY=10.42.42.1 \
+     -v /root/tuya-backups:/usr/bin/tuya-convert/backups \
+     -v /root/tuya-convert/files:/usr/bin/tuya-convert/files \
+     localhost/tuya-convert; echo EXITED; sleep 99999"
+sleep 4
+tmux capture-pane -pt tc | tail -20

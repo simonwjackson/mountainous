@@ -1,0 +1,13 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p podman git tmux
+# On myoko as root: fetch tuya-convert and build its container image (once).
+set -eu
+W=/root/tuya-convert
+[ -d $W ] || git clone -q --depth 1 https://github.com/ct-Open-Source/tuya-convert $W
+cd $W
+sed -i 's|^FROM alpine:3.13|FROM docker.io/library/alpine:3.13|' Dockerfile
+
+[ -f /etc/containers/policy.json ] || echo '{"default":[{"type":"insecureAcceptAnything"}]}' > /root/tc-policy.json
+POL=/etc/containers/policy.json; [ -f $POL ] || POL=/root/tc-policy.json
+podman build --signature-policy "$POL" -t tuya-convert . 2>&1 | tail -15
+podman images tuya-convert
