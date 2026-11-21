@@ -88,8 +88,8 @@ said on Rakku in between stays on Rakku.
 ## Logbook in the Apps launcher
 
 Only Simon's `mcp-apps.json` declares a Logbook `defaultView`: `days_summary`
-with `{ start: "$today-6d", end: "$today+1d" }`. The MCP tool's range is
-`[start,end)`, so this opens seven days including today. Core resolves these
+with `{ start: "$today", end: "$today+1d" }`. The MCP tool's range is
+`[start,end)`, so this opens today only (a week of summed calories is useless). Core resolves these
 placeholders at open time, using the existing 03:00 day boundary in
 `ASSISTANT_HOME_PLACE` (`America/Denver` on Rakku). Existing cards keep their
 recorded dates when refreshed.
