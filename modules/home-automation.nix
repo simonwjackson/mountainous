@@ -14,7 +14,10 @@
 #
 # Upgrade: change `image` to the new tag and its index digest
 # (`skopeo inspect docker://ghcr.io/home-assistant/home-assistant:<tag>`).
-{ ... }:
+# If the zwave_js integration then reports "Invalid server version", move the
+# `zwave-js-server-src` input to a release with that schema and update
+# npmDepsHash below.
+{ inputs, ... }:
 {
   nixos.modules.home-automation =
     { config, lib, pkgs, ... }:
@@ -22,6 +25,16 @@
       configDir = "/var/lib/hass";
       port = 8123;
       zigbeeRadio = "/dev/serial/by-id/usb-Silicon_Labs_HubZ_Smart_Home_Controller_61600558-if01-port0";
+
+      zwaveServer = pkgs.zwave-js-server.overrideAttrs (_: {
+        version = "3.12.0";
+        src = inputs.zwave-js-server-src;
+        npmDeps = pkgs.fetchNpmDeps {
+          src = inputs.zwave-js-server-src;
+          name = "zwave-js-server-3.12.0-npm-deps";
+          hash = "sha256-BirJSLT6HbdD78RmS1Vyq+g4j0x4K8nKEdWeGDz+L3k=";
+        };
+      });
 
       # Written only when configuration.yaml is missing or is a link left by the
       # NixOS module. After that the file belongs to Home Assistant.
@@ -172,6 +185,7 @@
 
       services.zwave-js = {
         enable = true;
+        package = zwaveServer;
         port = 3000;
         secretsConfigFile = config.sops.secrets.zwave-js-secrets.path;
         # The server protocol has no authentication, and Home Assistant

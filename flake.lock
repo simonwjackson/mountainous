@@ -1944,7 +1944,8 @@
         "synth": "synth",
         "vela": "vela",
         "w95fa-src": "w95fa-src_2",
-        "youtube": "youtube"
+        "youtube": "youtube",
+        "zwave-js-server-src": "zwave-js-server-src"
       }
     },
     "rust-overlay": {
@@ -2683,6 +2684,23 @@
         "ref": "service-apps-unzen",
         "type": "git",
         "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/youtube"
+      }
+    },
+    "zwave-js-server-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794311156,
+        "narHash": "sha256-jhHeQfWtDPEnSdA9/s6p04f++3JHMeC/AWsGNgWpv9o=",
+        "owner": "zwave-js",
+        "repo": "zwave-js-server",
+        "rev": "111a51ee1b0c0a92b80d923cb4648c361f904234",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zwave-js",
+        "ref": "3.12.0",
+        "repo": "zwave-js-server",
+        "type": "github"
       }
     }
   },

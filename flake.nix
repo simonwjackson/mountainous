@@ -160,10 +160,15 @@
       flake = false;
     };
 
-    # Rakku takes only its Home Assistant 2025.12.3 and Z-Wave JS 3.4.0 packages
-    # from this pin. Upgrade them only as a separate, backed-up change.
-    # gomod2nix-rakku and tests/fleet-sync-external.nix also use it.
+    # gomod2nix-rakku and tests/fleet-sync-external.nix use this pin.
     nixpkgs-rakku.url = "github:NixOS/nixpkgs/1306659b587dc277866c7b69eb97e5f07864d8c4";
+    # Z-Wave JS server for Home Assistant (modules/home-automation.nix). It must
+    # support the API schema that the pinned Home Assistant image asks for, so
+    # it moves with the image, not with nixpkgs.
+    zwave-js-server-src = {
+      url = "github:zwave-js/zwave-js-server/3.12.0";
+      flake = false;
+    };
     # Read-only MCP server for the Beszel hub. Bun app; see modules/beszel-mcp.nix.
     beszel-mcp = {
       url = "github:maxbth/beszel-mcp/v1.0.0";
