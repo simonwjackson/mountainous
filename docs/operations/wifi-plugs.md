@@ -50,3 +50,12 @@ use the module's GND, GPIO0, 3.3V, TX and RX pads.
 ```sh
 esphome/build gincuky-jh-g01u <plug-ip>
 ```
+
+## Adopt in Home Assistant
+
+```sh
+esphome/adopt <plug-ip>
+```
+
+It runs the ESPHome config flow on Rakku with the API key from
+`secrets/esphome.yaml`. The plug appears as `switch.gincuky_plug_xxxxxx`.

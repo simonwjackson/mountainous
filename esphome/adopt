@@ -1,0 +1,29 @@
+#!/usr/bin/env nix-shell
+#!nix-shell -i bash -p curl jq coreutils
+# Adopt an ESPHome device in Home Assistant through the config-flow REST API.
+#   esphome/adopt <device-ip>
+# The API key comes from secrets/esphome.yaml; the HA token from
+# ~/.config/home-assistant/token (long-lived token "agent (zao)").
+set -euo pipefail
+cd "$(dirname "$0")/.."
+IP="$1"
+KEY=$(./scripts/secrets --show secrets/esphome.yaml | sed -n 's/^api_key: "\?\([^"]*\)"\?$/\1/p')
+TOKEN=$(cat "$HOME/.config/home-assistant/token")
+HA=http://rakku:8123
+h=(-H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json")
+
+curl -s -m 10 "${h[@]}" "$HA/api/" | jq -c .
+flow=$(curl -s -m 30 "${h[@]}" -X POST "$HA/api/config/config_entries/flow" -d '{"handler":"esphome","show_advanced_options":false}')
+echo "$flow" | jq -c '{type,step_id,errors,reason}'
+id=$(echo "$flow" | jq -r .flow_id)
+
+step=$(curl -s -m 60 "${h[@]}" -X POST "$HA/api/config/config_entries/flow/$id" -d "$(jq -nc --arg ip "$IP" '{host:$ip,port:6053}')")
+echo "$step" | jq -c '{type,step_id,errors,reason,title}'
+
+if [ "$(echo "$step" | jq -r .step_id)" = "encryption_key" ]; then
+  step=$(curl -s -m 60 "${h[@]}" -X POST "$HA/api/config/config_entries/flow/$id" -d "$(jq -nc --arg k "$KEY" '{noise_psk:$k}')")
+  echo "$step" | jq -c '{type,step_id,errors,reason,title}'
+fi
+
+sleep 8
+curl -s -m 10 "${h[@]}" "$HA/api/states" | jq -c '.[] | select(.entity_id|test("gincuky")) | {entity_id,state,name:.attributes.friendly_name}'
