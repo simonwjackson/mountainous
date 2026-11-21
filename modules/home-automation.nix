@@ -14,6 +14,7 @@
 #
 # Upgrade: change `image` to the new tag and its index digest
 # (`skopeo inspect docker://ghcr.io/home-assistant/home-assistant:<tag>`).
+# Operations and agent access: docs/operations/home-assistant.md.
 # If the zwave_js integration then reports "Invalid server version", move the
 # `zwave-js-server-src` input to a release with that schema and update
 # npmDepsHash below.
@@ -102,6 +103,8 @@
           cd ${configDir}
           export GIT_AUTHOR_NAME="rakku" GIT_AUTHOR_EMAIL="root@rakku"
           export GIT_COMMITTER_NAME="rakku" GIT_COMMITTER_EMAIL="root@rakku"
+          # The directory belongs to hass; this runs as root.
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=${configDir}
           if [ ! -d .git ]; then
             git init --quiet --initial-branch=main
           fi
