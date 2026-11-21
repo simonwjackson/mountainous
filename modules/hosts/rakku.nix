@@ -614,12 +614,10 @@ in
             message = "Rakku must retain its existing stateVersion.";
           }
           {
-            assertion = config.services.home-assistant.package.version == "2025.12.3";
-            message = "Rakku migration must not upgrade Home Assistant.";
-          }
-          {
-            assertion = config.services.zwave-js.package.version == "3.4.0";
-            message = "Rakku migration must not upgrade Z-Wave JS.";
+            assertion =
+              builtins.match ".*@sha256:[0-9a-f]{64}" config.virtualisation.oci-containers.containers.home-assistant.image
+              != null;
+            message = "Rakku's Home Assistant image must be pinned by digest.";
           }
           {
             assertion = config.users.users.hass.uid == 286 && config.users.groups.hass.gid == 286;

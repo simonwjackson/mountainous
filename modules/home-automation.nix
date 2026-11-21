@@ -1,117 +1,177 @@
-# The existing Home Assistant instance, not a new onboarding configuration.
-# Mutable integrations, auth, registries and Zigbee state stay in /var/lib/hass.
+# Home Assistant runs as the official container image; Z-Wave JS runs natively.
 #
-# The host builds from the fleet nixpkgs. Home Assistant and Z-Wave JS alone
-# come from `nixpkgs-rakku`, so their store paths stay the deployed ones until
-# a separate, backed-up application upgrade moves that pin.
-{ inputs, ... }:
+# The split between Nix and Home Assistant:
+# - Nix owns the version (the image digest below), the host plumbing (serial
+#   device, ports, persistence) and the Z-Wave server. Changing these needs a
+#   nixos-rebuild.
+# - Home Assistant owns everything in /var/lib/hass, configuration.yaml
+#   included. People and agents change it through the UI, the REST/WebSocket
+#   API or the MCP server, with no rebuild. The image carries every
+#   integration and installs custom ones at runtime.
+# - Reproducibility of that state comes from a local git repository in
+#   /var/lib/hass, committed by a timer, and from Home Assistant's own backups.
+#   The repository holds credentials: it stays on this host and is never pushed.
+#
+# Upgrade: change `image` to the new tag and its index digest
+# (`skopeo inspect docker://ghcr.io/home-assistant/home-assistant:<tag>`).
+{ ... }:
 {
   nixos.modules.home-automation =
-    { config, pkgs, ... }:
+    { config, lib, pkgs, ... }:
     let
-      pinned = inputs.nixpkgs-rakku.legacyPackages.${pkgs.stdenv.hostPlatform.system};
+      configDir = "/var/lib/hass";
+      port = 8123;
+      zigbeeRadio = "/dev/serial/by-id/usb-Silicon_Labs_HubZ_Smart_Home_Controller_61600558-if01-port0";
+
+      # Written only when configuration.yaml is missing or is a link left by the
+      # NixOS module. After that the file belongs to Home Assistant.
+      seedConfiguration = pkgs.writeText "configuration.yaml" ''
+        automation: !include automations.yaml
+        binary_sensor: !include binary_sensors.yaml
+        group: !include groups.yaml
+        history: {}
+        homeassistant:
+          external_url: https://habitat.hummingbird-lake.ts.net
+          internal_url: http://localhost:${toString port}
+          name: Home
+          temperature_unit: C
+          time_zone: America/Denver
+          unit_system: metric
+        http:
+          server_port: ${toString port}
+          trusted_proxies:
+          - ::1
+          - 127.0.0.1
+          use_x_forwarded_for: true
+        input_boolean: !include input_booleans.yaml
+        input_datetime: !include input_datetime.yaml
+        input_number: !include input_number.yaml
+        logbook: {}
+        lovelace:
+          mode: storage
+        media_source: {}
+        recorder: {}
+        scene: !include scenes.yaml
+        script: !include scripts.yaml
+        sensor: !include sensors.yaml
+        tts:
+        - platform: google_translate
+          service_name: google_translate_say
+      '';
+
+      # What the config history leaves out: databases, logs, caches, runtime
+      # files and state that changes every minute.
+      seedGitignore = pkgs.writeText "hass.gitignore" ''
+        *.db
+        *.db-shm
+        *.db-wal
+        *.log*
+        .cache/
+        __pycache__/
+        *.pyc
+        .ha_run.lock
+        deps/
+        tts/
+        backups/
+        .cloud/
+        .storage/core.restore_state
+        .storage/trace.saved_traces
+        .storage/auth
+        .storage/*.bak-*
+        *.bak
+        *.backup
+      '';
+
+      commitConfig = pkgs.writeShellApplication {
+        name = "hass-config-commit";
+        runtimeInputs = [ pkgs.git ];
+        text = ''
+          cd ${configDir}
+          export GIT_AUTHOR_NAME="rakku" GIT_AUTHOR_EMAIL="root@rakku"
+          export GIT_COMMITTER_NAME="rakku" GIT_COMMITTER_EMAIL="root@rakku"
+          if [ ! -d .git ]; then
+            git init --quiet --initial-branch=main
+          fi
+          install -m 0644 ${seedGitignore} .gitignore
+          git add --all
+          if ! git diff --cached --quiet; then
+            git commit --quiet -m "snapshot $(date -u +%Y-%m-%dT%H:%MZ)"
+          fi
+        '';
+      };
     in
     {
-      services.home-assistant = {
-        enable = true;
-        package = pinned.home-assistant.override {
-          extraPackages = ps: [
-            ps.grpcio
-            ps.google-nest-sdm
-          ];
-        };
-        extraComponents = [
-          "default_config"
-          "zha"
-          "zwave_js"
-          "mqtt"
-          "esphome"
-          "met"
-          "group"
-          "input_boolean"
-          "input_button"
-          "input_datetime"
-          "input_number"
-          "input_select"
-          "input_text"
-          "counter"
-          "timer"
-          "schedule"
-          "google_translate"
-          "tts"
-          "sonos"
-          "cast"
-          "media_source"
-          "radio_browser"
-          "nest"
-          "ffmpeg"
-          "mobile_app"
-          "cloud"
-          "application_credentials"
-          "roborock"
-          "yeelight"
-          "dhcp"
-          "ssdp"
-          "zeroconf"
-          "usb"
-          "sun"
-          "zone"
-          "person"
-          "device_tracker"
-          "history"
-          "logbook"
-          "recorder"
+      virtualisation.oci-containers.backend = "podman";
+      virtualisation.oci-containers.containers.home-assistant = {
+        # 2026.11.2, multi-arch index digest.
+        image = "ghcr.io/home-assistant/home-assistant:2026.11.2@sha256:493a07e8f6530fc640223f4a0a5248f20a61ca2f718bb1d31efbf08a2c5ea28f";
+        # Keep the unit name, so units ordered after home-assistant.service
+        # and the habit `systemctl restart home-assistant` still work.
+        serviceName = "home-assistant";
+        environment.TZ = "America/Denver";
+        volumes = [
+          "${configDir}:/config"
+          "/run/dbus:/run/dbus:ro"
         ];
-        config = {
-          homeassistant = {
-            name = "Home";
-            unit_system = "metric";
-            time_zone = "America/Denver";
-            temperature_unit = "C";
-            external_url = "https://habitat.hummingbird-lake.ts.net";
-            internal_url = "http://localhost:8123";
-          };
-          automation = "!include automations.yaml";
-          binary_sensor = "!include binary_sensors.yaml";
-          group = "!include groups.yaml";
-          input_boolean = "!include input_booleans.yaml";
-          input_datetime = "!include input_datetime.yaml";
-          input_number = "!include input_number.yaml";
-          scene = "!include scenes.yaml";
-          script = "!include scripts.yaml";
-          sensor = "!include sensors.yaml";
-          history = { };
-          logbook = { };
-          map = { };
-          media_source = { };
-          recorder = { };
-          tts = [
-            {
-              platform = "google_translate";
-              service_name = "google_translate_say";
-            }
-          ];
-          # The fleet nixpkgs module no longer writes these two defaults. Keep
-          # the configuration.yaml that HA 2025.12.3 already runs with.
-          lovelace.mode = "storage";
-          http = {
-            server_host = [
-              "0.0.0.0"
-              "::"
-            ];
-            server_port = 8123;
-            trusted_proxies = [
-              "::1"
-              "127.0.0.1"
-            ];
-            use_x_forwarded_for = true;
-          };
+        # The ZHA config entry stores this path; keep it the same inside.
+        devices = [ "${zigbeeRadio}:${zigbeeRadio}" ];
+        extraOptions = [
+          "--network=host"
+          "--cap-add=NET_ADMIN"
+          "--cap-add=NET_RAW"
+        ];
+      };
+
+      systemd.services.home-assistant = {
+        wants = [
+          "network-online.target"
+          "home-assistant-config-seed.service"
+        ];
+        after = [
+          "network-online.target"
+          "home-assistant-config-seed.service"
+          "zwave-js.service"
+        ];
+        # Never pull the image into the tmpfs root. The host persists
+        # /var/lib/containers (disks/rakku-existing.nix).
+        unitConfig.RequiresMountsFor = [
+          "/var/lib/containers"
+          configDir
+        ];
+      };
+
+      systemd.services.home-assistant-config-seed = {
+        description = "Seed Home Assistant configuration.yaml";
+        unitConfig.RequiresMountsFor = [ configDir ];
+        serviceConfig.Type = "oneshot";
+        script = ''
+          f=${configDir}/configuration.yaml
+          if [ -L "$f" ] || [ ! -e "$f" ]; then
+            rm -f "$f"
+            install -m 0644 ${seedConfiguration} "$f"
+          fi
+        '';
+      };
+
+      systemd.services.hass-config-commit = {
+        description = "Commit Home Assistant configuration changes to the local history";
+        unitConfig.RequiresMountsFor = [ configDir ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = lib.getExe commitConfig;
+          Nice = 10;
+        };
+      };
+      systemd.timers.hass-config-commit = {
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "*:0/15";
+          Persistent = true;
         };
       };
 
       services.zwave-js = {
         enable = true;
-        package = pinned.zwave-js-server;
         port = 3000;
         secretsConfigFile = config.sops.secrets.zwave-js-secrets.path;
         # The server protocol has no authentication, and Home Assistant
@@ -123,13 +183,18 @@
           "--disable-dns-sd"
         ];
       };
-      # The fleet nixpkgs removed `openFirewall`. Open the same port it did.
-      networking.firewall.allowedTCPPorts = [
-        config.services.home-assistant.config.http.server_port
-      ];
-      users.users.hass.extraGroups = [ "dialout" ];
-      # Keep the deployed ownership rather than allocate a different service UID.
-      users.users.hass.uid = 286;
+
+      networking.firewall.allowedTCPPorts = [ port ];
+
+      # Files from the native service keep their owner, so a rollback to it
+      # still works. The container itself runs as root.
+      users.users.hass = {
+        isSystemUser = true;
+        group = "hass";
+        uid = 286;
+        home = configDir;
+        extraGroups = [ "dialout" ];
+      };
       users.groups.hass.gid = 286;
     };
 }

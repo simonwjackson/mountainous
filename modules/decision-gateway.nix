@@ -147,14 +147,9 @@ in
         unitConfig.RequiresMountsFor = [ "/var/lib/containers" ];
       };
 
-      # Root is tmpfs. Keep the image on disk so a reboot does not pull it
-      # again into memory.
-      environment.persistence."/tundra/permafrost".directories = [
-        {
-          directory = "/var/lib/containers";
-          mode = "0700";
-        }
-      ];
+      # Root is tmpfs. disks/rakku-existing.nix persists /var/lib/containers
+      # for every podman container on the host, so a reboot does not pull the
+      # image again into memory.
 
       mountainous.tailnetNames.decide = {
         description = "Decision gateway tailnet proxy";

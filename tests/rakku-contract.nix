@@ -5,7 +5,8 @@ let
   directories = map (
     entry: if builtins.isString entry then entry else entry.directory
   ) persistence.directories;
-  haExec = c.systemd.services.home-assistant.serviceConfig.ExecStart;
+  ha = c.virtualisation.oci-containers.containers.home-assistant;
+  haExec = c.systemd.services.home-assistant.script;
   zwaveExec = c.systemd.services.zwave-js.serviceConfig.ExecStart;
 in
 assert c.networking.hostName == "rakku";
@@ -30,9 +31,17 @@ assert builtins.all (path: builtins.elem path directories) [
   "/home/simonwjackson"
   "/var/lib/tsnet-proxy-habitat"
 ];
-assert builtins.match ".*4xdbwlvdmkd278fzy69bawfj1df487m5-homeassistant-2025.12.3.*" haExec != null;
+# Home Assistant is the official image, pinned by digest, on the persisted
+# config directory, with the Zigbee radio at the path its config entry stores.
+assert builtins.match "ghcr\\.io/home-assistant/home-assistant:.*@sha256:[0-9a-f]{64}" ha.image != null;
+assert ha.serviceName == "home-assistant";
+assert builtins.elem "/var/lib/hass:/config" ha.volumes;
 assert
-  builtins.match ".*rirnmd7dk9ikj4fw51n5fwjvsbb7q2s0-zwave-js-server-3.4.0.*" zwaveExec != null;
+  ha.devices == [
+    "/dev/serial/by-id/usb-Silicon_Labs_HubZ_Smart_Home_Controller_61600558-if01-port0:/dev/serial/by-id/usb-Silicon_Labs_HubZ_Smart_Home_Controller_61600558-if01-port0"
+  ];
+assert builtins.elem "/var/lib/containers" c.systemd.services.home-assistant.unitConfig.RequiresMountsFor;
+assert c.systemd.timers.hass-config-commit.wantedBy == [ "timers.target" ];
 # The Z-Wave server has no authentication. The LAN and tailnet interfaces are
 # trusted, so it must listen on loopback only.
 assert builtins.match ".* --host 127\\.0\\.0\\.1 .*" zwaveExec != null;
@@ -47,11 +56,7 @@ assert
   c.sops.secrets.withings-api-key.sopsFile == ../secrets/hosts/rakku.yaml
   && c.sops.secrets.withings-api-key.mode == "0400";
 assert c.sops.age.sshKeyPaths == [ "/tundra/permafrost/etc/ssh/ssh_host_ed25519_key" ];
-assert c.services.home-assistant.configDir == "/var/lib/hass";
-assert
-  c.services.home-assistant.config.homeassistant.external_url
-  == "https://habitat.hummingbird-lake.ts.net";
-assert c.services.home-assistant.config.homeassistant.internal_url == "http://localhost:8123";
+assert !c.services.home-assistant.enable;
 assert !c.networking.networkmanager.enable && c.networking.useDHCP;
 assert
   c.networking.firewall.enable && builtins.elem "enp1s0" c.networking.firewall.trustedInterfaces;
@@ -61,10 +66,9 @@ assert c.systemd.services.tailscale-join.enable;
   status = "pass";
   toplevel = c.system.build.toplevel.outPath;
   inherit haExec zwaveExec directories;
-  haConfiguration = c.services.home-assistant.config;
+  haImage = ha.image;
   sshKeys = map (key: key.path) c.services.openssh.hostKeys;
   versions = {
-    homeAssistant = c.services.home-assistant.package.version;
     zwaveServer = c.services.zwave-js.package.version;
   };
 }

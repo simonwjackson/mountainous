@@ -71,6 +71,12 @@ in
         mode = "0700";
       }
       "/var/lib/NetworkManager"
+      # Podman images and containers for every container on this host
+      # (Home Assistant, LiteLLM). Root is tmpfs.
+      {
+        directory = "/var/lib/containers";
+        mode = "0700";
+      }
       # modules/tailnet-names.nix persists /var/lib/tsnet-proxy-<name>.
       {
         directory = "/home/simonwjackson";
