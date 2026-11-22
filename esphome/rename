@@ -1,0 +1,37 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -i python3 -p "python3.withPackages (p: [ p.websockets ])"
+# Rename a plug in Home Assistant: its device name and its switch entity ID.
+#   esphome/rename <mac-suffix> "<New Name>"      e.g. e0e6e2 "Christmas Tree"
+# The HA token comes from ~/.config/home-assistant/token.
+import asyncio, json, pathlib, re, sys
+import websockets
+
+async def main(suffix: str, name: str) -> None:
+    token = (pathlib.Path.home() / ".config/home-assistant/token").read_text().strip()
+    async with websockets.connect("ws://rakku:8123/api/websocket") as ws:
+        await ws.recv()
+        await ws.send(json.dumps({"type": "auth", "access_token": token}))
+        assert json.loads(await ws.recv())["type"] == "auth_ok"
+        n = 0
+        async def call(**msg):
+            nonlocal n
+            n += 1
+            await ws.send(json.dumps({"id": n, **msg}))
+            while True:
+                r = json.loads(await ws.recv())
+                if r.get("id") == n:
+                    if not r.get("success"):
+                        raise SystemExit(f"{msg['type']}: {r.get('error')}")
+                    return r["result"]
+        devices = await call(type="config/device_registry/list")
+        dev = next(d for d in devices if d["name"] and d["name"].lower().endswith(suffix.lower()))
+        await call(type="config/device_registry/update", device_id=dev["id"], name_by_user=name)
+        entities = await call(type="config/entity_registry/list")
+        slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+        for e in entities:
+            if e["device_id"] == dev["id"] and e["entity_id"].startswith("switch."):
+                r = await call(type="config/entity_registry/update", entity_id=e["entity_id"],
+                               new_entity_id=f"switch.{slug}")
+                print(f"{dev['name']} -> {name}: {e['entity_id']} -> {r['entity_entry']['entity_id']}")
+
+asyncio.run(main(sys.argv[1], sys.argv[2]))

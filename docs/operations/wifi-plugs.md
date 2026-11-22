@@ -59,3 +59,10 @@ esphome/adopt <plug-ip>
 
 It runs the ESPHome config flow on Rakku with the API key from
 `secrets/esphome.yaml`. The plug appears as `switch.gincuky_plug_xxxxxx`.
+
+Rename a plug (device name and entity ID): `esphome/rename <mac-suffix> "<Name>"`.
+
+| MAC | Name | Entity |
+|---|---|---|
+| 5C:CF:7F:E0:E6:E2 | Christmas Tree | `switch.christmas_tree` |
+| 5C:CF:7F:E0:E7:50 | (unnamed) | `switch.gincuky_plug_e0e750` |
