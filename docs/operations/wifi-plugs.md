@@ -65,4 +65,4 @@ Rename a plug (device name and entity ID): `esphome/rename <mac-suffix> "<Name>"
 | MAC | Name | Entity |
 |---|---|---|
 | 5C:CF:7F:E0:E6:E2 | Christmas Tree | `switch.christmas_tree` |
-| 5C:CF:7F:E0:E7:50 | (unnamed) | `switch.gincuky_plug_e0e750` |
+| 5C:CF:7F:E0:E7:50 | Under Cabinet Far (Kitchen) | `switch.under_cabinet_far`, shown as `light.kitchen_under_cabinet_far` in the Under Cabinet group; replaced Zigbee plug 00:12:4b:00:22:69:99:81 |
