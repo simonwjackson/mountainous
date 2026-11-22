@@ -1,6 +1,6 @@
 # Gincuky Wi-Fi plugs to ESPHome
 
-The Gincuky plugs (Jiuheng JH-G01U, FCC ID 2AJTRG01U) are ESP8266 Tuya plugs.
+The Gincuky plugs (Jiuheng JH-G01U, FCC ID 2AJTRG01U) are ESP8266 Tuya plugs (Espressif MAC prefixes seen: 5C:CF:7F, 68:C6:3A).
 They are flashed over the air with tuya-convert, without opening them, and run
 `esphome/gincuky-jh-g01u.yaml`. Home Assistant on Rakku adopts each one through
 the ESPHome integration. They never talk to Tuya's cloud.
@@ -66,3 +66,4 @@ Rename a plug (device name and entity ID): `esphome/rename <mac-suffix> "<Name>"
 |---|---|---|
 | 5C:CF:7F:E0:E6:E2 | Christmas Tree | `switch.christmas_tree` |
 | 5C:CF:7F:E0:E7:50 | Under Cabinet Far (Kitchen) | `switch.under_cabinet_far`, shown as `light.kitchen_under_cabinet_far` in the Under Cabinet group; replaced Zigbee plug 00:12:4b:00:22:69:99:81 |
+| 68:C6:3A:9D:51:F3 | (unnamed) | `switch.gincuky_plug_9d51f3` |
