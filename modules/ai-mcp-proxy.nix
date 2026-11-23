@@ -272,9 +272,12 @@
             };
             sparkyfitness = {
               backend = "http://127.0.0.1:3010/mcp";
-              # flakey (named claw-simon until the in-place rename; same ID).
-              # Laure's claw and every other node get 403.
-              callerNodeIds = [ "nbQJZMcewG11CNTRL" ];
+              # flakey (named claw-simon until the in-place rename; same ID) and
+              # zao (the life-inbox prototype). Laure's claw and every other node get 403.
+              callerNodeIds = [
+                "nbQJZMcewG11CNTRL"
+                "nto5J2nGb311CNTRL"
+              ];
               mcpTools = sparkyTools;
               bearerCredential = "mcp-sparkyfitness";
             };

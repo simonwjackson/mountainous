@@ -56,8 +56,13 @@
       "pace_goal_paid_answer"
     ];
   };
+  # zao: the life-inbox prototype (~/code/sandbox/life-inbox-prototype on Zao)
+  # reads and writes Simon's own data through this row, like flakey.
   sparkyfitness = {
-    callers = [ "flakey" ];
+    callers = [
+      "flakey"
+      "zao"
+    ];
     server = "sparkyfitness";
     tools = import ./openclaw-sparkyfitness-tools.nix;
   };

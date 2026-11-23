@@ -53,6 +53,7 @@ verification and rollback. No wind-down or coach workflow changes are included.
 | Upstream credential | `LoadCredential=mcp-sparkyfitness:/run/secrets/sparkyfitness-openclaw-api-key`, default `SetCredential=mcp-sparkyfitness:unavailable credential` |
 | Secret | sops `sparkyfitness-openclaw-api-key` in `secrets/hosts/rakku.yaml`, root `0400`, `restartUnits = [ "tsnet-proxy-ai.service" ]` |
 | OpenClaw | flakey only: server `sparkyfitness`, `https://ai.hummingbird-lake.ts.net/mcp/sparkyfitness`, `streamable-http`, `toolFilter.include` = the same 23; tool permissions `sparkyfitness__<tool>`; skill `nutrition-fitness`; the wind-down skill and the morning brief read food, training, sleep and body data from it, read-only |
+| Prototype | zao (since 2026-11-23): the life-inbox prototype in `~/code/sandbox/life-inbox-prototype` calls the same row and 23 tools, with no key of its own; it reads and writes Simon's data |
 
 - `/v1` and every path outside `/mcp/` go to the same `proxyHandler` as
   before, unwrapped and unchanged. `checks.ai-mcp-proxy` compares the

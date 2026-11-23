@@ -52,7 +52,7 @@ in
             tailnetMCPRouting = true;
             tailnetMCPRoutes.sparkyfitness = {
               backend = "http://127.0.0.1:${toString config.services.sparkyfitness.port}/mcp";
-              # flakey only (lib/ai-mcp-rows.nix). The front door holds the key;
+              # Callers from lib/ai-mcp-rows.nix (flakey and zao). The front door holds the key;
               # OpenClaw holds none.
               callerNodeIds = map (
                 node: (import ../lib/tailnet-nodes.nix).${node}
