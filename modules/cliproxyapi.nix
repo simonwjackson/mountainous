@@ -205,6 +205,7 @@
             "cliproxyapi.service"
           ];
           serviceConfig = common // {
+            EnvironmentFile = "${state}/.config/cliproxyapi/quota-router.env";
             ExecStart = "${profile}/bin/cliproxyapi-tsnet --name cliproxyapi --state ${state}/.config/cliproxyapi-tsnet --quota-state ${state}/.local/state/cliproxyapi-quota-router/state.json --quota-reset-command ${profile}/bin/cliproxy-quota-router";
           };
         };

@@ -32,6 +32,10 @@ assert !(builtins.elem "cliproxyapi" rakku.nix.settings.trusted-users);
 assert builtins.elem rakku.mountainous.features.cliproxyapi.signingPublicKey
   rakku.nix.settings.trusted-public-keys;
 assert rakku.systemd.services.cliproxyapi.serviceConfig.NoNewPrivileges;
+# Confirmed resets and account overrides must reconcile immediately too.
+assert
+  rakku.systemd.services.cliproxyapi-tsnet.serviceConfig.EnvironmentFile
+  == "/var/lib/cliproxyapi/.config/cliproxyapi/quota-router.env";
 assert rakku.systemd.services.cliproxyapi-quota-router.serviceConfig.Type == "oneshot";
 assert rakku.systemd.timers.cliproxyapi-quota-router.timerConfig.OnUnitActiveSec == "2min";
 assert unzen.mountainous.features.cliproxyapi-updater.enable;
