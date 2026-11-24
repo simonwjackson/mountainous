@@ -55,6 +55,26 @@
           assert lib.hasInfix " /srv/lakes/towada " (health.text + " ");
           assert !(lib.hasInfix "/srv/lakes/towada/media" health.text);
           pkgs.runCommand "unzen-towada-health" { } "touch $out";
+        # Pyxis finds Sonos speakers by mDNS through avahi-browse; Avahi only
+        # browses, on the LAN only.
+        unzen-sonos-mdns =
+          let
+            c = self.nixosConfigurations.unzen.config;
+            avahi = c.services.avahi;
+          in
+          assert avahi.enable;
+          assert avahi.allowInterfaces == [ "bond0" ];
+          assert avahi.openFirewall;
+          assert !avahi.publish.enable;
+          assert !avahi.nssmdns4;
+          assert builtins.elem 5353 c.networking.firewall.allowedUDPPorts;
+          assert builtins.elem pkgs.avahi c.systemd.services.pyxis.path;
+          # Only Pyxis gets avahi-browse.
+          assert !(builtins.elem pkgs.avahi c.systemd.services.ossicle.path);
+          assert lib.hasInfix (builtins.unsafeDiscardStringContext "${pkgs.avahi}/bin") (
+            builtins.unsafeDiscardStringContext c.systemd.services.pyxis.environment.PATH
+          );
+          pkgs.runCommand "unzen-sonos-mdns" { } "touch $out";
       };
     };
 
@@ -141,6 +161,19 @@
         };
         # Sonos fetches media from this LAN-only listener, not the RPC backend.
         networking.firewall.interfaces.bond0.allowedTCPPorts = [ 9000 ];
+        # The Sonos speakers do not answer SSDP M-SEARCH, but they answer mDNS.
+        # Pyxis's Sonos plugin runs `avahi-browse _sonos._tcp`, which needs the
+        # daemon and the binary on the unit's PATH. Avahi only browses: it
+        # publishes nothing and listens only on the LAN, not on tailscale0 or
+        # the VPN veth.
+        services.avahi = {
+          enable = true;
+          allowInterfaces = [ "bond0" ];
+          openFirewall = true;
+          nssmdns4 = false;
+          publish.enable = false;
+        };
+        systemd.services.pyxis.path = [ pkgs.avahi ];
         mountainous.serviceApps.ossicle = {
           port = 4388;
           serverArgs = [
