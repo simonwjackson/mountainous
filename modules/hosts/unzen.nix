@@ -55,15 +55,6 @@
           assert lib.hasInfix " /srv/lakes/towada " (health.text + " ");
           assert !(lib.hasInfix "/srv/lakes/towada/media" health.text);
           pkgs.runCommand "unzen-towada-health" { } "touch $out";
-        # Pyxis finds Sonos speakers by SSDP; their unicast replies must pass.
-        unzen-ssdp =
-          let
-            fw = self.nixosConfigurations.unzen.config.networking.firewall;
-            rule = "nixos-fw -i bond0 -s 192.168.1.0/24 -p udp --sport 1900 -j nixos-fw-accept";
-          in
-          assert lib.hasInfix "iptables -w -A ${rule}" fw.extraCommands;
-          assert lib.hasInfix "iptables -w -D ${rule}" fw.extraStopCommands;
-          pkgs.runCommand "unzen-ssdp" { } "touch $out";
       };
     };
 
@@ -150,17 +141,6 @@
         };
         # Sonos fetches media from this LAN-only listener, not the RPC backend.
         networking.firewall.interfaces.bond0.allowedTCPPorts = [ 9000 ];
-        # Pyxis's Sonos discovery sends an SSDP M-SEARCH to 239.255.255.250:1900
-        # from an ephemeral port. Each speaker answers by unicast from port
-        # 1900 to that port. Conntrack does not match a unicast reply to a
-        # multicast request, so without this rule nixos-fw drops the replies.
-        # Accept only UDP from source port 1900, from the LAN, on bond0.
-        networking.firewall.extraCommands = ''
-          iptables -w -A nixos-fw -i bond0 -s 192.168.1.0/24 -p udp --sport 1900 -j nixos-fw-accept
-        '';
-        networking.firewall.extraStopCommands = ''
-          iptables -w -D nixos-fw -i bond0 -s 192.168.1.0/24 -p udp --sport 1900 -j nixos-fw-accept 2>/dev/null || true
-        '';
         mountainous.serviceApps.ossicle = {
           port = 4388;
           serverArgs = [
