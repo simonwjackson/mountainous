@@ -847,16 +847,18 @@
         "flake-utils": "flake-utils_2",
         "inputplumber-nixpkgs": "inputplumber-nixpkgs",
         "nixpkgs": "nixpkgs_5",
+        "op6-mobile-nixos": "op6-mobile-nixos",
+        "op6-nixpkgs": "op6-nixpkgs",
         "proseql": "proseql",
         "rust-overlay": "rust-overlay",
         "tabs6-nixpkgs": "tabs6-nixpkgs"
       },
       "locked": {
-        "lastModified": 1795357567,
-        "narHash": "sha256-DSMTDhT92MPveEVkHehRfA8DIBityCEPRZVTR8JCJhw=",
+        "lastModified": 1795493784,
+        "narHash": "sha256-+IHK30hDF+KQLvJl0pKffcPCOHVSECcwjQGyTPuWa9I=",
         "owner": "korri-os",
         "repo": "korri",
-        "rev": "2ff0d6264d98ef95f658d4ebf344cf8753e5c1a7",
+        "rev": "fa26c703a4f544c7d923172595a0e90edd4815f3",
         "type": "github"
       },
       "original": {
@@ -1476,6 +1478,39 @@
         "owner": "nzbfast",
         "ref": "v1.7.1",
         "repo": "nzbfast",
+        "type": "github"
+      }
+    },
+    "op6-mobile-nixos": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1795193709,
+        "narHash": "sha256-HRXYVTQCtaEH40k1qB6QgNxFpII9CtWQEzqdhrxfXUQ=",
+        "owner": "mwlaboratories",
+        "repo": "mobile-nixos",
+        "rev": "a64dd6570519ddb3921654cf6b9ba41ac8ba6e88",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mwlaboratories",
+        "repo": "mobile-nixos",
+        "rev": "a64dd6570519ddb3921654cf6b9ba41ac8ba6e88",
+        "type": "github"
+      }
+    },
+    "op6-nixpkgs": {
+      "locked": {
+        "lastModified": 1794890597,
+        "narHash": "sha256-lME2lHoDHAaSHP3/okgiVoJ0icVEvsQH8LeU3We7tcc=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "04906337b6d53e8bb0eaf0470ae9f070a4d4eb55",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "04906337b6d53e8bb0eaf0470ae9f070a4d4eb55",
         "type": "github"
       }
     },
