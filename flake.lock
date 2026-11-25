@@ -928,11 +928,11 @@
         "tabs6-nixpkgs": "tabs6-nixpkgs"
       },
       "locked": {
-        "lastModified": 1795607284,
-        "narHash": "sha256-3Xx9c+5zkIFRH9G0SrnZDLWrBANYZHgXQQo8TQo8dks=",
+        "lastModified": 1795621095,
+        "narHash": "sha256-lALvLXqFiaIkMmKncHQ3/X6k5zt5OIG6vMZChXUD3rA=",
         "owner": "korri-os",
         "repo": "korri",
-        "rev": "878e68b45c9778a44aa25ece8bd48575484a633e",
+        "rev": "fb1068c7eba4602e445f8508e5eda1075097d796",
         "type": "github"
       },
       "original": {
