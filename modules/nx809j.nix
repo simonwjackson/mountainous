@@ -19,6 +19,12 @@
         import ../lib/nx809j-kernel.nix { inherit pkgs inputs; }
       );
       services.korriProduct.kernel.overrideReason = "NX809J drivers are in the board port, based on linux-next.";
+      services.udev.packages = [
+        (pkgs.runCommand "nx809j-modem-recovery-rule" { } ''
+          install -Dm444 ${inputs.nx809j-port}/device/rootfs/usr/lib/udev/rules.d/80-nx809j-modem-recovery.rules \
+            $out/lib/udev/rules.d/80-nx809j-modem-recovery.rules
+        '')
+      ];
       hardware.deviceTree = {
         enable = true;
         name = "qcom/kaanapali-nubia-nx809j.dtb";

@@ -23,16 +23,7 @@
         config.system.build.hensouKit
         inputs.tarn.packages.${pkgs.stdenv.hostPlatform.system}.default
       ];
-      services.korriProduct = {
-        runtimeAccount.uid = 56774;
-        usbGadget = {
-          name = "asama";
-          product = "Asama NixOS";
-          address = "10.42.249.1";
-          hostMac = "02:00:00:00:f9:01";
-          deviceMac = "02:00:00:00:f9:02";
-        };
-      };
+      services.korriProduct.runtimeAccount.uid = 56774;
       # Do not claim Denial's seat. Nested Sway and the mode switch are later work.
       services.korriLinuxHost.compositor = {
         backend = "headless";

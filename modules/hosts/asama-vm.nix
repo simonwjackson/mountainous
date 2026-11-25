@@ -34,14 +34,8 @@
           "video=Virtual-1:1216x2688"
           "quiet"
         ];
-        systemd.services.usb-gadget.enable = false;
-        # No fleet decryption key or tailnet identity in the guest. Rakku is
-        # reached through Myoko's NAT; login uses the operator's SSH key.
-        system.activationScripts.setupSecrets.text = lib.mkForce "";
-        system.activationScripts.setupSecretsForUsers.text = lib.mkForce "";
-        users.users.simon.hashedPasswordFile = lib.mkForce null;
-        users.users.root.hashedPasswordFile = lib.mkForce null;
-        systemd.services.tailscale-join.enable = false;
+        # The guest has no cable network or USB device controller.
+        disabledModules = [ "${inputs.korri}/nix/product/usb-gadget.nix" ];
         programs.denial.package = pkgs.denial.overrideAttrs (old: {
           postInstall = (old.postInstall or "") + ''
             install -Dm755 ${compositor}/bin/deniald $out/bin/deniald
