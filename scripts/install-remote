@@ -42,6 +42,8 @@ TARGET="${2:-}"
 
 Every disk in that host's disko layout is destroyed."
 
+[ "$HOST" != asama ] || die "refusing asama: the NX809J has protected UFS partitions"
+
 cd "$REPO"
 
 echo "=== host ==="

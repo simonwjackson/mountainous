@@ -70,6 +70,14 @@
 
       # The app must refuse to run without both arguments, before it touches
       # the network, and must point at the pinned nixos-anywhere.
+      checks.install-refuses-asama = pkgs.runCommand "install-refuses-asama" { } ''
+        if msg=$(${lib.getExe install} asama root@invalid 2>&1); then
+          echo "installer accepted asama" >&2
+          exit 1
+        fi
+        grep -Fx 'error: refusing asama: the NX809J has protected UFS partitions' <<< "$msg"
+        touch "$out"
+      '';
       checks.install-app = pkgs.runCommand "install-app-check" { } ''
         set +e
         msg=$(${lib.getExe install} 2>&1); rc=$?
