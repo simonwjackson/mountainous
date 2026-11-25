@@ -15,6 +15,7 @@
     system = "x86_64-linux";
     layers = [
       "desktop"
+      "desktop-shared"
       "disk"
       # Hensou Files: its service, the folder handler, the udisks2 rule
       # (modules/hensou-files.nix).

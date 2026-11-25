@@ -18,6 +18,7 @@
     system = "x86_64-linux";
     layers = [
       "desktop"
+      "desktop-shared"
       "disk"
       "portable"
       "galaxy-book3"

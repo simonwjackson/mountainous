@@ -2,6 +2,19 @@
 # Toolkit files are generated outputs, never a second preference store.
 { inputs, ... }:
 let
+  themePackages = pkgs: [
+    (desktopThemeCommand pkgs)
+    (import ../lib/native-themes.nix { inherit pkgs inputs; })
+    pkgs.libsForQt5.qt5ct
+    pkgs.qt6Packages.qt6ct
+    pkgs.libsForQt5.qtstyleplugin-kvantum
+    pkgs.qt6Packages.qtstyleplugin-kvantum
+    # gsettings is the documented front end to the same dconf keys the
+    # switcher writes. dconf alone is enough for the script; gsettings is
+    # there so the keys can be read and set by hand.
+    pkgs.glib
+  ];
+
   themes = builtins.fromJSON (builtins.readFile ./quickshell/themes.json);
   validFaces =
     registry:
@@ -340,182 +353,209 @@ in
 {
   # The packaged switcher in a private D-Bus session with a real dconf:
   # mode, the extra-dark file, toggles, reapply and a missing file.
-  perSystem = { pkgs, config, ... }: {
-    # Native CLI target for headless checks on each flake system. The NixOS
-    # module below uses the same factory for the installed command.
-    packages.desktop-theme = desktopThemeCommand pkgs;
-    packages.desktop-native-themes = import ../lib/native-themes.nix { inherit pkgs inputs; };
-    checks.native-themes =
-      let
-        kitPalettes = import ../lib/kit-palettes.nix {
-          inherit pkgs;
-          kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
-        };
-        qt5Probe = import ../lib/native-qt-probe.nix {
-          inherit pkgs qtPlatformTheme;
-          qt = pkgs.libsForQt5;
-          ct = pkgs.libsForQt5.qt5ct;
-          kvantum = pkgs.libsForQt5.qtstyleplugin-kvantum;
-          name = "native-qt5-probe";
-        };
-        qt6Probe = import ../lib/native-qt-probe.nix {
-          inherit pkgs qtPlatformTheme;
-          qt = pkgs.qt6Packages;
-          ct = pkgs.qt6Packages.qt6ct;
-          kvantum = pkgs.qt6Packages.qtstyleplugin-kvantum;
-          name = "native-qt6-probe";
-        };
-      in
-      pkgs.runCommand "native-themes"
-        {
-          nativeBuildInputs = [
-            pkgs.bash
-            pkgs.coreutils
-            pkgs.dbus
-            pkgs.dconf
-            pkgs.gnugrep
-            (pkgs.python3.withPackages (p: [ p.pillow ]))
-            pkgs.ghostty
-            pkgs.libsForQt5.qt5ct
-            pkgs.qt6Packages.qt6ct
-            pkgs.libsForQt5.qtstyleplugin-kvantum
-            pkgs.qt6Packages.qtstyleplugin-kvantum
-            pkgs.nodejs
-          ];
-          DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
-          SCHEMES_JSON = ../scripts/system-colour-schemes.json;
-          KIT_PALETTES = kitPalettes;
-          # Phase 4: icons, cursors and the desktop pattern, asserted after
-          # every set, toggle and reapply in scripts/test-native-themes.
-          DESKTOP_ART = import ../lib/desktop-art.nix { inherit pkgs inputs; };
-          DESKTOP_PATTERN_TEST = "${./quickshell}/desktop-art.test.js";
-          DESKTOP_PATTERN_JS = "${./quickshell}/desktop-art.js";
-          THEMES_JSON = "${./quickshell}/themes.json";
-          FONTCONFIG_FILE = pkgs.makeFontsConf {
-            fontDirectories = [
-              config.packages.chicagoflf
-              config.packages.w95fa-grid
-              config.packages.terminal-fonts
-              pkgs.dejavu_fonts
-              pkgs.nerd-fonts.symbols-only
-            ];
-          };
-          GHOSTTY_ROOT_CONFIG = ghosttyRootConfig pkgs;
-          OBS_LIBRARY = "${pkgs.obs-studio}/lib/libobs.so";
-          NATIVE_OBS_PROBE = ../tests/native-obs.py;
-          NATIVE_QT5_PROBE = "${qt5Probe}/bin/native-qt-probe";
-          NATIVE_QT6_PROBE = "${qt6Probe}/bin/native-qt-probe";
-        }
-        ''
-          bash ${../scripts/test-native-themes} ${desktopThemeCommand pkgs}/bin/desktop-theme ${
-            import ../lib/native-themes.nix { inherit pkgs inputs; }
-          }
-          native=${import ../lib/native-themes.nix { inherit pkgs inputs; }}
-          python3 ${../tests/native-palettes.py} ${../scripts/generate-native-themes.py} ${kitPalettes} "$native"
-          python3 ${../tests/desktop-art.py} "$DESKTOP_ART" "$THEMES_JSON" ${./web-apps.json} ${./web-app-pwas.json}
-          node "$DESKTOP_PATTERN_TEST" "$DESKTOP_PATTERN_JS" "$THEMES_JSON"
-          export HOME="$TMPDIR/home" XDG_CONFIG_HOME="$TMPDIR/config" XDG_STATE_HOME="$TMPDIR/state" XDG_CACHE_HOME="$TMPDIR/cache"
-          mkdir -p "$HOME"
-          for config in "$native"/share/mountainous/native/*/ghostty.conf; do
-            ghostty +validate-config --config-file="$config"
-          done
-          touch $out
-        '';
-    checks.desktop-appearances =
-      pkgs.runCommand "desktop-appearances"
-        {
-          nativeBuildInputs = [ pkgs.nodejs ];
-          KIT_PALETTES = import ../lib/kit-palettes.nix {
+  perSystem =
+    { pkgs, config, ... }:
+    {
+      # Native CLI target for headless checks on each flake system. The NixOS
+      # module below uses the same factory for the installed command.
+      packages.desktop-theme = desktopThemeCommand pkgs;
+      packages.desktop-native-themes = import ../lib/native-themes.nix { inherit pkgs inputs; };
+      checks.native-themes =
+        let
+          kitPalettes = import ../lib/kit-palettes.nix {
             inherit pkgs;
             kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
           };
-          SCHEMES_JSON = ../scripts/system-colour-schemes.json;
-          HENSOU_QML_ROOT = "${
-            inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
-          }/lib/qt-6/qml";
-        }
-        ''
-          node ${./quickshell/desktop-art.test.js} ${./quickshell/desktop-art.js} ${./quickshell}/themes.json
-          node ${./quickshell/web-theme.test.js} ${./quickshell/web-theme.js} ${./quickshell/web-theme-page.js} ${./quickshell}
-          touch $out
-        '';
-    checks.desktop-appearance-surface =
-      pkgs.runCommand "desktop-appearance-surface"
-        {
-          nativeBuildInputs = [
-            (pkgs.python3.withPackages (p: [ p.pillow ]))
-            pkgs.quickshell
-            pkgs.labwc
-            pkgs.grim
-          ];
-          SCHEMES_JSON = ../scripts/system-colour-schemes.json;
-          QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
-          QML_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
-          FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
-        }
-        ''
-          export NOTIFICATION_SCHEMA_JS="$TMPDIR/notification-schema.js"
-          bash ${./quickshell/notification-schema-js.sh} ${../packages/notify-sync/schema/ui-socket.v1.json} > "$NOTIFICATION_SCHEMA_JS"
-          python3 ${../scripts/test-theme-appearance-host.py} ${./quickshell} \
-            ${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml \
-            ${pkgs.quickshell}/bin/qs ${pkgs.labwc}/bin/labwc
-          touch $out
-        '';
-    checks.theme-appearance-host =
-      pkgs.runCommand "theme-appearance-host"
-        {
-          nativeBuildInputs = [
-            pkgs.python3
-            pkgs.quickshell
-          ];
-        }
-        ''
-          python3 ${../scripts/test-theme-appearance-host.py} ${./quickshell} \
-            ${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml \
-            ${pkgs.quickshell}/bin/qs
-          touch $out
-        '';
-    checks.ghostty-reload =
-      pkgs.runCommand "ghostty-reload"
-        {
-          nativeBuildInputs = [
-            pkgs.dbus
-            (pkgs.python3.withPackages (p: [ p.pygobject3 ]))
-          ];
-        }
-        ''
-          dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- python3 ${../tests/ghostty-reload.py} ${../scripts/reload-ghostty.py}
-          touch $out
-        '';
-    checks.desktop-theme =
-      assert validFaces themes;
-      assert !(validFaces [ { id = "missing"; } ]);
-      assert
-        !(validFaces [
+          qt5Probe = import ../lib/native-qt-probe.nix {
+            inherit pkgs qtPlatformTheme;
+            qt = pkgs.libsForQt5;
+            ct = pkgs.libsForQt5.qt5ct;
+            kvantum = pkgs.libsForQt5.qtstyleplugin-kvantum;
+            name = "native-qt5-probe";
+          };
+          qt6Probe = import ../lib/native-qt-probe.nix {
+            inherit pkgs qtPlatformTheme;
+            qt = pkgs.qt6Packages;
+            ct = pkgs.qt6Packages.qt6ct;
+            kvantum = pkgs.qt6Packages.qtstyleplugin-kvantum;
+            name = "native-qt6-probe";
+          };
+        in
+        pkgs.runCommand "native-themes"
           {
-            id = "invalid";
-            pyxampFace = "unknown";
+            nativeBuildInputs = [
+              pkgs.bash
+              pkgs.coreutils
+              pkgs.dbus
+              pkgs.dconf
+              pkgs.gnugrep
+              (pkgs.python3.withPackages (p: [ p.pillow ]))
+              pkgs.ghostty
+              pkgs.libsForQt5.qt5ct
+              pkgs.qt6Packages.qt6ct
+              pkgs.libsForQt5.qtstyleplugin-kvantum
+              pkgs.qt6Packages.qtstyleplugin-kvantum
+              pkgs.nodejs
+            ];
+            DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
+            SCHEMES_JSON = ../scripts/system-colour-schemes.json;
+            KIT_PALETTES = kitPalettes;
+            # Phase 4: icons, cursors and the desktop pattern, asserted after
+            # every set, toggle and reapply in scripts/test-native-themes.
+            DESKTOP_ART = import ../lib/desktop-art.nix { inherit pkgs inputs; };
+            DESKTOP_PATTERN_TEST = "${./quickshell}/desktop-art.test.js";
+            DESKTOP_PATTERN_JS = "${./quickshell}/desktop-art.js";
+            THEMES_JSON = "${./quickshell}/themes.json";
+            FONTCONFIG_FILE = pkgs.makeFontsConf {
+              fontDirectories = [
+                config.packages.chicagoflf
+                config.packages.w95fa-grid
+                config.packages.terminal-fonts
+                pkgs.dejavu_fonts
+                pkgs.nerd-fonts.symbols-only
+              ];
+            };
+            GHOSTTY_ROOT_CONFIG = ghosttyRootConfig pkgs;
+            OBS_LIBRARY = "${pkgs.obs-studio}/lib/libobs.so";
+            NATIVE_OBS_PROBE = ../tests/native-obs.py;
+            NATIVE_QT5_PROBE = "${qt5Probe}/bin/native-qt-probe";
+            NATIVE_QT6_PROBE = "${qt6Probe}/bin/native-qt-probe";
           }
-        ]);
-      pkgs.runCommand "desktop-theme"
-        {
-          nativeBuildInputs = [
-            pkgs.bash
-            pkgs.coreutils
-            pkgs.dbus
-            pkgs.dconf
-          ];
-          DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
-        }
-        ''
-          export THEMES_JSON=${./quickshell/themes.json}
-          bash ${../scripts/test-desktop-theme} ${desktopThemeCommand pkgs}/bin/desktop-theme
-          touch $out
-        '';
-  };
+          ''
+            bash ${../scripts/test-native-themes} ${desktopThemeCommand pkgs}/bin/desktop-theme ${
+              import ../lib/native-themes.nix { inherit pkgs inputs; }
+            }
+            native=${import ../lib/native-themes.nix { inherit pkgs inputs; }}
+            python3 ${../tests/native-palettes.py} ${../scripts/generate-native-themes.py} ${kitPalettes} "$native"
+            python3 ${../tests/desktop-art.py} "$DESKTOP_ART" "$THEMES_JSON" ${./web-apps.json} ${./web-app-pwas.json}
+            node "$DESKTOP_PATTERN_TEST" "$DESKTOP_PATTERN_JS" "$THEMES_JSON"
+            export HOME="$TMPDIR/home" XDG_CONFIG_HOME="$TMPDIR/config" XDG_STATE_HOME="$TMPDIR/state" XDG_CACHE_HOME="$TMPDIR/cache"
+            mkdir -p "$HOME"
+            for config in "$native"/share/mountainous/native/*/ghostty.conf; do
+              ghostty +validate-config --config-file="$config"
+            done
+            touch $out
+          '';
+      checks.desktop-appearances =
+        pkgs.runCommand "desktop-appearances"
+          {
+            nativeBuildInputs = [ pkgs.nodejs ];
+            KIT_PALETTES = import ../lib/kit-palettes.nix {
+              inherit pkgs;
+              kit = inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml;
+            };
+            SCHEMES_JSON = ../scripts/system-colour-schemes.json;
+            HENSOU_QML_ROOT = "${
+              inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
+            }/lib/qt-6/qml";
+          }
+          ''
+            node ${./quickshell/desktop-art.test.js} ${./quickshell/desktop-art.js} ${./quickshell}/themes.json
+            node ${./quickshell/web-theme.test.js} ${./quickshell/web-theme.js} ${./quickshell/web-theme-page.js} ${./quickshell}
+            touch $out
+          '';
+      checks.desktop-appearance-surface =
+        pkgs.runCommand "desktop-appearance-surface"
+          {
+            nativeBuildInputs = [
+              (pkgs.python3.withPackages (p: [ p.pillow ]))
+              pkgs.quickshell
+              pkgs.labwc
+              pkgs.grim
+            ];
+            SCHEMES_JSON = ../scripts/system-colour-schemes.json;
+            QML2_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+            QML_IMPORT_PATH = "${pkgs.qt6.qtwebsockets}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";
+            FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+          }
+          ''
+            export NOTIFICATION_SCHEMA_JS="$TMPDIR/notification-schema.js"
+            bash ${./quickshell/notification-schema-js.sh} ${../packages/notify-sync/schema/ui-socket.v1.json} > "$NOTIFICATION_SCHEMA_JS"
+            python3 ${../scripts/test-theme-appearance-host.py} ${./quickshell} \
+              ${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml \
+              ${pkgs.quickshell}/bin/qs ${pkgs.labwc}/bin/labwc
+            touch $out
+          '';
+      checks.theme-appearance-host =
+        pkgs.runCommand "theme-appearance-host"
+          {
+            nativeBuildInputs = [
+              pkgs.python3
+              pkgs.quickshell
+            ];
+          }
+          ''
+            python3 ${../scripts/test-theme-appearance-host.py} ${./quickshell} \
+              ${inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml}/lib/qt-6/qml \
+              ${pkgs.quickshell}/bin/qs
+            touch $out
+          '';
+      checks.ghostty-reload =
+        pkgs.runCommand "ghostty-reload"
+          {
+            nativeBuildInputs = [
+              pkgs.dbus
+              (pkgs.python3.withPackages (p: [ p.pygobject3 ]))
+            ];
+          }
+          ''
+            dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- python3 ${../tests/ghostty-reload.py} ${../scripts/reload-ghostty.py}
+            touch $out
+          '';
+      checks.desktop-theme =
+        assert validFaces themes;
+        assert !(validFaces [ { id = "missing"; } ]);
+        assert
+          !(validFaces [
+            {
+              id = "invalid";
+              pyxampFace = "unknown";
+            }
+          ]);
+        pkgs.runCommand "desktop-theme"
+          {
+            nativeBuildInputs = [
+              pkgs.bash
+              pkgs.coreutils
+              pkgs.dbus
+              pkgs.dconf
+            ];
+            DBUS_SESSION_CONFIG = "${pkgs.dbus}/share/dbus-1/session.conf";
+          }
+          ''
+            export THEMES_JSON=${./quickshell/themes.json}
+            bash ${../scripts/test-desktop-theme} ${desktopThemeCommand pkgs}/bin/desktop-theme
+            touch $out
+          '';
+    };
 
   nixos.modules.desktop =
-    { pkgs, lib, ... }:
+    { config, pkgs, ... }:
+    {
+      environment.systemPackages = themePackages pkgs;
+      # Restore the saved preference and create the watched file before the bars.
+      systemd.user.services.desktop-theme = {
+        description = "Apply the saved desktop appearance";
+        wantedBy = [ "hyprland-session.target" ];
+        partOf = [ "graphical-session.target" ];
+        before = [ "quickshell.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = "${config.system.build.desktopTheme}/bin/desktop-theme reapply";
+          RemainAfterExit = true;
+          TimeoutStartSec = 15;
+        };
+      };
+
+    };
+
+  nixos.modules.desktop-shared =
+    {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
     let
       desktop-theme = desktopThemeCommand pkgs;
 
@@ -541,32 +581,7 @@ in
       qt.enable = true;
       environment.variables.QT_QPA_PLATFORMTHEME = lib.mkDefault qtPlatformTheme;
 
-      environment.systemPackages = [
-        desktop-theme
-        nativeThemes
-        pkgs.libsForQt5.qt5ct
-        pkgs.qt6Packages.qt6ct
-        pkgs.libsForQt5.qtstyleplugin-kvantum
-        pkgs.qt6Packages.qtstyleplugin-kvantum
-        # gsettings is the documented front end to the same dconf keys the
-        # switcher writes. dconf alone is enough for the script; gsettings is
-        # there so the keys can be read and set by hand.
-        pkgs.glib
-      ];
-
-      # Restore the saved preference and create the watched file before the bars.
-      systemd.user.services.desktop-theme = {
-        description = "Apply the saved desktop appearance";
-        wantedBy = [ "hyprland-session.target" ];
-        partOf = [ "graphical-session.target" ];
-        before = [ "quickshell.service" ];
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = "${desktop-theme}/bin/desktop-theme reapply";
-          RemainAfterExit = true;
-          TimeoutStartSec = 15;
-        };
-      };
+      environment.systemPackages = lib.mkIf (!config.programs.hyprland.enable) (themePackages pkgs);
 
       hjem.users.simon.files = {
         ".config/ghostty/config.ghostty".source = ghosttyConfig;

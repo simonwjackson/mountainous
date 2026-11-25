@@ -24,7 +24,7 @@ in
       }
     );
   };
-  nixos.modules.desktop = { lib, pkgs, ... }: {
+  nixos.modules.desktop-shared = { lib, pkgs, ... }: {
     boot.plymouth = {
       enable = lib.mkDefault true;
       theme = lib.mkDefault "mountainous-platinum";

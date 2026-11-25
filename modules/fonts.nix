@@ -28,8 +28,9 @@ let
     };
   # One font implementation for the shell and standalone Hensou applications.
   # Keep Hensou's tested nixpkgs pin; do not rebuild these with fleet overrides.
-  chicagoflf = pkgs: inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.chicagoflf;
-  w95fa-grid = pkgs: inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.w95fa-grid;
+  # Both outputs contain only TTF data. Hensou publishes these once, under
+  # x86_64-linux; sharing the data does not run x86 code on the phone.
+  inherit (inputs.hensou.packages.x86_64-linux) chicagoflf w95fa-grid;
 
 in
 {
@@ -48,8 +49,8 @@ in
               ${pkgs.nerd-fonts.symbols-only}/share/fonts/truetype/NerdFonts/Symbols/SymbolsNerdFontMono-Regular.ttf
             touch $out
           '';
-      packages.chicagoflf = chicagoflf pkgs;
-      packages.w95fa-grid = w95fa-grid pkgs;
+      packages.chicagoflf = chicagoflf;
+      packages.w95fa-grid = w95fa-grid;
       checks.w95fa-grid =
         pkgs.runCommand "w95fa-grid-font"
           {
@@ -83,7 +84,7 @@ in
           '';
     };
 
-  nixos.modules.desktop =
+  nixos.modules.desktop-shared =
     { pkgs, ... }:
     {
       fonts = {
@@ -98,8 +99,8 @@ in
           ])
           ++ [
             (terminal-fonts pkgs)
-            (chicagoflf pkgs)
-            (w95fa-grid pkgs)
+            chicagoflf
+            w95fa-grid
           ];
         fontconfig = {
           defaultFonts = {

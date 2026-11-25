@@ -95,7 +95,7 @@
           # reaches the unit.
           QT_QPA_PLATFORM = "wayland";
           QML2_IMPORT_PATH = "${
-            inputs.hensou.packages.${pkgs.stdenv.hostPlatform.system}.hensou-qml
+            config.system.build.hensouKit
           }/lib/qt-6/qml:${pkgs.qt6.qtwebsockets}/lib/qt-6/qml";
           OCI_EGRESS_ENABLED = "1";
         };

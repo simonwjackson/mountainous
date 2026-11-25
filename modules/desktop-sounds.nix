@@ -1,6 +1,12 @@
 # Original sound assets and the semantic playback contract. No real audio in tests.
 { inputs, ... }:
 {
+  # Assets, not the Quickshell sound player. Mobile sessions can consume
+  # the same banks and Qt Quick kit without starting Quickshell.
+  nixos.modules.desktop-shared = {
+    system.build.desktopSoundBanks = ./quickshell/themes;
+    system.build.hensouKit = inputs.hensou.packages.x86_64-linux.hensou-qml;
+  };
   nixos.modules.desktop = { pkgs, ... }: {
     systemd.user.services.quickshell.environment.QML_IMPORT_PATH =
       "${pkgs.qt6.qtmultimedia}/lib/qt-6/qml";

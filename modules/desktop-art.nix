@@ -2,6 +2,12 @@
 # docs/plans/desktop-themes/phase4-art.md). desktop-theme selects the icon
 # and cursor themes; Quickshell draws the pattern from themes.json.
 { inputs, ... }:
+let
+  artPackages = pkgs: [
+    (import ../lib/desktop-art.nix { inherit pkgs inputs; })
+    (import ../lib/platinum-icons.nix { inherit pkgs; })
+  ];
+in
 {
   perSystem =
     { pkgs, ... }:
@@ -32,14 +38,27 @@
     };
 
   nixos.modules.desktop =
-    { pkgs, lib, ... }:
+    { pkgs, ... }:
+    {
+      # Keep these entries in the existing host's system-path merge order.
+      environment.systemPackages = artPackages pkgs;
+      # Pin the helper for the user service; do not rely on a login-shell PATH.
+      systemd.user.services.quickshell.environment.MOUNTAINOUS_PLATINUM_ICON = "${
+        import ../lib/platinum-icons.nix { inherit pkgs; }
+      }/bin/mountainous-platinum-icon";
+    };
+
+  nixos.modules.desktop-shared =
+    {
+      config,
+      pkgs,
+      lib,
+      ...
+    }:
     {
       # share/icons: Mountainous-{platinum,memphis} icon themes, Chicago95,
       # and the two cursor themes (XCursor and hyprcursor in one directory).
-      environment.systemPackages = [
-        (import ../lib/desktop-art.nix { inherit pkgs inputs; })
-        (import ../lib/platinum-icons.nix { inherit pkgs; })
-      ];
+      environment.systemPackages = lib.mkIf (!config.programs.hyprland.enable) (artPackages pkgs);
       # Platinum tokens drawn at build time into the Mountainous-platinum-apps
       # theme, which Mountainous-platinum inherits first
       # (scripts/platinum-app-tokens.py): 32 px art for every app the theme
@@ -58,10 +77,6 @@
             "$out/share/icons/Mountainous-platinum-apps"
         fi
       '';
-      # Pin the helper for the user service; do not rely on a login-shell PATH.
-      systemd.user.services.quickshell.environment.MOUNTAINOUS_PLATINUM_ICON = "${
-        import ../lib/platinum-icons.nix { inherit pkgs; }
-      }/bin/mountainous-platinum-icon";
       # A client with no XCURSOR_THEME loads "default"; send it to the alias
       # desktop-theme keeps in ~/.icons (scripts/apply-native-theme.py).
       xdg.icons.fallbackCursorThemes = lib.mkBefore [
