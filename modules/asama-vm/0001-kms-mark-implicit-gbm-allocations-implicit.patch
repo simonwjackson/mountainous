@@ -1,0 +1,79 @@
+diff --git a/compositor/src/bin/deniald/gpu_transfer/mod.rs b/compositor/src/bin/deniald/gpu_transfer/mod.rs
+index 7ad2575..f67ce5f 100644
+--- a/compositor/src/bin/deniald/gpu_transfer/mod.rs
++++ b/compositor/src/bin/deniald/gpu_transfer/mod.rs
+@@ -809,6 +809,15 @@ impl GpuTarget {
+             .dmabuf_render_formats()
+             .contains(&lease.scanout.format())
+         {
++            let scanout = lease.scanout.format();
++            let same_code: Vec<_> = destination
++                .display
++                .dmabuf_render_formats()
++                .iter()
++                .filter(|f| f.code == scanout.code)
++                .map(|f| f.modifier)
++                .collect();
++            tracing::warn!(?scanout, ?same_code, "vm-debug: destination render formats");
+             return Err("destination EGL cannot render the returned scanout layout".into());
+         }
+         let sampled = if pair.is_none() {
+diff --git a/compositor/src/bin/deniald/kms_state.rs b/compositor/src/bin/deniald/kms_state.rs
+index 6833208..b028a35 100644
+--- a/compositor/src/bin/deniald/kms_state.rs
++++ b/compositor/src/bin/deniald/kms_state.rs
+@@ -668,7 +668,12 @@ impl SceneTransferAllocator {
+                             )
+                         };
+                         let source_buffer = match allocation {
+-                            Ok(bo) => GbmBuffer::from_bo(bo, false),
++                            // A buffer from plain gbm_bo_create has the driver's
++                            // implicit layout. Mark it implicit so its format
++                            // reports MOD_INVALID and EGL imports it without an
++                            // explicit modifier; virgl allocates LINEAR here but
++                            // cannot bind an explicit-LINEAR import as an FBO.
++                            Ok(bo) => GbmBuffer::from_bo(bo, !explicit),
+                             Err(error) => {
+                                 failures.push(format!(
+                                     "{fourcc:?} source flags={flags:?} explicit={explicit}: {error}"
+@@ -801,7 +806,22 @@ impl ScanoutBuffer {
+         code: Fourcc,
+         modifiers: &[Modifier],
+     ) -> Result<Self, Box<dyn Error>> {
+-        let buffer = allocator.create_buffer(size.width, size.height, code, modifiers)?;
++        // DENIAL_VM_IMPLICIT_SCANOUT (virtio-gpu with virgl): the negotiated
++        // list is explicit LINEAR, which virtio-gpu rejects in ADDFB2 and
++        // virgl's EGL cannot render into. Allocate with the implicit layout.
++        // Smithay's allocator still reports virgl's buffer as explicit LINEAR,
++        // so allocate through plain gbm_bo_create and mark it implicit here.
++        let buffer = if std::env::var_os("DENIAL_VM_IMPLICIT_SCANOUT").is_some() {
++            let bo = allocator.as_ref().create_buffer_object::<()>(
++                size.width,
++                size.height,
++                code,
++                GbmBufferFlags::SCANOUT | GbmBufferFlags::RENDERING,
++            )?;
++            GbmBuffer::from_bo(bo, true)
++        } else {
++            allocator.create_buffer(size.width, size.height, code, modifiers)?
++        };
+         let format = smithay::backend::allocator::Buffer::format(&buffer);
+         let dmabuf = buffer.export()?;
+         let framebuffer = if cross_device {
+@@ -1060,8 +1080,15 @@ impl OutputSwapchains {
+                 .hdr
+                 .zip(super::output_color::hdr_request(&scanout.output.name))
+                 .map(|(display, mode)| super::output_color::HdrOutput::new(display, mode));
++            // DENIAL_VM_IMPLICIT_SCANOUT: virtio-gpu scans out XR24 only.
++            let scanout_fourccs: &[Fourcc] =
++                if std::env::var_os("DENIAL_VM_IMPLICIT_SCANOUT").is_some() {
++                    &[Fourcc::Xrgb8888]
++                } else {
++                    &SCANOUT_FOURCCS
++                };
+             let formats = compatible_scanout_formats(
+-                &SCANOUT_FOURCCS,
++                scanout_fourccs,
+                 &[&scanout.surface.plane_info().formats],
+                 render_formats,
+             );
