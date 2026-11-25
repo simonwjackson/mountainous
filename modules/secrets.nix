@@ -24,12 +24,14 @@
     {
       config,
       inputs,
+      enrolled,
+      lib,
       ...
     }:
     {
       imports = [ inputs.sops-nix.nixosModules.sops ];
 
-      sops = {
+      sops = lib.mkIf enrolled {
         defaultSopsFile = ../secrets/fleet.yaml;
 
         # The host decrypts with the SSH host key it already has, so there is no
@@ -84,7 +86,7 @@
       # belongs in base rather than in each host. Both files are plain paths
       # under /run/secrets, which is a tmpfs -- the decrypted values never touch
       # a disk.
-      mountainous.tailscale.oauthClientIdFile = config.sops.secrets.tailscale-oauth-id.path;
-      mountainous.tailscale.oauthSecretFile = config.sops.secrets.tailscale-oauth-secret.path;
+      mountainous.tailscale.oauthClientIdFile = lib.mkIf enrolled config.sops.secrets.tailscale-oauth-id.path;
+      mountainous.tailscale.oauthSecretFile = lib.mkIf enrolled config.sops.secrets.tailscale-oauth-secret.path;
     };
 }

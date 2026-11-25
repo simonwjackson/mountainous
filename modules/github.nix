@@ -13,23 +13,23 @@
 let
   credential = "github-token";
   # Fleet hosts only; installer images have no mountainous options.
-  hosts = builtins.attrNames config.nixos.hosts;
+  hosts = builtins.attrNames config.nixos.enrolledHosts;
 in
 {
-  # Every host carries the signed-in gh, and the token it needs.
+  # Enrolled hosts carry the signed-in gh and its token.
   perSystem =
     { pkgs, lib, ... }:
     let
       problems = lib.concatMap (
-          host:
-          let
-            c = self.nixosConfigurations.${host}.config;
-            want = ok: msg: lib.optional (!ok) "${host}: ${msg}";
-          in
-          want (lib.elem c.mountainous.github.package c.environment.systemPackages) "gh is not installed"
-          ++ want (c.sops.secrets ? ${credential}) "the ${credential} secret is not declared"
-          ++ want (lib.elem "github" c.users.users.simon.extraGroups) "simon cannot read the GitHub token"
-        ) hosts;
+        host:
+        let
+          c = self.nixosConfigurations.${host}.config;
+          want = ok: msg: lib.optional (!ok) "${host}: ${msg}";
+        in
+        want (lib.elem c.mountainous.github.package c.environment.systemPackages) "gh is not installed"
+        ++ want (c.sops.secrets ? ${credential}) "the ${credential} secret is not declared"
+        ++ want (lib.elem "github" c.users.users.simon.extraGroups) "simon cannot read the GitHub token"
+      ) hosts;
     in
     {
       checks.github =
@@ -44,6 +44,7 @@ in
       config,
       lib,
       pkgs,
+      enrolled,
       ...
     }:
     let
@@ -51,7 +52,9 @@ in
         name = "gh";
         text = ''
           if [ -z "''${GH_TOKEN:-}" ]; then
-            for file in "''${CREDENTIALS_DIRECTORY:-/nonexistent}/${credential}" ${config.sops.secrets.${credential}.path}; do
+            for file in "''${CREDENTIALS_DIRECTORY:-/nonexistent}/${credential}" ${
+              config.sops.secrets.${credential}.path
+            }; do
               if [ -r "$file" ]; then
                 GH_TOKEN=$(<"$file")
                 export GH_TOKEN
@@ -63,30 +66,34 @@ in
         '';
       };
       # The wrapper first, so its bin/gh wins; gh's man pages and completions come along.
-      gh = pkgs.symlinkJoin {
-        name = "gh-${pkgs.gh.version}";
-        paths = [
-          signIn
+      gh =
+        if !enrolled then
           pkgs.gh
-        ];
-      };
+        else
+          pkgs.symlinkJoin {
+            name = "gh-${pkgs.gh.version}";
+            paths = [
+              signIn
+              pkgs.gh
+            ];
+          };
     in
     {
       options.mountainous.github.package = lib.mkOption {
         type = lib.types.package;
         readOnly = true;
-        description = "gh, signed in from the fleet's GitHub token. Put it on a service's PATH to give the service gh.";
+        description = "gh, signed in from the fleet token on enrolled hosts only.";
       };
 
       config = {
         mountainous.github.package = gh;
 
-        sops.secrets.${credential} = {
+        sops.secrets.${credential} = lib.mkIf enrolled {
           group = "github";
           mode = "0440";
         };
-        users.groups.github = { };
-        users.users.simon.extraGroups = [ "github" ];
+        users.groups.github = lib.mkIf enrolled { };
+        users.users.simon.extraGroups = lib.optional enrolled "github";
 
         environment.systemPackages = [ gh ];
         programs.git = {

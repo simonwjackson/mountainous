@@ -79,7 +79,10 @@ in
     flake.nixosConfigurations = lib.mapAttrs (
       hostName: host:
       host.nixpkgs.lib.nixosSystem {
-        specialArgs = { inherit inputs; };
+        specialArgs = {
+          inherit inputs;
+          inherit (host) enrolled;
+        };
         modules = [
           {
             networking.hostName = hostName;
@@ -87,12 +90,8 @@ in
           }
           host.module
         ]
-        # `base` first and unconditionally. Every machine is on the tailnet,
-        # carries the same accounts and can read its own secrets. None of that
-        # is a per-host decision, so no per-host list gets a say in it.
-        ++ map (layer: config.nixos.modules.${layer}) (
-          lib.unique ([ "base" ] ++ host.layers)
-        );
+        # Base owns the accounts and consumes fleet credentials only after enrollment.
+        ++ map (layer: config.nixos.modules.${layer}) (lib.unique ([ "base" ] ++ host.layers));
       }
     ) config.nixos.hosts;
   };

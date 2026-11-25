@@ -5,7 +5,7 @@
   ...
 }:
 let
-  hosts = config.nixos.hosts;
+  enrolledHosts = config.nixos.enrolledHosts;
   state = "/var/lib/app-updater";
   updateType = lib.types.attrsOf (
     lib.types.submodule {
@@ -88,7 +88,7 @@ in
             hostName = "yari.hummingbird-lake.ts.net";
             privateKey = "${state}/ssh/builder_ed25519";
           };
-          hosts = lib.mapAttrs (_: host: host.system) hosts;
+          hosts = lib.mapAttrs (_: host: host.system) enrolledHosts;
         }
       );
 
@@ -104,8 +104,8 @@ in
             assertion =
               inputs ? ${app.input}
               && config.mountainous.appProfiles ? ${name}
-              && builtins.all (host: hosts ? ${host}) app.hosts;
-            message = "appUpdates.${name} requires an existing input, profile and fleet hosts.";
+              && builtins.all (host: enrolledHosts ? ${host}) app.hosts;
+            message = "appUpdates.${name} requires an existing input, profile and enrolled fleet hosts.";
           }) apps;
           environment.systemPackages = [ updater ];
           systemd.services = lib.mapAttrs' (

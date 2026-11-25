@@ -1,8 +1,10 @@
 {
   hosts,
+  preEnrollment,
   lib,
   external,
 }:
+assert lib.all (c: !c.services.syncthing.enable) (lib.attrValues preEnrollment);
 assert external.status == "pass";
 builtins.all (
   name:

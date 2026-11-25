@@ -1,9 +1,21 @@
 {
   hosts,
+  preEnrollment,
   deploy,
   unzen,
   lib,
 }:
+assert lib.all (
+  name:
+  let
+    c = preEnrollment.${name};
+  in
+  !c.mountainous.appProfiles.pi.enable
+  && !c.mountainous.appDeployment.enable
+  && c.users.users.app-deploy.openssh.authorizedKeys.keys == [ ]
+  && !(lib.elem c.mountainous.appDeployment.signingPublicKey c.nix.settings.trusted-public-keys)
+  && !(deploy.nodes ? ${name})
+) (lib.attrNames preEnrollment);
 assert builtins.all (
   name:
   let

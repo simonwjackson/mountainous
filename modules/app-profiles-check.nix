@@ -13,18 +13,18 @@
       ...
     }:
     let
+      enrolledHosts = lib.mapAttrs (name: _: self.nixosConfigurations.${name}) config.nixos.enrolledHosts;
+      preEnrollment = lib.genAttrs [ "asama" "asama-vm" ] (name: self.nixosConfigurations.${name}.config);
       contract = import ../tests/app-profiles.nix {
-        inherit lib;
-        hosts = lib.genAttrs (lib.attrNames config.nixos.hosts) (name: self.nixosConfigurations.${name});
+        inherit lib preEnrollment;
+        hosts = enrolledHosts;
         deploy = self.deploy;
         unzen = self.nixosConfigurations.unzen.config;
       };
       sync = import ../tests/fleet-sync.nix {
-        inherit lib;
+        inherit lib preEnrollment;
         external = import ../tests/fleet-sync-external.nix { inherit inputs lib; };
-        hosts = lib.genAttrs (lib.attrNames config.nixos.hosts) (
-          name: self.nixosConfigurations.${name}.config
-        );
+        hosts = lib.mapAttrs (_: h: h.config) enrolledHosts;
       };
     in
     {

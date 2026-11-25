@@ -31,6 +31,7 @@
   nixos.modules.base =
     {
       config,
+      enrolled,
       lib,
       pkgs,
       ...
@@ -202,7 +203,7 @@
         '';
       };
 
-      canJoin = cfg.oauthSecretFile != null && cfg.oauthClientIdFile != null;
+      canJoin = enrolled && cfg.oauthSecretFile != null && cfg.oauthClientIdFile != null;
     in
     {
       options.mountainous.tailscale = {

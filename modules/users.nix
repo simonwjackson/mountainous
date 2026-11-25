@@ -18,7 +18,12 @@ let
 in
 {
   nixos.modules.base =
-    { config, lib, ... }:
+    {
+      config,
+      lib,
+      enrolled,
+      ...
+    }:
     {
       imports = [ inputs.hjem.nixosModules.default ];
 
@@ -66,7 +71,7 @@ in
         # hashedPasswordFile, not hashedPassword: the file is re-read on every
         # activation, so it repairs an account that was created locked rather
         # than only applying at creation time.
-        hashedPasswordFile = config.sops.secrets.user-password.path;
+        hashedPasswordFile = lib.mkIf enrolled config.sops.secrets.user-password.path;
       };
 
       # Remote deploys land as root over SSH, so root needs the same key.
@@ -74,7 +79,7 @@ in
         openssh.authorizedKeys.keys = [ flake.mountainous.sshKey ];
         # Escape hatch if the graphical login breaks. Same file as the user:
         # one password for the machine, not two to keep in step.
-        hashedPasswordFile = config.sops.secrets.user-password.path;
+        hashedPasswordFile = lib.mkIf enrolled config.sops.secrets.user-password.path;
       };
 
       hjem = {
