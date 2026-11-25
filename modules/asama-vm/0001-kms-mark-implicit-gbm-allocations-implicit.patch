@@ -2,19 +2,21 @@ diff --git a/compositor/src/bin/deniald/gpu_transfer/mod.rs b/compositor/src/bin
 index 7ad2575..f67ce5f 100644
 --- a/compositor/src/bin/deniald/gpu_transfer/mod.rs
 +++ b/compositor/src/bin/deniald/gpu_transfer/mod.rs
-@@ -809,6 +809,15 @@ impl GpuTarget {
+@@ -809,6 +809,17 @@ impl GpuTarget {
              .dmabuf_render_formats()
              .contains(&lease.scanout.format())
          {
-+            let scanout = lease.scanout.format();
-+            let same_code: Vec<_> = destination
-+                .display
-+                .dmabuf_render_formats()
-+                .iter()
-+                .filter(|f| f.code == scanout.code)
-+                .map(|f| f.modifier)
-+                .collect();
-+            tracing::warn!(?scanout, ?same_code, "vm-debug: destination render formats");
++            if std::env::var_os("DENIAL_VM_IMPLICIT_SCANOUT").is_some() {
++                let scanout = lease.scanout.format();
++                let same_code: Vec<_> = destination
++                    .display
++                    .dmabuf_render_formats()
++                    .iter()
++                    .filter(|f| f.code == scanout.code)
++                    .map(|f| f.modifier)
++                    .collect();
++                tracing::warn!(?scanout, ?same_code, "vm-debug: destination render formats");
++            }
              return Err("destination EGL cannot render the returned scanout layout".into());
          }
          let sampled = if pair.is_none() {
@@ -22,7 +24,7 @@ diff --git a/compositor/src/bin/deniald/kms_state.rs b/compositor/src/bin/denial
 index 6833208..b028a35 100644
 --- a/compositor/src/bin/deniald/kms_state.rs
 +++ b/compositor/src/bin/deniald/kms_state.rs
-@@ -668,7 +668,12 @@ impl SceneTransferAllocator {
+@@ -668,7 +668,15 @@ impl SceneTransferAllocator {
                              )
                          };
                          let source_buffer = match allocation {
@@ -32,11 +34,14 @@ index 6833208..b028a35 100644
 +                            // reports MOD_INVALID and EGL imports it without an
 +                            // explicit modifier; virgl allocates LINEAR here but
 +                            // cannot bind an explicit-LINEAR import as an FBO.
-+                            Ok(bo) => GbmBuffer::from_bo(bo, !explicit),
++                            Ok(bo) => GbmBuffer::from_bo(
++                                bo,
++                                !explicit && std::env::var_os("DENIAL_VM_IMPLICIT_SCANOUT").is_some(),
++                            ),
                              Err(error) => {
                                  failures.push(format!(
                                      "{fourcc:?} source flags={flags:?} explicit={explicit}: {error}"
-@@ -801,7 +806,22 @@ impl ScanoutBuffer {
+@@ -801,7 +809,22 @@ impl ScanoutBuffer {
          code: Fourcc,
          modifiers: &[Modifier],
      ) -> Result<Self, Box<dyn Error>> {
@@ -60,7 +65,7 @@ index 6833208..b028a35 100644
          let format = smithay::backend::allocator::Buffer::format(&buffer);
          let dmabuf = buffer.export()?;
          let framebuffer = if cross_device {
-@@ -1060,8 +1080,15 @@ impl OutputSwapchains {
+@@ -1060,8 +1083,15 @@ impl OutputSwapchains {
                  .hdr
                  .zip(super::output_color::hdr_request(&scanout.output.name))
                  .map(|(display, mode)| super::output_color::HdrOutput::new(display, mode));

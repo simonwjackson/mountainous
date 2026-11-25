@@ -38,8 +38,11 @@ the framebuffer-to-MSM splash handover on arrival.
 
 ## Session and design guest
 
-`asama` uses Korri's nixpkgs and does **not** take Denial yet. The runtime
-supports ARM64; Denial's Nix packaging at `01b588e` does not. Korri's Sway
+`asama` uses Korri's nixpkgs and does **not** take Denial yet. At `01b588e`, Denial's
+Nix outputs are x86_64-only. The ARM64 runtime engine matches upstream's SHA-256
+(`af2435ed14ce971fc249eaf2aa7bd2e5a0ef963069794db69396cb3c88a0fcff`).
+Upstream does not pin an ARM Dart SDK and matching `gen_snapshot` to build
+the shell. The blocker is the build toolchain, not the runtime engine. Korri's Sway
 runs headless so it does not compete for Denial's seat. Controller/dock/slider
 mode switching and nested Sway are later work.
 
