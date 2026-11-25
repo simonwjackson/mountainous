@@ -23,11 +23,23 @@ in
       '';
     };
 
+    enrolledHosts = mkOption {
+      type = types.attrs;
+      readOnly = true;
+      description = "Installed hosts eligible for fleet credentials and managed services.";
+    };
+
     hosts = mkOption {
       default = { };
       type = types.lazyAttrsOf (
         types.submodule {
           options = {
+            enrolled = mkOption {
+              type = types.bool;
+              default = true;
+              description = "False for a design guest or hardware awaiting provisioning.";
+            };
+
             system = mkOption {
               type = types.str;
               default = "x86_64-linux";
@@ -61,6 +73,7 @@ in
   };
 
   config = {
+    nixos.enrolledHosts = lib.filterAttrs (_: h: h.enrolled) config.nixos.hosts;
     systems = lib.unique (lib.mapAttrsToList (_: host: host.system) config.nixos.hosts);
 
     flake.nixosConfigurations = lib.mapAttrs (

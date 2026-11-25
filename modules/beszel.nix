@@ -22,7 +22,7 @@
   ...
 }:
 let
-  hostNames = builtins.attrNames config.nixos.hosts;
+  hostNames = builtins.attrNames config.nixos.enrolledHosts;
   hubPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKhkSuyrf+twVaJAZ2Kc1e03mC0rt3rk98vCX+7bQFJ6 beszel-hub";
   hubName = "beszel";
   tailnet = "hummingbird-lake.ts.net";

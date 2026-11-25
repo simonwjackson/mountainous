@@ -8,7 +8,7 @@
 }:
 let
   registry = config.mountainous.appProfiles;
-  hosts = config.nixos.hosts;
+  hosts = config.nixos.enrolledHosts;
   state = "/var/lib/app-updater";
 in
 {

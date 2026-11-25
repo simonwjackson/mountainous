@@ -64,7 +64,7 @@ in
         input = "pi";
         schedule = "*-*-* 00,06,12,18:00:00 UTC";
         # Hiyori is offline and has no verified OpenSSH host pin.
-        hosts = lib.remove "hiyori" (lib.attrNames flake.nixos.hosts);
+        hosts = lib.remove "hiyori" (lib.attrNames flake.nixos.enrolledHosts);
         substituters = [
           "https://pi.cachix.org"
           "https://nix-community.cachix.org"
@@ -82,7 +82,7 @@ in
     hosts = lib.subtractLists [
       "fuji"
       "aka"
-    ] (lib.attrNames flake.nixos.hosts);
+    ] (lib.attrNames flake.nixos.enrolledHosts);
     files = [ "settings.json" ];
   };
 
