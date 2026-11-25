@@ -31,14 +31,11 @@
         "rd.systemd.gpt_auto=0"
       ];
       boot.initrd.systemd.enable = true;
-      boot.initrd.availableKernelModules = lib.mkForce [
-        "ufs_qcom"
-        "sd_mod"
-        "ext4"
-      ];
+      # UFS, SCSI disk and ext4 are built into the board kernel.
+      boot.initrd.availableKernelModules = lib.mkForce [ ];
       boot.initrd.kernelModules = [
         "msm"
-        "qcom_rmtfs_mem"
+        "rmtfs_mem"
       ];
       # The first three files come from linux-firmware. The signed ZAP image
       # must match this phone; listing a name does not supply a private blob.
