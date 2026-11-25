@@ -174,6 +174,26 @@
           publish.enable = false;
         };
         systemd.services.pyxis.path = [ pkgs.avahi ];
+        # The Pyxis MCP server (pyxis clients/mcp). It holds no secrets: each agent sends its own
+        # Pyxis API token, which the server forwards to Pyxis on loopback. The tailnet only
+        # carries traffic. It ships in the Pyxis flake, so it moves with the pyxis lock.
+        mountainous.serviceApps.pyxis-mcp = {
+          package = system: inputs.pyxis.packages.${system}.pyxis-mcp-app;
+          server = "pyxis-mcp";
+          port = 4489;
+          serverArgs = [ ];
+          sidecarArgs = [
+            "--name"
+            "pyxis-mcp"
+            "--upstream"
+            "http://127.0.0.1:4489"
+            "--state"
+            "/var/lib/pyxis-mcp/state/tsnet"
+          ];
+          environment.PYXIS_BASE_URL = "http://127.0.0.1:4488";
+          smokeCommand = "${pkgs.curl}/bin/curl -fsS --max-time 5 http://127.0.0.1:4489/healthz >/dev/null";
+          checkCommand = ''test "$APP_VERSION" = 2.0.0'';
+        };
         mountainous.serviceApps.ossicle = {
           port = 4388;
           serverArgs = [

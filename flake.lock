@@ -1852,11 +1852,11 @@
         "proseql": "proseql_4"
       },
       "locked": {
-        "lastModified": 1794078682,
-        "narHash": "sha256-KWZpsq6+b2ovqqvSvOQX+C+DBv8jt6WfzM30ra172Sk=",
+        "lastModified": 1795577300,
+        "narHash": "sha256-j1lYaQCECZWTr0xjLyAa/NUWUamIWoK/cmQiRZUJssU=",
         "ref": "service-apps-unzen",
-        "rev": "112c9ddfe42ba3f37c12418f44aa43d3060eb2a9",
-        "revCount": 216,
+        "rev": "4a9a7cd13da7b926546181ae5b2a23f45820501f",
+        "revCount": 256,
         "type": "git",
         "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/github/simonwjackson/pyxis"
       },
