@@ -41,6 +41,14 @@
             install -Dm755 ${compositor}/bin/deniald $out/bin/deniald
           '';
         });
+        # The design guest is unenrolled, so it gets no fleet password
+        # (modules/users.nix) and both accounts would be locked: no way past
+        # Denial's lock screen. A throwaway guest that holds no secrets and is
+        # reachable only through Myoko's loopback keeps the old sandbox's
+        # known password, "denial". Never copy this to the phone.
+        users.users.simon.hashedPasswordFile = lib.mkForce null;
+        users.users.simon.password = "denial";
+        security.sudo.wheelNeedsPassword = false;
         environment.sessionVariables.DENIAL_VM_IMPLICIT_SCANOUT = "1";
         environment.etc."denial/outputs.conf".text = ''
           Virtual-1=0,0
