@@ -7,7 +7,7 @@
   ...
 }:
 let
-  hosts = config.nixos.hosts;
+  hosts = config.nixos.enrolledHosts;
   appsFor = host: self.nixosConfigurations.${host}.config.mountainous.serviceApps;
   names = lib.unique (lib.concatMap (host: lib.attrNames (appsFor host)) (lib.attrNames hosts));
   appFor =

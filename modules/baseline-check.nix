@@ -1,10 +1,10 @@
-# The fleet standard, checked on every host.
+# The fleet standard, checked on every enrolled host.
 #
 # A host may differ from the base layer, but only on purpose: each exception
 # below names the host or layer that is allowed to.
 { config, self, ... }:
 let
-  hosts = config.nixos.hosts;
+  hosts = config.nixos.enrolledHosts;
 in
 {
   perSystem =
