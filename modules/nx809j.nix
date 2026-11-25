@@ -2,7 +2,7 @@
 {
   nixos.modules.nx809j =
     {
-      config,
+      utils,
       lib,
       pkgs,
       options,
@@ -56,10 +56,13 @@
       # Keep private modem state out of the store and initrd. Only read UFS
       # while preparing ordinary files on the mounted Linux root. Carry these
       # files across switch-root, not an initrd daemon with an ephemeral copy.
-      boot.initrd.systemd.services.nx809j-rmtfs-copies = {
+      boot.initrd.systemd.services.nx809j-rmtfs-copies = let
+        devices = map (label: "${utils.escapeSystemdPath "/dev/disk/by-partlabel/${label}"}.device")
+          [ "modemst1" "modemst2" "fsc" "fsg" ];
+      in {
         wantedBy = [ "initrd.target" ];
-        after = [ "sysroot.mount" ];
-        requires = [ "sysroot.mount" ];
+        after = [ "sysroot.mount" ] ++ devices;
+        requires = [ "sysroot.mount" ] ++ devices;
         before = [ "initrd-switch-root.target" ];
         unitConfig.DefaultDependencies = false;
         serviceConfig.Type = "oneshot";
@@ -67,6 +70,7 @@
         script = ''
           set -eu
           dir=/sysroot/var/lib/rmtfs
+          [ "$(realpath -m "$dir")" = "$dir" ]
           install -d -m 0700 "$dir"
           for pair in modemst1:modem_fs1 modemst2:modem_fs2 fsc:modem_fsc fsg:modem_fsg; do
             file="$dir/''${pair#*:}"
@@ -80,12 +84,15 @@
             tmp=$(mktemp "$dir/.copy.XXXXXXXX")
             trap 'rm -f "$tmp"' EXIT
             cat "$part" > "$tmp"
+            [ -s "$tmp" ]
             mv -T "$tmp" "$file"
           done
+          touch /run/nx809j-rmtfs-ready
         '';
       };
       systemd.services.rmtfs = {
         wantedBy = [ "multi-user.target" ];
+        unitConfig.ConditionPathExists = "/run/nx809j-rmtfs-ready";
         unitConfig.ConditionFileNotEmpty = map (f: "/var/lib/rmtfs/${f}") [
           "modem_fs1"
           "modem_fs2"
@@ -97,7 +104,7 @@
           # The remoteproc memory device is a character device. Even a bad
           # state-file symlink must never give this daemon a block device.
           DevicePolicy = "closed";
-          DeviceAllow = [ "char-* rw" ];
+          DeviceAllow = [ "char-qcom_rmtfs_mem rw" ];
         };
       };
     };
