@@ -1,0 +1,66 @@
+[Plymouth Theme]
+Name=Mountainous Twin
+Description=Twin summits on black. The firmware picture holds; no animation.
+ModuleName=two-step
+
+[two-step]
+# NixOS: the package build rewrites ImageDir to its store path.
+ImageDir=/usr/share/plymouth/themes/mountainous-twin
+# The password prompt keeps DejaVu Sans (mountainous desktop-boot README).
+Font=DejaVu Sans 16
+TitleFont=DejaVu Sans 24
+# No throbber, progress or end-animation frames ship. These would place
+# them; they stay so the dialog and messages have a position.
+HorizontalAlignment=.5
+VerticalAlignment=.7
+DialogHorizontalAlignment=.5
+DialogVerticalAlignment=.7
+TitleHorizontalAlignment=.5
+TitleVerticalAlignment=.6
+WatermarkHorizontalAlignment=.5
+WatermarkVerticalAlignment=.96
+Transition=none
+TransitionDuration=0.0
+BackgroundStartColor=0x000000
+BackgroundEndColor=0x000000
+ProgressBarBackgroundColor=0x3a3a3a
+ProgressBarForegroundColor=0xdddddd
+# The mark stays on screen behind a password prompt.
+DialogClearsFirmwareBackground=false
+MessageBelowAnimation=true
+
+[boot-up]
+UseFirmwareBackground=true
+UseEndAnimation=false
+
+[shutdown]
+UseFirmwareBackground=true
+UseEndAnimation=false
+
+[reboot]
+UseFirmwareBackground=true
+UseEndAnimation=false
+
+[updates]
+UseFirmwareBackground=true
+SuppressMessages=true
+UseProgressBar=true
+ProgressBarShowPercentComplete=true
+Title=Installing updates
+SubTitle=Do not turn off the device
+
+[system-upgrade]
+UseFirmwareBackground=true
+SuppressMessages=true
+UseProgressBar=true
+ProgressBarShowPercentComplete=true
+Title=Upgrading the system
+SubTitle=Do not turn off the device
+
+[firmware-upgrade]
+UseFirmwareBackground=true
+SuppressMessages=true
+UseProgressBar=true
+ProgressBarShowPercentComplete=true
+Title=Upgrading firmware
+SubTitle=Do not turn off the device
