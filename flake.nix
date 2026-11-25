@@ -9,6 +9,18 @@
   inputs = {
     # Keep upstream's nixpkgs: Unzen already built these exact store paths.
     sparkyfitness.url = "github:CodeWithCJ/SparkyFitness/59a812e5d7c091bbb97f18c859ca1e51d82df679";
+    nx809j-port = {
+      url = "github:Reixo0/nx809j-mainline/feb8ea8c601bdbbe1ff9c5a7428d18179f227b4e";
+      flake = false;
+    };
+    # linux/ is a separate checkout. This is the From commit of the last
+    # format-patch in the pinned port's patches/ series.
+    nx809j-linux = {
+      url = "github:Reixo0/linux/26729f82a8cc127b73526ba36739ff0a7f841dae";
+      flake = false;
+    };
+    denial.url = "github:denialwm/denial/01b588ec50831bce9e57aed623901f49846ec791";
+    tarn.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/tarn?ref=spike/rust-aarch64&dir=app";
 
     # Release packaging and its locked npm closure; ARM uses our runtime below.
     nix-openclaw = {
