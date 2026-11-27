@@ -161,7 +161,7 @@ assert builtins.elem {
   defaultView = {
     tool = "days_summary";
     input = {
-      start = "$today-6d";
+      start = "$today";
       end = "$today+1d";
     };
   };
