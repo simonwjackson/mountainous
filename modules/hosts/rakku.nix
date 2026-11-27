@@ -20,7 +20,6 @@ in
       "cliproxyapi"
       "logbook"
       "sparkyfitness"
-      "mindwtr"
       "tailnet-names"
       "claw-tools"
       "claw-scryer"
@@ -303,6 +302,8 @@ in
         # Preserve UID 1000 and the old home. Cairn's account is added, not a
         # destructive rename. Retire the old login only in a separate change.
         users.users.simon.uid = 1001;
+        # Naedoko's runner (user unit naedoko-runner.service) survives logouts.
+        users.users.simon.linger = true;
         users.users.simonwjackson = {
           isNormalUser = true;
           uid = 1000;

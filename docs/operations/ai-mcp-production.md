@@ -26,20 +26,13 @@ Yari 63 deployment, browser acceptance, cleanup and forward rollback. Pace's two
 rows also remain; the complete current table is `lib/ai-mcp-rows.nix`, rather
 than the historical stage-2 table below.
 
-## Mindwtr follow-up
+## Mindwtr retired (2026-11-27)
 
-Mindwtr adds `/mcp/mindwtr` → `http://127.0.0.1:8723/mcp`, only for Flakey
-(`nbQJZMcewG11CNTRL`). The row, `mindwtr` MCP server, toolFilter and tools.allow
-share the 15 task/project/area tools in `lib/openclaw-mindwtr-tools.nix`.
-The AI proxy loads the separate incoming token from
-`/run/secrets/mindwtr-mcp-token`. The native write-enabled helper holds the
-Cloud token and talks only to Rakku's loopback Cloud server. OpenClaw holds
-neither token. Snowy gets no Mindwtr capability. The task/project/area delete
-tools delete data; the Simon-only `tasks` skill requires confirmation. Inbox is
-captured through `mindwtr_add_task` with `status: "inbox"`; next actions use
-`mindwtr_list_tasks` with `view: "available"`, not all open tasks.
-See [Mindwtr operations](mindwtr-rakku.md) for source pins, phone setup, backup,
-verification and rollback. No wind-down or coach workflow changes are included.
+Mindwtr is removed from Rakku: no `/mcp/mindwtr` row, no `mindwtr` MCP server
+on Flakey, no `tasks` skill. Its state stays on disk at `/var/lib/mindwtr`
+(`/tundra/permafrost/var/lib/mindwtr`). The encrypted `mindwtr-cloud-token` and
+`mindwtr-mcp-token` values stay in `secrets/hosts/rakku.yaml`, undeclared.
+The Sparkyfitness row no longer admits Zao (that caller was the Tarn prototype).
 
 ## Contract
 

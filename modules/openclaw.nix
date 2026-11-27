@@ -491,7 +491,6 @@
               "claw-gmail__mail_send_draft"
               "claw-gmail__mail_discard_card"
             ]
-            ++ (map (tool: "mindwtr__${tool}") (import ../lib/ai-mcp-rows.nix).mindwtr.tools)
             ++ [
               "claw-calendar__calendar_busy"
               "claw-calendar__calendars_list"
@@ -536,11 +535,9 @@
             .calendar.tools;
           assert gateway.config.mcp.servers.claw-calendar.codex.defaultToolsApprovalMode == "approve";
           assert lib.pathExists "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/calendar/SKILL.md";
-          assert lib.pathExists "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/tasks/SKILL.md";
-          assert !(lib.pathExists "${builtins.elemAt laure.skills.load.extraDirs 1}/tasks/SKILL.md");
-          assert
-            gateway.config.mcp.servers.mindwtr.toolFilter.include == (import ../lib/ai-mcp-rows.nix)
-            .mindwtr.tools;
+          # Mindwtr is retired: no tasks skill and no mindwtr server.
+          assert !(lib.pathExists "${builtins.elemAt gateway.config.skills.load.extraDirs 1}/tasks/SKILL.md");
+          assert !(gateway.config.mcp.servers ? mindwtr);
           assert !(laure.mcp.servers ? mindwtr);
           assert !(gateway.config.mcp.servers ? claw-scryer);
           assert

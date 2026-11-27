@@ -11,11 +11,6 @@
 #   that lists a tool not named here, a row not named here, or a row whose
 #   callers differ from these fails evaluation.
 {
-  mindwtr = {
-    callers = [ "flakey" ];
-    server = "mindwtr";
-    tools = import ./openclaw-mindwtr-tools.nix;
-  };
   pace = {
     callers = [ "flakey" ];
     server = "pace";
@@ -56,13 +51,8 @@
       "pace_goal_paid_answer"
     ];
   };
-  # zao: the Tarn prototype (~/code/sandbox/tarn/prototype on Zao)
-  # reads and writes Simon's own data through this row, like flakey.
   sparkyfitness = {
-    callers = [
-      "flakey"
-      "zao"
-    ];
+    callers = [ "flakey" ];
     server = "sparkyfitness";
     tools = import ./openclaw-sparkyfitness-tools.nix;
   };
