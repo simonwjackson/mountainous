@@ -1391,22 +1391,6 @@
     },
     "nixpkgs_22": {
       "locked": {
-        "lastModified": 1794890597,
-        "narHash": "sha256-lME2lHoDHAaSHP3/okgiVoJ0icVEvsQH8LeU3We7tcc=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "04906337b6d53e8bb0eaf0470ae9f070a4d4eb55",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_23": {
-      "locked": {
         "lastModified": 1787736819,
         "narHash": "sha256-cV5xEJJK3BvhU8rEd4mC9UsmDi5qscv/kzGPhBRC5WA=",
         "owner": "NixOS",
@@ -2082,7 +2066,6 @@
         "sparkyfitness": "sparkyfitness",
         "storia": "storia",
         "synth": "synth",
-        "tarn": "tarn",
         "vela": "vela",
         "w95fa-src": "w95fa-src_2",
         "youtube": "youtube",
@@ -2604,27 +2587,6 @@
         "type": "github"
       }
     },
-    "tarn": {
-      "inputs": {
-        "nixpkgs": "nixpkgs_22"
-      },
-      "locked": {
-        "dir": "app",
-        "lastModified": 1795595009,
-        "narHash": "sha256-/FN8aahs5m3qH3l1hlTKDjjyQV3GsGUtZGHkrAtAqmk=",
-        "ref": "spike/rust-aarch64",
-        "rev": "6ae721b48fb027c0c8391a6b972a98f6c81ee028",
-        "revCount": 43,
-        "type": "git",
-        "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/tarn"
-      },
-      "original": {
-        "dir": "app",
-        "ref": "spike/rust-aarch64",
-        "type": "git",
-        "url": "ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/tarn"
-      }
-    },
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
@@ -2830,7 +2792,7 @@
     "youtube": {
       "inputs": {
         "flake-utils": "flake-utils_7",
-        "nixpkgs": "nixpkgs_23",
+        "nixpkgs": "nixpkgs_22",
         "yattee-server": "yattee-server"
       },
       "locked": {

@@ -1,4 +1,4 @@
-{ inputs, ... }:
+{ ... }:
 {
   nixos.modules.phone =
     {
@@ -19,10 +19,7 @@
           substituteInPlace "$dir/mountainous-twin.plymouth" --replace-fail /usr/share/plymouth "$out/share/plymouth"
         '')
       ];
-      environment.systemPackages = [
-        config.system.build.hensouKit
-        inputs.tarn.packages.${pkgs.stdenv.hostPlatform.system}.default
-      ];
+      environment.systemPackages = [ config.system.build.hensouKit ];
       services.korriProduct.runtimeAccount.uid = 56774;
       # Do not claim Denial's seat. Nested Sway and the mode switch are later work.
       services.korriLinuxHost.compositor = {

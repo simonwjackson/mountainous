@@ -20,7 +20,6 @@
       flake = false;
     };
     denial.url = "github:denialwm/denial/01b588ec50831bce9e57aed623901f49846ec791";
-    tarn.url = "git+ssh://simonwjackson@zao.hummingbird-lake.ts.net/home/simonwjackson/code/sandbox/tarn?ref=spike/rust-aarch64&dir=app";
 
     # Release packaging and its locked npm closure; ARM uses our runtime below.
     nix-openclaw = {

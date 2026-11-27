@@ -57,12 +57,6 @@
           system_bar=hidden
           maximize_padding=0
         '';
-        systemd.user.services.tarn = {
-          description = "Tarn window on Rakku";
-          partOf = [ "denial-session.target" ];
-          environment.TARN_SERVER = "ws://100.88.212.117:4790";
-          serviceConfig.ExecStart = lib.getExe inputs.tarn.packages.x86_64-linux.default;
-        };
         virtualisation = {
           cores = 6;
           memorySize = 4096;

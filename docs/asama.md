@@ -53,10 +53,8 @@ From this checkout on Zao:
 ```sh
 vm=$(scripts/asama-vm/build.sh)
 scripts/asama-vm/run-on-myoko.sh "$vm"
-scripts/asama-vm/guest.sh 'systemctl --user start tarn && journalctl --user -u tarn -n 10 --no-pager'
 ```
 
 The VM has its own disk image under `~/asama-vm` on Myoko. The SSH port is
-on Myoko's loopback only. Tarn connects over Myoko's NAT to tarn-service on
-Rakku (`ws://100.88.212.117:4790`). Do not enroll the design guest or give it
+on Myoko's loopback only. Do not enroll the design guest or give it
 a fleet decryption key.
